@@ -6,3 +6,5 @@ dist/
 icon.ico
 .venv/
 venv/
+bin/
+obj/
