@@ -2,11 +2,12 @@ namespace ExternalDrivePanel;
 
 public sealed class FavoriteItem
 {
-    public FavoriteItem(string path, bool isDirectory)
+    public FavoriteItem(string path, bool isDirectory, bool isBuiltIn = false, string? label = null)
     {
         Path = path;
         IsDirectory = isDirectory;
-        Name = System.IO.Path.GetFileName(path.TrimEnd(System.IO.Path.DirectorySeparatorChar));
+        IsBuiltIn = isBuiltIn;
+        Name = label ?? System.IO.Path.GetFileName(path.TrimEnd(System.IO.Path.DirectorySeparatorChar));
         if (string.IsNullOrWhiteSpace(Name))
         {
             Name = path.TrimEnd(System.IO.Path.DirectorySeparatorChar);
@@ -15,5 +16,7 @@ public sealed class FavoriteItem
 
     public string Path { get; }
     public bool IsDirectory { get; }
+    public bool IsBuiltIn { get; }
     public string Name { get; }
+    public string Icon => IsDirectory ? "📁" : "📄";
 }

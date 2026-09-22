@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
 namespace ExternalDrivePanel;
@@ -12,12 +11,13 @@ public partial class DrivePanelWindow : Window
 {
     private readonly string _root;
     private readonly DriveService _driveService = new();
-    private readonly FavoriteCollection _favorites = new();
-    private readonly List<string> _history = [];
+    private readonly FavoriteCollection _favorites;
+    private readonly List<NavigationState> _history = [];
     private List<FileSystemEntry> _currentItems = [];
     private int _historyIndex = -1;
     private string _currentPath;
-    private FavoriteItem? _activeFavorite;
+    private PanelContentMode _contentMode;
+    private bool _isDetailsView;
     private string _sortProperty = nameof(FileSystemEntry.Name);
     private ListSortDirection _sortDirection = ListSortDirection.Ascending;
 
@@ -29,9 +29,9 @@ public partial class DrivePanelWindow : Window
 
         var driveName = _root.TrimEnd(Path.DirectorySeparatorChar);
         TitleText.Text = string.IsNullOrWhiteSpace(label) ? driveName : $"{driveName} {label}";
-        RootTabButton.Content = driveName;
-        FavoriteTabs.ItemsSource = _favorites.Items;
-        NavigateTo(_root);
+        _favorites = new FavoriteCollection(_root, driveName);
+        FavoriteItemsList.ItemsSource = _favorites.Items;
+        ShowFavorites();
     }
 
     public void SetPlacement(int index, int windowCount)
@@ -43,32 +43,67 @@ public partial class DrivePanelWindow : Window
         Top = workArea.Top + (Height * index);
     }
 
-    private void NavigateTo(string path, bool addToHistory = true)
+    private bool ShowFavorites(bool addToHistory = true)
+    {
+        _contentMode = PanelContentMode.Favorites;
+        FavoriteItemsList.Visibility = Visibility.Visible;
+        IconItemsList.Visibility = Visibility.Collapsed;
+        DetailsGrid.Visibility = Visibility.Collapsed;
+        FavoriteItemsList.SelectedItem = null;
+        ShowFavoriteAddress(null);
+
+        if (addToHistory)
+        {
+            AddHistory(new NavigationState(PanelContentMode.Favorites, null));
+        }
+
+        UpdateNavigationButtons();
+        return true;
+    }
+
+    private bool NavigateTo(string path, bool addToHistory = true)
     {
         var fullPath = Path.GetFullPath(path);
         if (!IsWithinDrive(fullPath) || !Directory.Exists(fullPath) || !LoadDirectory(fullPath))
         {
+            return false;
+        }
+
+        _contentMode = PanelContentMode.Folder;
+        _currentPath = fullPath;
+        FavoriteItemsList.Visibility = Visibility.Collapsed;
+        ApplyFolderViewVisibility();
+
+        if (addToHistory)
+        {
+            AddHistory(new NavigationState(PanelContentMode.Folder, fullPath));
+        }
+
+        BuildFolderBreadcrumb();
+        UpdateNavigationButtons();
+        return true;
+    }
+
+    private void AddHistory(NavigationState state)
+    {
+        if (_historyIndex >= 0 && StatesEqual(_history[_historyIndex], state))
+        {
             return;
         }
 
-        _currentPath = fullPath;
-        if (addToHistory)
+        if (_historyIndex < _history.Count - 1)
         {
-            if (_historyIndex < _history.Count - 1)
-            {
-                _history.RemoveRange(_historyIndex + 1, _history.Count - _historyIndex - 1);
-            }
-
-            if (_history.Count == 0 || !string.Equals(_history[^1], fullPath, StringComparison.OrdinalIgnoreCase))
-            {
-                _history.Add(fullPath);
-            }
-            _historyIndex = _history.Count - 1;
+            _history.RemoveRange(_historyIndex + 1, _history.Count - _historyIndex - 1);
         }
 
-        BuildBreadcrumb();
-        UpdateNavigationButtons();
+        _history.Add(state);
+        _historyIndex = _history.Count - 1;
     }
+
+    private bool RestoreHistory(NavigationState state) =>
+        state.Mode == PanelContentMode.Favorites
+            ? ShowFavorites(false)
+            : state.Path is not null && NavigateTo(state.Path, false);
 
     private bool LoadDirectory(string path)
     {
@@ -127,7 +162,13 @@ public partial class DrivePanelWindow : Window
         DetailsGrid.ItemsSource = visibleItems;
     }
 
-    private void BuildBreadcrumb()
+    private void ApplyFolderViewVisibility()
+    {
+        IconItemsList.Visibility = _isDetailsView ? Visibility.Collapsed : Visibility.Visible;
+        DetailsGrid.Visibility = _isDetailsView ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void BuildFolderBreadcrumb()
     {
         BreadcrumbPanel.Children.Clear();
         AddBreadcrumbButton(_root.TrimEnd(Path.DirectorySeparatorChar), _root);
@@ -145,6 +186,17 @@ public partial class DrivePanelWindow : Window
             accumulated = Path.Combine(accumulated, segment);
             AddBreadcrumbButton(segment, accumulated);
         }
+    }
+
+    private void ShowFavoriteAddress(FavoriteItem? favorite)
+    {
+        BreadcrumbPanel.Children.Clear();
+        BreadcrumbPanel.Children.Add(new TextBlock
+        {
+            Text = favorite?.Path ?? "즐겨찾기",
+            Margin = new Thickness(5, 2, 5, 2),
+            TextTrimming = TextTrimming.CharacterEllipsis
+        });
     }
 
     private void AddBreadcrumbButton(string caption, string targetPath)
@@ -165,7 +217,42 @@ public partial class DrivePanelWindow : Window
     {
         BackButton.IsEnabled = _historyIndex > 0;
         ForwardButton.IsEnabled = _historyIndex >= 0 && _historyIndex < _history.Count - 1;
-        UpButton.IsEnabled = !PathsEqual(_currentPath, _root);
+        UpButton.IsEnabled = _contentMode == PanelContentMode.Folder && !PathsEqual(_currentPath, _root);
+        IconViewButton.IsEnabled = _contentMode == PanelContentMode.Folder;
+        DetailsViewButton.IsEnabled = _contentMode == PanelContentMode.Folder;
+    }
+
+    private void FavoriteItemsList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_contentMode == PanelContentMode.Favorites)
+        {
+            ShowFavoriteAddress(FavoriteItemsList.SelectedItem as FavoriteItem);
+        }
+    }
+
+    private void FavoriteItemsList_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (FavoriteItemsList.SelectedItem is not FavoriteItem favorite)
+        {
+            return;
+        }
+
+        if (favorite.IsDirectory)
+        {
+            NavigateTo(favorite.Path);
+        }
+        else
+        {
+            OpenWithShell(favorite.Path);
+        }
+    }
+
+    private void FavoriteItemsList_OnContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (FavoriteItemsList.SelectedItem is not FavoriteItem { IsBuiltIn: false })
+        {
+            e.Handled = true;
+        }
     }
 
     private void Items_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -225,9 +312,9 @@ public partial class DrivePanelWindow : Window
     }
 
     private FileSystemEntry? GetSelectedEntry() =>
-        IconItemsList.Visibility == Visibility.Visible
-            ? IconItemsList.SelectedItem as FileSystemEntry
-            : DetailsGrid.SelectedItem as FileSystemEntry;
+        _isDetailsView
+            ? DetailsGrid.SelectedItem as FileSystemEntry
+            : IconItemsList.SelectedItem as FileSystemEntry;
 
     private void AddFavorite_OnClick(object sender, RoutedEventArgs e)
     {
@@ -240,38 +327,10 @@ public partial class DrivePanelWindow : Window
 
     private void RemoveFavorite_OnClick(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuItem { CommandParameter: FavoriteItem favorite })
+        if (FavoriteItemsList.SelectedItem is FavoriteItem favorite && _favorites.Remove(favorite))
         {
-            _favorites.Remove(favorite);
-            if (ReferenceEquals(_activeFavorite, favorite))
-            {
-                _activeFavorite = null;
-            }
+            FavoriteItemsList.SelectedItem = null;
         }
-    }
-
-    private void FavoriteTab_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button { DataContext: FavoriteItem favorite })
-        {
-            return;
-        }
-
-        if (favorite.IsDirectory)
-        {
-            _activeFavorite = favorite;
-            NavigateTo(favorite.Path);
-        }
-        else
-        {
-            OpenWithShell(favorite.Path);
-        }
-    }
-
-    private void RootTabButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        _activeFavorite = null;
-        NavigateTo(_root);
     }
 
     private void BackButton_OnClick(object sender, RoutedEventArgs e)
@@ -281,8 +340,12 @@ public partial class DrivePanelWindow : Window
             return;
         }
 
-        _historyIndex--;
-        NavigateTo(_history[_historyIndex], false);
+        var targetIndex = _historyIndex - 1;
+        if (RestoreHistory(_history[targetIndex]))
+        {
+            _historyIndex = targetIndex;
+            UpdateNavigationButtons();
+        }
     }
 
     private void ForwardButton_OnClick(object sender, RoutedEventArgs e)
@@ -292,12 +355,21 @@ public partial class DrivePanelWindow : Window
             return;
         }
 
-        _historyIndex++;
-        NavigateTo(_history[_historyIndex], false);
+        var targetIndex = _historyIndex + 1;
+        if (RestoreHistory(_history[targetIndex]))
+        {
+            _historyIndex = targetIndex;
+            UpdateNavigationButtons();
+        }
     }
 
     private void UpButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (_contentMode != PanelContentMode.Folder)
+        {
+            return;
+        }
+
         var parent = Directory.GetParent(_currentPath);
         if (parent is not null && IsWithinDrive(parent.FullName))
         {
@@ -305,19 +377,28 @@ public partial class DrivePanelWindow : Window
         }
     }
 
-    private void HomeButton_OnClick(object sender, RoutedEventArgs e) =>
-        NavigateTo(_activeFavorite is { IsDirectory: true } ? _activeFavorite.Path : _root);
+    private void HomeButton_OnClick(object sender, RoutedEventArgs e) => ShowFavorites();
 
     private void IconViewButton_OnClick(object sender, RoutedEventArgs e)
     {
-        IconItemsList.Visibility = Visibility.Visible;
-        DetailsGrid.Visibility = Visibility.Collapsed;
+        if (_contentMode != PanelContentMode.Folder)
+        {
+            return;
+        }
+
+        _isDetailsView = false;
+        ApplyFolderViewVisibility();
     }
 
     private void DetailsViewButton_OnClick(object sender, RoutedEventArgs e)
     {
-        IconItemsList.Visibility = Visibility.Collapsed;
-        DetailsGrid.Visibility = Visibility.Visible;
+        if (_contentMode != PanelContentMode.Folder)
+        {
+            return;
+        }
+
+        _isDetailsView = true;
+        ApplyFolderViewVisibility();
     }
 
     private void DetailsGrid_OnSorting(object sender, DataGridSortingEventArgs e)
@@ -350,10 +431,23 @@ public partial class DrivePanelWindow : Window
         return fullPath.StartsWith(_root, StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool StatesEqual(NavigationState left, NavigationState right) =>
+        left.Mode == right.Mode
+        && (left.Mode == PanelContentMode.Favorites
+            || string.Equals(left.Path, right.Path, StringComparison.OrdinalIgnoreCase));
+
     private static bool PathsEqual(string left, string right) =>
         string.Equals(Path.GetFullPath(left).TrimEnd(Path.DirectorySeparatorChar),
             Path.GetFullPath(right).TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase);
 
     private static string EnsureTrailingSeparator(string path) =>
         path.EndsWith(Path.DirectorySeparatorChar) ? path : path + Path.DirectorySeparatorChar;
+
+    private enum PanelContentMode
+    {
+        Favorites,
+        Folder
+    }
+
+    private sealed record NavigationState(PanelContentMode Mode, string? Path);
 }
