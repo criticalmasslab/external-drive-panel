@@ -7,25 +7,20 @@ namespace ExternalDrivePanel;
 public sealed class DriveService
 {
     private const int VolumeNameBufferLength = 261;
+    private const uint InvalidFileAttributes = 0xFFFFFFFF;
+    private const uint FileAttributeHidden = 0x2;
+    private const uint FileAttributeSystem = 0x4;
 
     public IReadOnlyList<string> ListDriveRoots() => Environment.GetLogicalDrives();
 
     public (uint VolumeSerialNumber, string VolumeLabel) GetVolumeInfo(string root)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(root);
-
         var volumeName = new StringBuilder(VolumeNameBufferLength);
         var fileSystemName = new StringBuilder(VolumeNameBufferLength);
 
-        if (!GetVolumeInformationW(
-                root,
-                volumeName,
-                volumeName.Capacity,
-                out uint serialNumber,
-                out _,
-                out _,
-                fileSystemName,
-                fileSystemName.Capacity))
+        if (!GetVolumeInformationW(root, volumeName, volumeName.Capacity, out uint serialNumber,
+                out _, out _, fileSystemName, fileSystemName.Capacity))
         {
             throw new Win32Exception(Marshal.GetLastWin32Error(), $"볼륨 정보를 읽을 수 없습니다: {root}");
         }
@@ -56,7 +51,6 @@ public sealed class DriveService
     public Dictionary<uint, (string Root, string Label)> SnapshotAllVolumes()
     {
         var snapshot = new Dictionary<uint, (string Root, string Label)>();
-
         foreach (var root in ListDriveRoots())
         {
             if (string.Equals(root, @"C:\", StringComparison.OrdinalIgnoreCase))
@@ -78,6 +72,13 @@ public sealed class DriveService
         return snapshot;
     }
 
+    public bool IsVisibleFileSystemEntry(string path)
+    {
+        var attributes = GetFileAttributesW(path);
+        return attributes != InvalidFileAttributes
+               && (attributes & (FileAttributeHidden | FileAttributeSystem)) == 0;
+    }
+
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetVolumeInformationW(
@@ -89,4 +90,7 @@ public sealed class DriveService
         out uint lpFileSystemFlags,
         StringBuilder lpFileSystemNameBuffer,
         int nFileSystemNameSize);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern uint GetFileAttributesW(string lpFileName);
 }

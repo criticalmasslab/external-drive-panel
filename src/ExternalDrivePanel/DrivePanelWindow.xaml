@@ -7,33 +7,110 @@
         Topmost="False"
         ResizeMode="NoResize"
         Background="#FFF7F7F7">
+    <Window.Resources>
+        <Style x:Key="ToolbarButton" TargetType="Button">
+            <Setter Property="MinWidth" Value="34" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Padding" Value="7,2" />
+        </Style>
+    </Window.Resources>
     <Border BorderBrush="#FFD0D0D0" BorderThickness="1">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Border Padding="16,12" Background="#FF243447">
-                <TextBlock x:Name="TitleText"
-                           Foreground="White"
-                           FontSize="18"
-                           FontWeight="SemiBold"
-                           TextTrimming="CharacterEllipsis" />
+            <Border Padding="14,9" Background="#FF243447">
+                <TextBlock x:Name="TitleText" Foreground="White" FontSize="17"
+                           FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
             </Border>
 
-            <ListBox x:Name="ItemsList"
-                     Grid.Row="1"
-                     BorderThickness="0"
-                     Background="Transparent"
-                     FontSize="14"
-                     MouseDoubleClick="ItemsList_OnMouseDoubleClick">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Padding="8,5" Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+            <Border Grid.Row="1" Padding="5,4" Background="#FFE9EDF2">
+                <DockPanel LastChildFill="True">
+                    <Button x:Name="RootTabButton" DockPanel.Dock="Left" Margin="2,0"
+                            Padding="11,5" FontWeight="SemiBold" Click="RootTabButton_OnClick" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl x:Name="FavoriteTabs">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Margin="2,0" Padding="10,5" Content="{Binding Name}"
+                                            ToolTip="{Binding Path}" Click="FavoriteTab_OnClick">
+                                        <Button.ContextMenu>
+                                            <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                                <MenuItem Header="즐겨찾기에서 제거" CommandParameter="{Binding}"
+                                                          Click="RemoveFavorite_OnClick" />
+                                            </ContextMenu>
+                                        </Button.ContextMenu>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
+            <ToolBar Grid.Row="2" Padding="3" Background="#FFF4F5F7" ToolBarTray.IsLocked="True">
+                <Button x:Name="BackButton" Style="{StaticResource ToolbarButton}" Content="←" ToolTip="뒤로" Click="BackButton_OnClick" />
+                <Button x:Name="ForwardButton" Style="{StaticResource ToolbarButton}" Content="→" ToolTip="앞으로" Click="ForwardButton_OnClick" />
+                <Button x:Name="UpButton" Style="{StaticResource ToolbarButton}" Content="↑" ToolTip="위로" Click="UpButton_OnClick" />
+                <Button Style="{StaticResource ToolbarButton}" Content="🏠" ToolTip="홈" Click="HomeButton_OnClick" />
+                <Separator />
+                <Button Style="{StaticResource ToolbarButton}" Content="▦ 아이콘" ToolTip="아이콘 보기" Click="IconViewButton_OnClick" />
+                <Button Style="{StaticResource ToolbarButton}" Content="☷ 상세" ToolTip="상세 보기" Click="DetailsViewButton_OnClick" />
+            </ToolBar>
+
+            <Border Grid.Row="3" Margin="6,3,6,5" Padding="7,3" BorderBrush="#FFBFC5CC"
+                    BorderThickness="1" CornerRadius="3" Background="White">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <StackPanel x:Name="BreadcrumbPanel" Orientation="Horizontal" />
+                </ScrollViewer>
+            </Border>
+
+            <Grid Grid.Row="4">
+                <ListBox x:Name="IconItemsList" BorderThickness="0" Background="Transparent"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         MouseDoubleClick="Items_OnMouseDoubleClick"
+                         PreviewMouseRightButtonDown="Items_OnPreviewMouseRightButtonDown">
+                    <ListBox.ContextMenu>
+                        <ContextMenu><MenuItem Header="즐겨찾기에 추가" Click="AddFavorite_OnClick" /></ContextMenu>
+                    </ListBox.ContextMenu>
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Width="105" Margin="5" ToolTip="{Binding FullPath}">
+                                <TextBlock FontSize="24" HorizontalAlignment="Center" Text="{Binding Icon}" />
+                                <TextBlock Text="{Binding Name}" TextAlignment="Center" TextWrapping="Wrap" MaxHeight="38" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <DataGrid x:Name="DetailsGrid" Visibility="Collapsed" AutoGenerateColumns="False"
+                          IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
+                          CanUserReorderColumns="False" GridLinesVisibility="Horizontal"
+                          MouseDoubleClick="Items_OnMouseDoubleClick" Sorting="DetailsGrid_OnSorting"
+                          PreviewMouseRightButtonDown="Items_OnPreviewMouseRightButtonDown">
+                    <DataGrid.ContextMenu>
+                        <ContextMenu><MenuItem Header="즐겨찾기에 추가" Click="AddFavorite_OnClick" /></ContextMenu>
+                    </DataGrid.ContextMenu>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="이름" Binding="{Binding DisplayName}" SortMemberPath="Name" Width="2*" />
+                        <DataGridTextColumn Header="수정한 날짜" Binding="{Binding ModifiedDate, StringFormat=yyyy-MM-dd HH:mm}" SortMemberPath="ModifiedDate" Width="*" />
+                        <DataGridTextColumn Header="크기" Binding="{Binding SizeDisplay}" SortMemberPath="Size" Width="Auto" />
+                        <DataGridTextColumn Header="유형" Binding="{Binding Type}" SortMemberPath="Type" Width="*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
         </Grid>
     </Border>
 </Window>
