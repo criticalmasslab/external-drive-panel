@@ -29,7 +29,9 @@ public partial class DrivePanelWindow : Window
 
         var driveName = _root.TrimEnd(Path.DirectorySeparatorChar);
         TitleText.Text = string.IsNullOrWhiteSpace(label) ? driveName : $"{driveName} {label}";
-        _favorites = new FavoriteCollection(_root, driveName);
+        _favorites = new FavoriteCollection();
+        DriveRootButton.Content = driveName;
+        _favorites.Items.CollectionChanged += (_, _) => UpdateEmptyFavoritesMessage();
         FavoriteItemsList.ItemsSource = _favorites.Items;
         ShowFavorites();
     }
@@ -213,6 +215,13 @@ public partial class DrivePanelWindow : Window
         BreadcrumbPanel.Children.Add(button);
     }
 
+    private void UpdateEmptyFavoritesMessage()
+    {
+        EmptyFavoritesMessage.Visibility = _contentMode == PanelContentMode.Favorites && _favorites.Items.Count == 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
     private void UpdateNavigationButtons()
     {
         BackButton.IsEnabled = _historyIndex > 0;
@@ -247,15 +256,7 @@ public partial class DrivePanelWindow : Window
         }
     }
 
-    private void FavoriteItemsList_OnContextMenuOpening(object sender, ContextMenuEventArgs e)
-    {
-        if (FavoriteItemsList.SelectedItem is not FavoriteItem { IsBuiltIn: false })
-        {
-            e.Handled = true;
-        }
-    }
-
-    private void Items_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
+private void Items_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         var entry = sender switch
         {
@@ -378,6 +379,8 @@ public partial class DrivePanelWindow : Window
     }
 
     private void HomeButton_OnClick(object sender, RoutedEventArgs e) => ShowFavorites();
+
+    private void DriveRootButton_OnClick(object sender, RoutedEventArgs e) => NavigateTo(_root);
 
     private void IconViewButton_OnClick(object sender, RoutedEventArgs e)
     {

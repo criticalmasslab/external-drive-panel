@@ -34,6 +34,7 @@
                 <Button x:Name="ForwardButton" Style="{StaticResource ToolbarButton}" Content="→" ToolTip="앞으로" Click="ForwardButton_OnClick" />
                 <Button x:Name="UpButton" Style="{StaticResource ToolbarButton}" Content="↑" ToolTip="위로" Click="UpButton_OnClick" />
                 <Button Style="{StaticResource ToolbarButton}" Content="🏠" ToolTip="즐겨찾기 홈" Click="HomeButton_OnClick" />
+                <Button x:Name="DriveRootButton" Style="{StaticResource ToolbarButton}" ToolTip="드라이브 루트" Click="DriveRootButton_OnClick" />
                 <Separator />
                 <Button x:Name="IconViewButton" Style="{StaticResource ToolbarButton}" Content="▦ 아이콘" ToolTip="아이콘 보기" Click="IconViewButton_OnClick" />
                 <Button x:Name="DetailsViewButton" Style="{StaticResource ToolbarButton}" Content="☷ 상세" ToolTip="상세 보기" Click="DetailsViewButton_OnClick" />
@@ -52,7 +53,7 @@
                          SelectionChanged="FavoriteItemsList_OnSelectionChanged"
                          MouseDoubleClick="FavoriteItemsList_OnMouseDoubleClick"
                          PreviewMouseRightButtonDown="Items_OnPreviewMouseRightButtonDown"
-                         ContextMenuOpening="FavoriteItemsList_OnContextMenuOpening">
+                         >
                     <ListBox.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="즐겨찾기에서 제거" Click="RemoveFavorite_OnClick" />
@@ -63,7 +64,7 @@
                     </ListBox.ItemsPanel>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Border x:Name="FavoriteTile" Width="105" Margin="5" Padding="7"
+                            <Border Width="105" Margin="5" Padding="7"
                                     BorderBrush="Transparent" BorderThickness="1" CornerRadius="5"
                                     ToolTip="{Binding Path}">
                                 <StackPanel>
@@ -71,15 +72,13 @@
                                     <TextBlock Text="{Binding Name}" TextAlignment="Center" TextWrapping="Wrap" MaxHeight="38" />
                                 </StackPanel>
                             </Border>
-                            <DataTemplate.Triggers>
-                                <DataTrigger Binding="{Binding IsBuiltIn}" Value="True">
-                                    <Setter TargetName="FavoriteTile" Property="Background" Value="#FFE4F0FF" />
-                                    <Setter TargetName="FavoriteTile" Property="BorderBrush" Value="#FF4B82C3" />
-                                </DataTrigger>
-                            </DataTemplate.Triggers>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
+
+                <TextBlock x:Name="EmptyFavoritesMessage" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Margin="24" TextAlignment="Center" TextWrapping="Wrap" Foreground="#FF68717C"
+                           Text="즐겨찾기가 없습니다. 폴더나 파일을 우클릭해서 추가해보세요." />
 
                 <ListBox x:Name="IconItemsList" Visibility="Collapsed" BorderThickness="0" Background="Transparent"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
