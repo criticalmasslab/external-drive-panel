@@ -1,0 +1,53 @@
+<Window x:Class="ExternalDrivePanel.ZoneSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="화면 영역 설정" Width="480" Height="680"
+        WindowStartupLocation="CenterOwner" ResizeMode="CanResizeWithGrip">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="18">
+            <TextBlock Text="모니터" FontSize="16" FontWeight="SemiBold" />
+            <StackPanel x:Name="MonitorOptions" Margin="0,8,0,18" />
+
+            <TextBlock Text="격자 크기" FontSize="16" FontWeight="SemiBold" />
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,8">
+                <TextBlock Text="가로" VerticalAlignment="Center" />
+                <TextBox x:Name="GridColsText" Width="55" Margin="8,0,18,0" TextChanged="GridSize_OnTextChanged" />
+                <TextBlock Text="세로" VerticalAlignment="Center" />
+                <TextBox x:Name="GridRowsText" Width="55" Margin="8,0" TextChanged="GridSize_OnTextChanged" />
+            </StackPanel>
+            <Border Height="190" BorderBrush="#FFB9C0C8" BorderThickness="1" Background="#FFF4F6F8" Margin="0,0,0,18">
+                <UniformGrid x:Name="GridPreview" Margin="6" />
+            </Border>
+
+            <TextBlock Text="여러 패널 분할 방향" FontSize="16" FontWeight="SemiBold" />
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,18">
+                <RadioButton x:Name="VerticalSplitRadio" Content="세로로 나열" GroupName="Split" Margin="0,0,22,0" />
+                <RadioButton x:Name="HorizontalSplitRadio" Content="가로로 나열" GroupName="Split" />
+            </StackPanel>
+
+            <TextBlock Text="여백" FontSize="16" FontWeight="SemiBold" />
+            <CheckBox x:Name="UniformMarginCheck" Content="사방 동일" Margin="0,8,0,8"
+                      Checked="UniformMargin_OnChanged" Unchecked="UniformMargin_OnChanged" />
+            <StackPanel x:Name="UniformMarginPanel" Orientation="Horizontal" Margin="0,0,0,8">
+                <TextBlock Text="전체" Width="45" VerticalAlignment="Center" />
+                <TextBox x:Name="MarginAllText" Width="70" />
+            </StackPanel>
+            <Grid x:Name="IndividualMarginPanel" Margin="0,0,0,18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="45" /><ColumnDefinition Width="70" />
+                    <ColumnDefinition Width="45" /><ColumnDefinition Width="70" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                <TextBlock Text="위" VerticalAlignment="Center" /><TextBox x:Name="MarginTopText" Grid.Column="1" Margin="0,2" />
+                <TextBlock Text="아래" Grid.Column="2" VerticalAlignment="Center" /><TextBox x:Name="MarginBottomText" Grid.Column="3" Margin="0,2" />
+                <TextBlock Text="왼쪽" Grid.Row="1" VerticalAlignment="Center" /><TextBox x:Name="MarginLeftText" Grid.Row="1" Grid.Column="1" Margin="0,2" />
+                <TextBlock Text="오른쪽" Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" /><TextBox x:Name="MarginRightText" Grid.Row="1" Grid.Column="3" Margin="0,2" />
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="취소" Width="80" Margin="4" IsCancel="True" />
+                <Button Content="저장" Width="80" Margin="4" IsDefault="True" Click="SaveButton_OnClick" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Window>

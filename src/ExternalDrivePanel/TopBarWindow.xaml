@@ -1,0 +1,25 @@
+<Window x:Class="ExternalDrivePanel.TopBarWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="External Drive Panel Controls"
+        WindowStyle="None" ShowInTaskbar="False" ResizeMode="NoResize"
+        Background="#FF1D2A38">
+    <Border BorderBrush="#FF415266" BorderThickness="1">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="External Drive Panel" Foreground="White" FontWeight="SemiBold"
+                       VerticalAlignment="Center" Margin="10,0" TextTrimming="CharacterEllipsis" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Content="⚙" Width="32" ToolTip="화면 영역 설정" Click="SettingsButton_OnClick" />
+                <Button x:Name="HiddenButton" Content="👁" Width="32" ToolTip="숨김 항목 표시" Click="HiddenButton_OnClick" />
+                <Button Content="−" Width="32" ToolTip="아이콘 작게" Click="SmallerButton_OnClick" />
+                <Button Content="＋" Width="32" ToolTip="아이콘 크게" Click="LargerButton_OnClick" />
+                <Button Content="⊞" Width="32" ToolTip="아이콘 보기" Click="IconViewButton_OnClick" />
+                <Button Content="☰" Width="32" ToolTip="상세 보기" Click="DetailsViewButton_OnClick" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

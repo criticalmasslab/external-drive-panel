@@ -72,11 +72,11 @@ public sealed class DriveService
         return snapshot;
     }
 
-    public bool IsVisibleFileSystemEntry(string path)
+    public bool IsVisibleFileSystemEntry(string path, bool showHiddenItems = false)
     {
         var attributes = GetFileAttributesW(path);
         return attributes != InvalidFileAttributes
-               && (attributes & (FileAttributeHidden | FileAttributeSystem)) == 0;
+               && (showHiddenItems || (attributes & (FileAttributeHidden | FileAttributeSystem)) == 0);
     }
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]

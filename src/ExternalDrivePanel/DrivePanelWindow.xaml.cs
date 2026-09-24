@@ -11,6 +11,8 @@ public partial class DrivePanelWindow : Window
 {
     private readonly string _root;
     private readonly DriveService _driveService = new();
+    private readonly GlobalViewSettings _viewSettings;
+    private readonly EjectService _ejectService;
     private readonly FavoriteCollection _favorites;
     private readonly List<NavigationState> _history = [];
     private List<FileSystemEntry> _currentItems = [];
@@ -18,11 +20,14 @@ public partial class DrivePanelWindow : Window
     private string _currentPath;
     private PanelContentMode _contentMode;
     private bool _isDetailsView;
+    private bool _appliedShowHiddenItems;
     private string _sortProperty = nameof(FileSystemEntry.Name);
     private ListSortDirection _sortDirection = ListSortDirection.Ascending;
 
-    public DrivePanelWindow(string root, string label)
+    public DrivePanelWindow(string root, string label, GlobalViewSettings viewSettings, EjectService ejectService)
     {
+        _viewSettings = viewSettings;
+        _ejectService = ejectService;
         InitializeComponent();
         _root = EnsureTrailingSeparator(Path.GetFullPath(root));
         _currentPath = _root;
@@ -34,15 +39,33 @@ public partial class DrivePanelWindow : Window
         _favorites.Items.CollectionChanged += (_, _) => UpdateEmptyFavoritesMessage();
         FavoriteItemsList.ItemsSource = _favorites.Items;
         ShowFavorites();
+        _appliedShowHiddenItems = !_viewSettings.ShowHiddenItems;
+        ApplyGlobalViewSettings();
     }
 
-    public void SetPlacement(int index, int windowCount)
+    public void SetPlacement(LayoutRect rectangle)
     {
-        var workArea = SystemParameters.WorkArea;
-        Width = workArea.Width / 4;
-        Height = workArea.Height / Math.Max(1, windowCount);
-        Left = workArea.Right - Width;
-        Top = workArea.Top + (Height * index);
+        Left = rectangle.X;
+        Top = rectangle.Y;
+        Width = rectangle.Width;
+        Height = rectangle.Height;
+    }
+
+    public void ApplyGlobalViewSettings()
+    {
+        Resources["IconGlyphSize"] = _viewSettings.IconSize;
+        _isDetailsView = _viewSettings.ViewMode == GlobalViewMode.Details;
+        var hiddenSettingChanged = _appliedShowHiddenItems != _viewSettings.ShowHiddenItems;
+        _appliedShowHiddenItems = _viewSettings.ShowHiddenItems;
+
+        if (_contentMode == PanelContentMode.Folder)
+        {
+            if (hiddenSettingChanged)
+            {
+                LoadDirectory(_currentPath);
+            }
+            ApplyFolderViewVisibility();
+        }
     }
 
     private bool ShowFavorites(bool addToHistory = true)
@@ -112,7 +135,7 @@ public partial class DrivePanelWindow : Window
         try
         {
             _currentItems = Directory.EnumerateFileSystemEntries(path)
-                .Where(_driveService.IsVisibleFileSystemEntry)
+.Where(path => _driveService.IsVisibleFileSystemEntry(path, _viewSettings.ShowHiddenItems))
                 .Select(TryCreateEntry)
                 .OfType<FileSystemEntry>()
                 .ToList();
@@ -256,7 +279,7 @@ public partial class DrivePanelWindow : Window
         }
     }
 
-private void Items_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private void Items_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         var entry = sender switch
         {
@@ -381,27 +404,43 @@ private void Items_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
     private void HomeButton_OnClick(object sender, RoutedEventArgs e) => ShowFavorites();
 
     private void DriveRootButton_OnClick(object sender, RoutedEventArgs e) => NavigateTo(_root);
-
-    private void IconViewButton_OnClick(object sender, RoutedEventArgs e)
+    private void EjectButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (_contentMode != PanelContentMode.Folder)
+        var driveName = _root.TrimEnd(Path.DirectorySeparatorChar);
+        var answer = MessageBox.Show(this, $"{driveName} 외장하드를 안전하게 꺼낼까요?", "안전하게 꺼내기",
+            MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (answer != MessageBoxResult.Yes)
         {
             return;
         }
 
-        _isDetailsView = false;
-        ApplyFolderViewVisibility();
+        var result = _ejectService.TryEject(_root);
+        if (result.Success)
+        {
+            MessageBox.Show("안전하게 제거되었습니다.", "안전하게 꺼내기", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        else
+        {
+            MessageBox.Show(this,
+                $"안전하게 제거하지 못했습니다.\n\n{result.FailureReason}\n\n작업표시줄의 하드웨어 안전 제거 아이콘을 이용해주세요.",
+                "꺼내기 실패", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void IconViewButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_contentMode == PanelContentMode.Folder)
+        {
+            _viewSettings.SetViewMode(GlobalViewMode.Icon);
+        }
     }
 
     private void DetailsViewButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (_contentMode != PanelContentMode.Folder)
+        if (_contentMode == PanelContentMode.Folder)
         {
-            return;
+            _viewSettings.SetViewMode(GlobalViewMode.Details);
         }
-
-        _isDetailsView = true;
-        ApplyFolderViewVisibility();
     }
 
     private void DetailsGrid_OnSorting(object sender, DataGridSortingEventArgs e)
