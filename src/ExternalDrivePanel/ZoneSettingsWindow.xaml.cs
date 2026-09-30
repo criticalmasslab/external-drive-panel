@@ -11,10 +11,13 @@ public partial class ZoneSettingsWindow : Window
     private readonly ZoneSettings _draft;
     private readonly IReadOnlyList<MonitorDescriptor> _monitors;
     private bool _isInitialized;
+    private readonly PhysicalWindowPlacement _placement;
 
     public ZoneSettingsWindow(ZoneSettings settings, IReadOnlyList<MonitorDescriptor> monitors)
     {
         InitializeComponent();
+        _placement = new PhysicalWindowPlacement(this);
+        Loaded += (_, _) => _placement.CenterOnOwner(480, 680);
         _target = settings;
         _draft = settings.Clone();
         _monitors = monitors;
@@ -129,10 +132,20 @@ public partial class ZoneSettingsWindow : Window
 
     private void SaveButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (ApplySettings())
+        {
+            DialogResult = true;
+        }
+    }
+
+    private void ApplyButton_OnClick(object sender, RoutedEventArgs e) => ApplySettings();
+
+    private bool ApplySettings()
+    {
         if (_monitors.Count == 0)
         {
             MessageBox.Show(this, "사용 가능한 모니터를 찾지 못했습니다.", "저장할 수 없음", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
+            return false;
         }
 
         if (!TryPositiveInt(GridColsText.Text, out var columns)
@@ -144,7 +157,7 @@ public partial class ZoneSettingsWindow : Window
             || !TryNonNegativeDouble(MarginRightText.Text, out var right))
         {
             MessageBox.Show(this, "격자는 1 이상의 정수, 여백은 0 이상의 숫자로 입력해주세요.", "입력 확인", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
+            return false;
         }
 
         _draft.GridCols = Math.Min(columns, 50);
@@ -162,7 +175,7 @@ public partial class ZoneSettingsWindow : Window
 
         _target.CopyFrom(_draft);
         SettingsSaved?.Invoke(this, EventArgs.Empty);
-        DialogResult = true;
+        return true;
     }
 
     private static string Format(double value) => value.ToString("0.##", CultureInfo.CurrentCulture);

@@ -24,6 +24,27 @@ internal sealed class PhysicalWindowPlacement
         Apply();
     }
 
+    public void CenterOnOwner(double widthInDips, double heightInDips)
+    {
+        var ownerHandle = new WindowInteropHelper(_window.Owner ?? _window).Handle;
+        var monitor = MonitorFromWindow(ownerHandle, 2); // MONITOR_DEFAULTTONEAREST
+        var info = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };
+        if (!GetMonitorInfoW(monitor, ref info))
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
+
+        var dpi = GetDpiForWindow(ownerHandle);
+        var scale = dpi == 0 ? 1.0 : dpi / 96.0;
+        var work = info.Work;
+        var width = Math.Min(widthInDips * scale, work.Right - work.Left);
+        var height = Math.Min(heightInDips * scale, work.Bottom - work.Top);
+        SetPlacement(new LayoutRect(
+            work.Left + (work.Right - work.Left - width) / 2,
+            work.Top + (work.Bottom - work.Top - height) / 2,
+            width, height));
+    }
+
     private void Apply()
     {
         if (!_window.IsLoaded || _pending is not { } rectangle)
@@ -52,6 +73,30 @@ internal sealed class PhysicalWindowPlacement
 
     private const uint SwpNoZOrder = 0x0004;
     private const uint SwpNoActivate = 0x0010;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MonitorInfo
+    {
+        public int Size;
+        public NativeRect Monitor, Work;
+        public uint Flags;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr window, uint flags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetMonitorInfoW(IntPtr monitor, ref MonitorInfo info);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(IntPtr window);
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
