@@ -5,10 +5,12 @@ namespace ExternalDrivePanel;
 public partial class TopBarWindow : Window
 {
     private readonly GlobalViewSettings _viewSettings;
+    private readonly PhysicalWindowPlacement _placement;
 
     public TopBarWindow(GlobalViewSettings viewSettings)
     {
         InitializeComponent();
+        _placement = new PhysicalWindowPlacement(this);
         _viewSettings = viewSettings;
         _viewSettings.Changed += ViewSettings_OnChanged;
         UpdateStateHint();
@@ -18,10 +20,7 @@ public partial class TopBarWindow : Window
 
     public void SetPlacement(LayoutRect rectangle)
     {
-        Left = rectangle.X;
-        Top = rectangle.Y;
-        Width = rectangle.Width;
-        Height = rectangle.Height;
+        _placement.SetPlacement(rectangle);
     }
 
     private void SettingsButton_OnClick(object sender, RoutedEventArgs e) =>

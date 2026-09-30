@@ -10,6 +10,7 @@ namespace ExternalDrivePanel;
 public partial class DrivePanelWindow : Window
 {
     private readonly string _root;
+    private readonly PhysicalWindowPlacement _placement;
     private readonly DriveService _driveService = new();
     private readonly GlobalViewSettings _viewSettings;
     private readonly EjectService _ejectService;
@@ -29,6 +30,7 @@ public partial class DrivePanelWindow : Window
         _viewSettings = viewSettings;
         _ejectService = ejectService;
         InitializeComponent();
+        _placement = new PhysicalWindowPlacement(this);
         _root = EnsureTrailingSeparator(Path.GetFullPath(root));
         _currentPath = _root;
 
@@ -45,10 +47,7 @@ public partial class DrivePanelWindow : Window
 
     public void SetPlacement(LayoutRect rectangle)
     {
-        Left = rectangle.X;
-        Top = rectangle.Y;
-        Width = rectangle.Width;
-        Height = rectangle.Height;
+        _placement.SetPlacement(rectangle);
     }
 
     public void ApplyGlobalViewSettings()
