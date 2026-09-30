@@ -2,6 +2,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Threading;
 using ExternalDrivePanel;
 
@@ -41,12 +42,13 @@ internal static class Program
             var surface = new Grid { Background = System.Windows.Media.Brushes.White };
             var list = new ListBox();
             surface.Children.Add(list);
-            var window = new Window { Content = surface, Width = 500, Height = 400 };
+            var window = new Window { Content = new AdornerDecorator { Child = surface }, Width = 500, Height = 400 };
             var styleSource = new DrivePanelWindow(root, "Test resources", new GlobalViewSettings(), new EjectService());
             window.Resources.MergedDictionaries.Add(styleSource.Resources);
             window.Show();
             var refreshes = 0;
-            using var drops = new DragDropService(surface, root, favorites, _ => refreshes++, prompts);
+            string? currentFolder = null;
+            using var drops = new DragDropService(surface, root, favorites, _ => refreshes++, prompts, () => currentFolder);
 
             Require(FileCopyService.IsWithin(@"D:\folder\item", @"D:\")
                 && !FileCopyService.IsWithin(@"C:\folder\item", @"D:\")
@@ -78,6 +80,15 @@ internal static class Program
             prompts.Choice = CopyConflictChoice.Cancel;
             await drops.ProcessDropAsync([source, later], target);
             Require(!File.Exists(Path.Combine(destination, "later.txt")), "cancel stops remaining batch");
+            currentFolder = destination;
+            await drops.ProcessDropAsync([later], null);
+            Require(File.ReadAllText(Path.Combine(destination, "later.txt")) == "later", "folder-view blank drop copies into current folder");
+            var confirmations = prompts.Confirmations;
+            await drops.ProcessDropAsync([source], new DropTarget(local, false));
+            Require(prompts.Confirmations == confirmations, "file item does not fall back to current folder");
+            currentFolder = null;
+            await drops.ProcessDropAsync([later], null);
+            Require(prompts.Confirmations == confirmations && prompts.Messages.Last().Contains("폴더 위에"), "home blank drop still only informs");
 
             var folder = Directory.CreateDirectory(Path.Combine(external, "tree")).FullName;
             Directory.CreateDirectory(Path.Combine(folder, "nested"));
@@ -100,14 +111,42 @@ internal static class Program
             Require(DragDropService.FindTarget(item).Target == target, "favorite folder hit test");
             RaiseDrag(item, source, DragDrop.PreviewDragOverEvent);
             Require(DragDropService.GetIsDropTarget(item), "folder hover highlight");
-            Require(item.Background is System.Windows.Media.SolidColorBrush brush
-                && brush.Color == System.Windows.Media.Color.FromRgb(185, 220, 255), "real panel highlight style");
+            Require(HasHighlight(item), "highlight drawn above item template");
             RaiseDrag(surface, source, DragDrop.PreviewDragLeaveEvent);
             Require(!DragDropService.GetIsDropTarget(item), "highlight cleared on leave");
+            Require(!HasHighlight(item), "highlight layer removed on leave");
+            var otherWindow = new Window { Width = 100, Height = 100, Content = "Focus test" };
+            foreach (var selected in new[] { false, true })
+            {
+                item.IsSelected = selected;
+                otherWindow.Show();
+                otherWindow.Activate();
+                await Task.Delay(80);
+                Require(!(bool)item.GetValue(System.Windows.Controls.Primitives.Selector.IsSelectionActiveProperty),
+                    "selection is genuinely inactive before hover");
+                var originalBackground = item.Background;
+                RaiseDrag(item, source, DragDrop.PreviewDragEnterEvent);
+                Require(HasHighlight(item) && item.IsSelected == selected, "inactive selected/unselected item highlights on enter");
+                RaiseDrag(surface, source, DragDrop.PreviewDragLeaveEvent);
+                Require(!HasHighlight(item) && ReferenceEquals(item.Background, originalBackground)
+                    && item.IsSelected == selected, "original inactive selection/background preserved");
+            }
+            otherWindow.Close();
             item.DataContext = FileSystemEntry.FromPath(destination);
             Require(DragDropService.FindTarget(item).Target == target, "browser folder hit test");
             var row = new DataGridRow { DataContext = FileSystemEntry.FromPath(destination) };
             Require(DragDropService.FindTarget(row).Target == target, "details row hit test");
+            var grid = new DataGrid { AutoGenerateColumns = true, ItemsSource = new[] { FileSystemEntry.FromPath(destination) } };
+            surface.Children.Add(grid);
+            window.UpdateLayout();
+            var liveRow = (DataGridRow)grid.ItemContainerGenerator.ContainerFromIndex(0);
+            liveRow.IsSelected = true;
+            var rowBackground = liveRow.Background;
+            RaiseDrag(liveRow, source, DragDrop.PreviewDragOverEvent);
+            Require(HasHighlight(liveRow), "details selection cells cannot cover highlight layer");
+            RaiseDrag(liveRow, local, DragDrop.PreviewDropEvent);
+            Require(!HasHighlight(liveRow) && ReferenceEquals(liveRow.Background, rowBackground), "drop clears row overlay without changing background");
+            surface.Children.Remove(grid);
             RaiseDrag(item, local, DragDrop.PreviewDropEvent);
             Require(favorites.Items.Count == 2, "routed same-drive Drop deduplicates");
 
@@ -132,6 +171,9 @@ internal static class Program
             // Exercise all real conflict dialog buttons with test-owned windows.
             foreach (var (label, expected) in new[] { ("덮어쓰기", CopyConflictChoice.Overwrite), ("건너뛰기", CopyConflictChoice.Skip), ("취소", CopyConflictChoice.Cancel) })
             {
+                var foregroundWindow = new Window { Width = 120, Height = 120, Content = "Foreground test" };
+                foregroundWindow.Show();
+                foregroundWindow.Activate();
                 var dialog = new CopyConflictWindow(window, source, copied);
                 dialog.ContentRendered += (_, _) =>
                 {
@@ -140,12 +182,26 @@ internal static class Program
                     buttons.Children.OfType<Button>().Single(b => (string)b.Content == label)
                         .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 };
-                dialog.ShowDialog();
+                DialogActivation.Show(window, () =>
+                {
+                    Require(window.Topmost, "modal owner elevated before showing conflict dialog");
+                    Require(window.IsActive, "modal owner activated from another window");
+                    return dialog.ShowDialog();
+                });
                 Require(dialog.Choice == expected, "conflict button: " + label);
+                Require(!window.Topmost, "owner topmost restored after modal");
+                foregroundWindow.Close();
             }
+            window.Topmost = true;
+            DialogActivation.Show(window, () => true);
+            Require(window.Topmost, "preexisting topmost state preserved");
+            window.Topmost = false;
+            try { DialogActivation.Show<bool>(window, () => throw new IOException("test")); }
+            catch (IOException) { }
+            Require(!window.Topmost, "topmost restored when dialog fails");
             window.Close();
             styleSource.Close();
-            Console.WriteLine("PASS: routing, favorites/deduplication, blank/file targets, confirmation, background file/folder copy, overwrite/skip/cancel, refresh, folder hover, and all conflict buttons.");
+            Console.WriteLine("PASS: home/folder blank targets, copy/conflicts, inactive selection overlay and restoration, details overlay, foreground activation, modal topmost restoration, and all conflict buttons.");
         }
         finally { Directory.Delete(sandbox, recursive: true); }
     }
@@ -164,6 +220,9 @@ internal static class Program
     {
         if (!condition) throw new InvalidOperationException("FAIL: " + message);
     }
+
+    private static bool HasHighlight(UIElement element) => AdornerLayer.GetAdornerLayer(element)
+        ?.GetAdorners(element)?.Any(adorner => adorner.GetType().Name == "DropTargetAdorner") == true;
 
     private sealed class Prompts : IDropDialogs
     {

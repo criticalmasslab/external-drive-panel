@@ -42,7 +42,7 @@ public partial class DrivePanelWindow : Window
         {
             if (_contentMode == PanelContentMode.Folder && FileCopyService.IsWithin(_currentPath, destination))
                 LoadDirectory(_currentPath);
-        }, new DropDialogs(this));
+        }, new DropDialogs(this), () => _contentMode == PanelContentMode.Folder ? _currentPath : null);
         Closed += (_, _) => _dragDrop.Dispose();
         DriveRootButton.Content = driveName;
         _favorites.Items.CollectionChanged += (_, _) => UpdateEmptyFavoritesMessage();

@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 
 namespace ExternalDrivePanel;
@@ -17,30 +18,52 @@ public interface IDropDialogs
 public sealed class DragDropService : IDisposable
 {
     public static readonly DependencyProperty IsDropTargetProperty = DependencyProperty.RegisterAttached(
-        "IsDropTarget", typeof(bool), typeof(DragDropService), new PropertyMetadata(false));
+        "IsDropTarget", typeof(bool), typeof(DragDropService), new PropertyMetadata(false, OnDropTargetChanged));
     public static bool GetIsDropTarget(DependencyObject obj) => (bool)obj.GetValue(IsDropTargetProperty);
     public static void SetIsDropTarget(DependencyObject obj, bool value) => obj.SetValue(IsDropTargetProperty, value);
+
+    private static readonly DependencyProperty HighlightProperty = DependencyProperty.RegisterAttached(
+        "Highlight", typeof(DropTargetAdorner), typeof(DragDropService));
+
+    private static void OnDropTargetChanged(DependencyObject obj, DependencyPropertyChangedEventArgs e)
+    {
+        if (obj is not UIElement element) return;
+        if (element.GetValue(HighlightProperty) is DropTargetAdorner previous)
+        {
+            if (VisualTreeHelper.GetParent(previous) is AdornerLayer oldLayer) oldLayer.Remove(previous);
+            element.ClearValue(HighlightProperty);
+        }
+        if ((bool)e.NewValue && AdornerLayer.GetAdornerLayer(element) is { } layer)
+        {
+            var adorner = new DropTargetAdorner(element);
+            element.SetValue(HighlightProperty, adorner);
+            layer.Add(adorner);
+        }
+    }
 
     private readonly FrameworkElement _surface;
     private readonly string _root;
     private readonly FavoriteCollection _favorites;
     private readonly Action<string> _refresh;
     private readonly IDropDialogs _dialogs;
+    private readonly Func<string?> _currentFolder;
     private readonly CancellationTokenSource _lifetime = new();
     private FrameworkElement? _highlight;
     private bool _busy;
     private bool _disposed;
 
     public DragDropService(FrameworkElement surface, string root, FavoriteCollection favorites,
-        Action<string> refresh, IDropDialogs dialogs)
+        Action<string> refresh, IDropDialogs dialogs, Func<string?>? currentFolder = null)
     {
         _surface = surface;
         _root = root;
         _favorites = favorites;
         _refresh = refresh;
         _dialogs = dialogs;
+        _currentFolder = currentFolder ?? (() => null);
         surface.AllowDrop = true;
         surface.PreviewDragOver += OnDragOver;
+        surface.PreviewDragEnter += OnDragOver;
         surface.PreviewDragLeave += OnDragLeave;
         surface.PreviewDrop += OnDrop;
     }
@@ -127,6 +150,9 @@ public sealed class DragDropService : IDisposable
                 else external.Add(path);
             }
             if (external.Count == 0) return;
+            // Only empty space falls back to the current folder; file items remain invalid.
+            if (target is null && _currentFolder() is { } currentFolder)
+                target = new DropTarget(currentFolder, true);
             if (target is null)
             {
                 _dialogs.Inform("이 외장하드로 복사하려면 폴더 위에 정확히 놓아주세요.");
@@ -166,6 +192,7 @@ public sealed class DragDropService : IDisposable
         _lifetime.Cancel();
         SetHighlight(null);
         _surface.PreviewDragOver -= OnDragOver;
+        _surface.PreviewDragEnter -= OnDragOver;
         _surface.PreviewDragLeave -= OnDragLeave;
         _surface.PreviewDrop -= OnDrop;
     }
@@ -173,13 +200,15 @@ public sealed class DragDropService : IDisposable
 
 public sealed class DropDialogs(Window owner) : IDropDialogs
 {
-    public void Inform(string message) => MessageBox.Show(owner, message, "드래그 앤 드롭", MessageBoxButton.OK, MessageBoxImage.Information);
-    public bool ConfirmCopy(string destination) => MessageBox.Show(owner, $"'{destination}' 폴더로 복사하시겠습니까?",
-        "파일 복사 확인", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+    public void Inform(string message) => DialogActivation.Show(owner,
+        () => MessageBox.Show(owner, message, "드래그 앤 드롭", MessageBoxButton.OK, MessageBoxImage.Information));
+    public bool ConfirmCopy(string destination) => DialogActivation.Show(owner,
+        () => MessageBox.Show(owner, $"'{destination}' 폴더로 복사하시겠습니까?",
+        "파일 복사 확인", MessageBoxButton.YesNo, MessageBoxImage.Question)) == MessageBoxResult.Yes;
     public CopyConflictChoice ResolveConflict(string source, string target)
     {
         var dialog = new CopyConflictWindow(owner, source, target);
-        dialog.ShowDialog();
+        DialogActivation.Show(owner, () => dialog.ShowDialog());
         return dialog.Choice;
     }
 }
