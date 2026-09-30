@@ -15,6 +15,7 @@ public partial class DrivePanelWindow : Window
     private readonly GlobalViewSettings _viewSettings;
     private readonly EjectService _ejectService;
     private readonly FavoriteCollection _favorites;
+    private readonly DragDropService _dragDrop;
     private readonly List<NavigationState> _history = [];
     private List<FileSystemEntry> _currentItems = [];
     private int _historyIndex = -1;
@@ -37,6 +38,12 @@ public partial class DrivePanelWindow : Window
         var driveName = _root.TrimEnd(Path.DirectorySeparatorChar);
         TitleText.Text = string.IsNullOrWhiteSpace(label) ? driveName : $"{driveName} {label}";
         _favorites = new FavoriteCollection();
+        _dragDrop = new DragDropService(ContentArea, _root, _favorites, destination =>
+        {
+            if (_contentMode == PanelContentMode.Folder && FileCopyService.IsWithin(_currentPath, destination))
+                LoadDirectory(_currentPath);
+        }, new DropDialogs(this));
+        Closed += (_, _) => _dragDrop.Dispose();
         DriveRootButton.Content = driveName;
         _favorites.Items.CollectionChanged += (_, _) => UpdateEmptyFavoritesMessage();
         FavoriteItemsList.ItemsSource = _favorites.Items;
@@ -134,7 +141,7 @@ public partial class DrivePanelWindow : Window
         try
         {
             _currentItems = Directory.EnumerateFileSystemEntries(path)
-.Where(path => _driveService.IsVisibleFileSystemEntry(path, _viewSettings.ShowHiddenItems))
+                .Where(path => _driveService.IsVisibleFileSystemEntry(path, _viewSettings.ShowHiddenItems))
                 .Select(TryCreateEntry)
                 .OfType<FileSystemEntry>()
                 .ToList();
