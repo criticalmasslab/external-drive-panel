@@ -59,13 +59,7 @@
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          SelectionChanged="FavoriteItemsList_OnSelectionChanged"
                          MouseDoubleClick="FavoriteItemsList_OnMouseDoubleClick"
-                         PreviewMouseRightButtonDown="Items_OnPreviewMouseRightButtonDown"
                          >
-                    <ListBox.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem Header="즐겨찾기에서 제거" Click="RemoveFavorite_OnClick" />
-                        </ContextMenu>
-                    </ListBox.ContextMenu>
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
                     </ListBox.ItemsPanel>
@@ -91,10 +85,7 @@
                 <ListBox x:Name="IconItemsList" Visibility="Collapsed" BorderThickness="0" Background="Transparent"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          MouseDoubleClick="Items_OnMouseDoubleClick"
-                         PreviewMouseRightButtonDown="Items_OnPreviewMouseRightButtonDown">
-                    <ListBox.ContextMenu>
-                        <ContextMenu><MenuItem Header="즐겨찾기에 추가" Click="AddFavorite_OnClick" /></ContextMenu>
-                    </ListBox.ContextMenu>
+                         SelectionChanged="Items_OnSelectionChanged">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
                     </ListBox.ItemsPanel>
@@ -112,14 +103,7 @@
                           IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
                           CanUserReorderColumns="False" GridLinesVisibility="Horizontal"
                           MouseDoubleClick="Items_OnMouseDoubleClick" Sorting="DetailsGrid_OnSorting"
-                          SelectionChanged="DetailsGrid_OnSelectionChanged"
-                          PreviewMouseRightButtonDown="Items_OnPreviewMouseRightButtonDown">
-                    <DataGrid.ContextMenu>
-                        <ContextMenu>
-                            <MenuItem x:Name="DetailsAddFavoriteMenuItem" Header="즐겨찾기에 추가" Click="AddFavorite_OnClick" />
-                            <MenuItem x:Name="DetailsRemoveFavoriteMenuItem" Header="즐겨찾기에서 제거" Click="RemoveFavorite_OnClick" />
-                        </ContextMenu>
-                    </DataGrid.ContextMenu>
+                          SelectionChanged="Items_OnSelectionChanged">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="이름" Binding="{Binding DisplayName}" SortMemberPath="Name" Width="2*" />
                         <DataGridTextColumn Header="수정한 날짜" Binding="{Binding ModifiedDate, StringFormat=yyyy-MM-dd HH:mm}" SortMemberPath="ModifiedDate" Width="*" />

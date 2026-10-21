@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,6 +15,7 @@ public partial class DrivePanelWindow : Window
     private readonly EjectService _ejectService;
     private readonly FavoriteCollection _favorites;
     private readonly DragDropService _dragDrop;
+    private readonly ItemContextMenuBuilder _itemMenus;
     private readonly List<NavigationState> _history = [];
     private List<FileSystemEntry> _currentItems = [];
     private int _historyIndex = -1;
@@ -65,6 +65,17 @@ public partial class DrivePanelWindow : Window
         }
         _favorites.Items.CollectionChanged += (_, _) => { RefreshFavoriteRows(); UpdateEmptyFavoritesMessage(); };
         _favorites.Changed += (_, _) => SettingsChanged?.Invoke(this, EventArgs.Empty);
+        _itemMenus = new ItemContextMenuBuilder(this, _root, _favorites,
+            () => _contentMode == PanelContentMode.Favorites,
+            target => { if (target.IsDirectory) NavigateTo(target.Path); else OpenWithShell(target.Path); },
+            ShowItemAddress,
+            parent =>
+            {
+                if (_contentMode == PanelContentMode.Folder && PathsEqual(_currentPath, parent)) LoadDirectory(_currentPath);
+                else if (_contentMode == PanelContentMode.Favorites) RefreshFavoriteRows();
+            },
+            (message, error) => NotificationRequested?.Invoke(message, error), FavoriteItemsList, IconItemsList, DetailsGrid);
+        Closed += (_, _) => _itemMenus.Dispose();
         foreach (var column in DetailsGrid.Columns)
             column.SortDirection = column.SortMemberPath == _sortProperty ? _sortDirection : null;
         ShowFavorites();
@@ -73,6 +84,7 @@ public partial class DrivePanelWindow : Window
     }
 
     public event EventHandler? SettingsChanged;
+    public event Action<string, bool>? NotificationRequested;
     public string RootPath => _root;
     public GlobalViewMode EffectiveViewMode => PanelViewPolicy.EffectiveMode(_viewSettings.ViewMode, _viewModeOverride);
     public void ClearViewModeOverride() => _viewModeOverride = null;
@@ -241,8 +253,6 @@ public partial class DrivePanelWindow : Window
         DetailsGrid.Visibility = _isDetailsView ? Visibility.Visible : Visibility.Collapsed;
         DetailsGrid.ItemsSource = home ? _favoriteRows : IconItemsList.ItemsSource;
         DetailsGrid.CanUserSortColumns = !home;
-        DetailsAddFavoriteMenuItem.Visibility = home ? Visibility.Collapsed : Visibility.Visible;
-        DetailsRemoveFavoriteMenuItem.Visibility = home ? Visibility.Visible : Visibility.Collapsed;
         foreach (var column in DetailsGrid.Columns)
             column.SortDirection = !home && column.SortMemberPath == _sortProperty ? _sortDirection : null;
         IconViewButton.IsChecked = !_isDetailsView;
@@ -293,12 +303,14 @@ public partial class DrivePanelWindow : Window
         }
     }
 
-    private void ShowFavoriteAddress(FavoriteItem? favorite)
+    private void ShowFavoriteAddress(FavoriteItem? favorite) => ShowItemAddress(favorite?.Path ?? "즐겨찾기");
+
+    private void ShowItemAddress(string path)
     {
         BreadcrumbPanel.Children.Clear();
         BreadcrumbPanel.Children.Add(new TextBlock
         {
-            Text = favorite?.Path ?? "즐겨찾기",
+            Text = path,
             Margin = new Thickness(5, 2, 5, 2),
             TextTrimming = TextTrimming.CharacterEllipsis
         });
@@ -409,7 +421,7 @@ public partial class DrivePanelWindow : Window
     {
         try
         {
-            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            ShellActions.OpenFile(path);
         }
         catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
         {
@@ -417,48 +429,15 @@ public partial class DrivePanelWindow : Window
         }
     }
 
-    private void Items_OnPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        if (e.OriginalSource is not DependencyObject source)
-        {
-            return;
-        }
-
-        if (sender is ListBox listBox && ItemsControl.ContainerFromElement(listBox, source) is ListBoxItem listItem)
-        {
-            listItem.IsSelected = true;
-        }
-        else if (sender is DataGrid dataGrid && ItemsControl.ContainerFromElement(dataGrid, source) is DataGridRow row)
-        {
-            row.IsSelected = true;
-        }
-    }
-
-    private FileSystemEntry? GetSelectedEntry() =>
-        _isDetailsView
-            ? DetailsGrid.SelectedItem as FileSystemEntry
-            : IconItemsList.SelectedItem as FileSystemEntry;
-
-    private void AddFavorite_OnClick(object sender, RoutedEventArgs e)
-    {
-        var entry = GetSelectedEntry();
-        if (entry is not null)
-        {
-            _favorites.Add(entry.FullPath, entry.IsDirectory);
-        }
-    }
-
-    private void RemoveFavorite_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (GetSelectedFavorite() is FavoriteItem favorite && _favorites.Remove(favorite))
-        {
-            SelectFavorite(null);
-        }
-    }
-
-    private void DetailsGrid_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void Items_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_contentMode == PanelContentMode.Favorites) ShowFavoriteAddress(GetSelectedFavorite());
+        else
+        {
+            var item = _isDetailsView ? DetailsGrid.SelectedItem : IconItemsList.SelectedItem;
+            if (item is FileSystemEntry entry) ShowItemAddress(entry.FullPath);
+            else BuildFolderBreadcrumb();
+        }
     }
 
     private void ContentArea_OnPreviewMouseDown(object sender, MouseButtonEventArgs e)

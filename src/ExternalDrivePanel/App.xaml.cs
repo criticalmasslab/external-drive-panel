@@ -103,6 +103,7 @@ public partial class App : Application
             if (_panels.ContainsKey(serial)) continue;
             var serialKey = DriveCoordinator.Key(serial);
             var panel = new DrivePanelWindow(volume.Root, volume.Label, _viewSettings, _ejectService, _config.Drives[serialKey]);
+            panel.NotificationRequested += ShowNotification;
             void CapturePanel()
             {
                 // Do not resurrect a config entry deleted by Unregister. Keep registration
@@ -137,6 +138,17 @@ public partial class App : Application
     {
         RefreshPanels();
         ScheduleSave();
+    }
+
+    private void ShowNotification(string message, bool error)
+    {
+        if (_isExiting || _trayIcon is null) return;
+        try
+        {
+            _trayIcon.ShowBalloonTip("External Drive Panel", message.Length > 240 ? message[..237] + "…" : message,
+                error ? BalloonIcon.Error : BalloonIcon.Info);
+        }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Tray notification: {ex}"); }
     }
 
     private void RegisterDrive(uint serial)

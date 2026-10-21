@@ -74,8 +74,9 @@ internal static class Program
         Require(grid.Items.Cast<FavoriteDetailsRow>().Select(row => row.Name).SequenceEqual(new[] { "Zeta", "Alpha", "Missing" }), "favorite insertion order");
         Require(((FavoriteDetailsRow)grid.Items[2]).Type == "(경로 없음)", "missing row rendered");
         SavePreview(first);
-        Require(Control<MenuItem>(first, "DetailsRemoveFavoriteMenuItem").Visibility == Visibility.Visible
-            && Control<MenuItem>(first, "DetailsAddFavoriteMenuItem").Visibility == Visibility.Collapsed, "home context menu removes");
+        var menus = Field<ItemContextMenuBuilder>(first, "_itemMenus");
+        menus.Populate(grid.ContextMenu, ItemMenuTarget.FromItem(grid.Items[0])!);
+        Require((string)MenuCommand(grid, ItemMenuCommand.ToggleFavorite).Header == "즐겨찾기에서 제거", "home context menu removes");
         Require(!Control<Button>(first, "UpButton").IsEnabled && Control<ToggleButton>(first, "DetailsViewButton").IsEnabled, "home navigation/view buttons");
 
         grid.SelectedItem = grid.Items[0];
@@ -122,7 +123,8 @@ internal static class Program
         await drag.ProcessDropAsync([Path.Combine(root, "Zeta"), Path.Combine(root, "Alpha.txt")], null);
         Require(favorites.Items.Count == 2 && grid.Items.Count == 2 && message.Visibility == Visibility.Collapsed, "same-drive drop updates favorite details and hides hint");
         grid.SelectedItem = grid.Items[1];
-        Control<MenuItem>(first, "DetailsRemoveFavoriteMenuItem").RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        menus.Populate(grid.ContextMenu, ItemMenuTarget.FromItem(grid.SelectedItem)!);
+        MenuCommand(grid, ItemMenuCommand.ToggleFavorite).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         Require(favorites.Items.Count == 1 && grid.Items.Count == 1, "details remove menu removes selected favorite");
 
         Click(second, "DetailsViewButton");
@@ -191,6 +193,7 @@ internal static class Program
     }
     private static string Address(DrivePanelWindow panel) => Control<StackPanel>(panel, "BreadcrumbPanel").Children.OfType<TextBlock>().Single().Text;
     private static T Control<T>(FrameworkElement window, string name) => (T)window.FindName(name);
+    private static MenuItem MenuCommand(DataGrid grid, ItemMenuCommand command) => grid.ContextMenu.Items.OfType<MenuItem>().Single(item => Equals(item.Tag, command));
     private static void Click(FrameworkElement window, string name) => Control<ToggleButton>(window, name).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
     private static T Field<T>(object instance, string name) => (T)instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(instance)!;
     private static void Call(object instance, string name, params object[] args) => instance.GetType().GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(instance, args);
