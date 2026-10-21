@@ -19,16 +19,22 @@ public partial class App : Application
     private TopBarWindow? _topBar;
     private bool _isExiting;
     private readonly ConfigStore _configStore;
-    private readonly Func<Dictionary<uint, (string Root, string Label)>> _snapshotProvider;
+    private readonly Func<IReadOnlyList<DriveSnapshot>> _snapshotProvider;
     private AppConfig _config = new();
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
+    private DriveCoordinator _coordinator = null!;
+    private readonly Queue<DriveNotice> _notices = new();
+    private bool _noticePumpScheduled;
+    private bool _noticeShowing;
+    private NewDriveWindow? _newDriveWindow;
+    private DriveNotice? _activeNotice;
 
     public App() : this(new ConfigStore()) { }
 
-    public App(ConfigStore configStore, Func<Dictionary<uint, (string Root, string Label)>>? snapshotProvider = null)
+    public App(ConfigStore configStore, Func<IReadOnlyList<DriveSnapshot>>? snapshotProvider = null)
     {
         _configStore = configStore;
-        _snapshotProvider = snapshotProvider ?? _driveService.SnapshotAllVolumes;
+        _snapshotProvider = snapshotProvider ?? _driveService.SnapshotDrives;
     }
 
     protected override void OnStartup(StartupEventArgs e)
@@ -37,6 +43,7 @@ public partial class App : Application
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
         _config = _configStore.Load();
+        _coordinator = new DriveCoordinator(_config);
         _zoneSettings = _config.Zone;
         _viewSettings.Restore(_config.GlobalView);
         _saveTimer.Tick += (_, _) => SaveConfig();
@@ -54,10 +61,16 @@ public partial class App : Application
 
     private TaskbarIcon CreateTrayIcon()
     {
-        var exitItem = new MenuItem { Header = "종료" };
-        exitItem.Click += (_, _) => ExitApplication();
         var contextMenu = new ContextMenu();
-        contextMenu.Items.Add(exitItem);
+        contextMenu.Opened += (_, _) =>
+        {
+            RefreshPanels();
+            TrayMenuBuilder.Populate(contextMenu, _coordinator, _config,
+                () => TopBar_OnSettingsRequested(this, EventArgs.Empty), RegisterDrive,
+                key => { if (_coordinator.ToggleHidden(key)) RegistrationChanged(); },
+                UnregisterDrive, ExitApplication);
+        };
+        contextMenu.Closed += (_, _) => ScheduleNoticePump();
 
         return new TaskbarIcon
         {
@@ -71,34 +84,33 @@ public partial class App : Application
 
     private void RefreshPanels()
     {
-        var snapshot = _snapshotProvider();
-        foreach (var removedSerial in _panels.Keys.Except(snapshot.Keys).ToList())
-        {
-            _panels[removedSerial].Close();
-            _panels.Remove(removedSerial);
-        }
+        if (_isExiting) return;
+        var plan = _coordinator.Evaluate(_snapshotProvider());
+        if (plan.ConfigChanged) ScheduleSave();
+        foreach (var notice in plan.Notices) _notices.Enqueue(notice);
+        if (_activeNotice is not null && !_coordinator.CanPrompt(_activeNotice) && _newDriveWindow?.IsVisible == true)
+            _newDriveWindow.Close();
+        var visible = plan.VisibleDrives.ToDictionary(drive => drive.Serial);
+        foreach (var serial in _panels.Keys.ToList())
+            if (!visible.TryGetValue(serial, out var drive)
+                || !string.Equals(_panels[serial].RootPath, drive.Root, StringComparison.OrdinalIgnoreCase))
+                _panels[serial].Close();
 
-        foreach (var (serial, volume) in snapshot)
+        foreach (var volume in plan.VisibleDrives)
         {
-            if (_panels.TryGetValue(serial, out var existingPanel))
-            {
-                var key = serial.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                if (_config.Drives.TryGetValue(key, out var driveSettings) && driveSettings.LastKnownLabel != volume.Label)
-                {
-                    driveSettings.LastKnownLabel = volume.Label;
-                    ScheduleSave();
-                }
-                if (string.Equals(existingPanel.RootPath, volume.Root, StringComparison.OrdinalIgnoreCase)) continue;
-                existingPanel.Close();
-            }
-
-            var serialKey = serial.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            _config.Drives.TryGetValue(serialKey, out var savedSettings);
-            var panel = new DrivePanelWindow(volume.Root, volume.Label, _viewSettings, _ejectService, savedSettings);
+            var serial = volume.Serial;
+            if (_panels.ContainsKey(serial)) continue;
+            var serialKey = DriveCoordinator.Key(serial);
+            var panel = new DrivePanelWindow(volume.Root, volume.Label, _viewSettings, _ejectService, _config.Drives[serialKey]);
             void CapturePanel()
             {
-                var latestLabel = _config.Drives.TryGetValue(serialKey, out var latest) ? latest.LastKnownLabel : volume.Label;
-                _config.Drives[serialKey] = panel.CaptureSettings(latestLabel);
+                // Do not resurrect a config entry deleted by Unregister. Keep registration
+                // and hidden flags when capturing the panel's favorites/sort state.
+                if (!_config.Drives.TryGetValue(serialKey, out var saved) || !saved.Registered) return;
+                var state = panel.CaptureSettings(saved.LastKnownLabel);
+                saved.Favorites = state.Favorites;
+                saved.SortKey = state.SortKey;
+                saved.SortReverse = state.SortReverse;
                 ScheduleSave();
             }
             panel.SettingsChanged += (_, _) => CapturePanel();
@@ -112,12 +124,76 @@ public partial class App : Application
                 }
             };
             _panels.Add(serial, panel);
-            _config.Drives[serialKey] = panel.CaptureSettings(volume.Label);
-            CapturePanel();
             panel.Show();
         }
 
         RepositionWindows();
+        ScheduleNoticePump();
+    }
+
+    private void RegistrationChanged()
+    {
+        RefreshPanels();
+        ScheduleSave();
+    }
+
+    private void RegisterDrive(uint serial)
+    {
+        RefreshPanels(); // Validate that the menu candidate is still connected.
+        if (_coordinator.Register(serial)) RegistrationChanged();
+    }
+
+    private void UnregisterDrive(string key)
+    {
+        if (_topBar is null || !_config.Drives.TryGetValue(key, out var drive) || !drive.Registered) return;
+        var name = _coordinator.DisplayName(key);
+        var answer = DialogActivation.Show(_topBar, () => MessageBox.Show(_topBar,
+            $"'{name}' 등록을 해제할까요?\n이 외장하드의 즐겨찾기도 함께 삭제됩니다. 파일은 삭제되지 않아요.",
+            "외장하드 등록 해제", MessageBoxButton.YesNo, MessageBoxImage.Question));
+        if (answer == MessageBoxResult.Yes && _coordinator.Unregister(key)) RegistrationChanged();
+    }
+
+    private void ScheduleNoticePump()
+    {
+        if (_isExiting || _noticeShowing || _noticePumpScheduled || _notices.Count == 0) return;
+        _noticePumpScheduled = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
+        {
+            _noticePumpScheduled = false;
+            ShowNextNotice();
+        }));
+    }
+
+    private void ShowNextNotice()
+    {
+        if (_isExiting || _noticeShowing || _topBar is null || !_topBar.IsEnabled
+            || _trayIcon?.ContextMenu?.IsOpen == true) return;
+        while (_notices.TryDequeue(out var notice))
+        {
+            if (!_coordinator.CanPrompt(notice)) continue;
+            _noticeShowing = true;
+            _activeNotice = notice;
+            try
+            {
+                var dialog = new NewDriveWindow(_topBar, _coordinator.Connected[notice.Serial]);
+                _newDriveWindow = dialog;
+                DialogActivation.Show(_topBar, () => dialog.ShowDialog());
+                if (!_isExiting && _coordinator.CanPrompt(notice))
+                {
+                    if (dialog.Choice == NewDriveChoice.Register) RegisterDrive(notice.Serial);
+                    else if (dialog.Choice == NewDriveChoice.Ignore && _coordinator.Ignore(notice)) ScheduleSave();
+                }
+            }
+            finally
+            {
+                _newDriveWindow = null;
+                _activeNotice = null;
+                _noticeShowing = false;
+            }
+            // Defer each dialog to a separate dispatch; ticks may run inside ShowDialog.
+            ScheduleNoticePump();
+            return;
+        }
     }
 
     private void RepositionWindows()
@@ -133,7 +209,8 @@ public partial class App : Application
         var cell = _layoutCalculator.CalculateCell(monitor, _zoneSettings);
         _topBar.SetPlacement(_layoutCalculator.CalculateTopBar(cell));
 
-        var panels = _panels.Values.ToList();
+        var panels = _coordinator.RegisteredOrder.Select(key => uint.Parse(key, System.Globalization.CultureInfo.InvariantCulture))
+            .Where(serial => _panels.ContainsKey(serial)).Select(serial => _panels[serial]).ToList();
         var rectangles = _layoutCalculator.CalculatePanels(cell, panels.Count, _zoneSettings.SplitDirection);
         for (var index = 0; index < panels.Count; index++)
         {
@@ -146,13 +223,15 @@ public partial class App : Application
         var monitors = _monitorService.GetMonitors();
         if (monitors.Count == 0)
         {
-            MessageBox.Show("연결된 모니터 정보를 가져올 수 없습니다.", "화면 영역 설정", MessageBoxButton.OK, MessageBoxImage.Warning);
+            if (_topBar is not null) DialogActivation.Show(_topBar,
+                () => MessageBox.Show(_topBar, "연결된 모니터 정보를 가져올 수 없습니다.", "화면 영역 설정", MessageBoxButton.OK, MessageBoxImage.Warning));
             return;
         }
 
         var settingsWindow = new ZoneSettingsWindow(_zoneSettings, monitors) { Owner = _topBar };
         settingsWindow.SettingsSaved += (_, _) => { RepositionWindows(); ScheduleSave(); };
-        settingsWindow.ShowDialog();
+        if (_topBar is not null) DialogActivation.Show(_topBar, () => settingsWindow.ShowDialog());
+        ScheduleNoticePump();
     }
 
     private void ViewSettings_OnChanged(object? sender, EventArgs e)
@@ -183,6 +262,8 @@ public partial class App : Application
         _isExiting = true;
         _pollTimer.Stop();
         _saveTimer.Stop();
+        _notices.Clear();
+        _newDriveWindow?.Close();
         foreach (var panel in _panels.Values.ToList())
         {
             panel.Close();

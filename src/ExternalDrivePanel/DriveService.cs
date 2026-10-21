@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.IO;
 
 namespace ExternalDrivePanel;
 
@@ -49,27 +50,28 @@ public sealed class DriveService
     }
 
     public Dictionary<uint, (string Root, string Label)> SnapshotAllVolumes()
+        => SnapshotDrives().ToDictionary(drive => drive.Serial, drive => (drive.Root, drive.Label));
+
+    public IReadOnlyList<DriveSnapshot> SnapshotDrives()
     {
-        var snapshot = new Dictionary<uint, (string Root, string Label)>();
+        var snapshot = new Dictionary<uint, DriveSnapshot>();
         foreach (var root in ListDriveRoots())
         {
-            if (string.Equals(root, @"C:\", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
             try
             {
+                var type = new DriveInfo(root).DriveType;
+                // Exclude network/optical devices before attempting volume metadata reads.
+                if (!DriveCoordinator.IsCandidate(root, type)) continue;
                 var volume = GetVolumeInfo(root);
-                snapshot[volume.VolumeSerialNumber] = (root, volume.VolumeLabel);
+                snapshot[volume.VolumeSerialNumber] = new(volume.VolumeSerialNumber, root, volume.VolumeLabel, type);
             }
-            catch (Win32Exception)
+            catch (Exception ex) when (ex is Win32Exception or IOException or UnauthorizedAccessException)
             {
                 // 연결은 보이지만 현재 접근할 수 없는 볼륨은 다음 폴링에서 재시도한다.
             }
         }
 
-        return snapshot;
+        return snapshot.Values.ToList();
     }
 
     public bool IsVisibleFileSystemEntry(string path, bool showHiddenItems = false)

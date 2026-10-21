@@ -6,6 +6,9 @@ public sealed class AppConfig
     public ZoneSettings Zone { get; set; } = new();
     public GlobalViewConfig GlobalView { get; set; } = new();
     public Dictionary<string, DriveConfig> Drives { get; set; } = new();
+    public bool NotifyNewDrive { get; set; } = true;
+    public List<string> DriveOrder { get; set; } = [];
+    public List<string> IgnoredDrives { get; set; } = [];
 }
 
 public sealed class GlobalViewConfig
@@ -17,6 +20,8 @@ public sealed class GlobalViewConfig
 
 public sealed class DriveConfig
 {
+    public bool Registered { get; set; }
+    public bool Hidden { get; set; }
     public string LastKnownLabel { get; set; } = string.Empty;
     public List<FavoriteConfig> Favorites { get; set; } = [];
     public string SortKey { get; set; } = nameof(FileSystemEntry.Name);

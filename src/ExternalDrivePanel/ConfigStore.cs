@@ -82,7 +82,9 @@ public sealed class ConfigStore
 
     private static void Validate(AppConfig config)
     {
-        if (config.Version != 1 || config.Zone is null || config.GlobalView is null || config.Drives is null)
+        if (config.Version != 1 || config.Zone is null || config.GlobalView is null || config.Drives is null
+            || config.DriveOrder is null || config.IgnoredDrives is null
+            || config.DriveOrder.Concat(config.IgnoredDrives).Any(serial => !uint.TryParse(serial, out _)))
             throw new JsonException("지원하지 않거나 올바르지 않은 설정 형식입니다.");
         var zone = config.Zone;
         if (zone.MonitorIndex < 0 || zone.GridCols is < 1 or > 50 || zone.GridRows is < 1 or > 50

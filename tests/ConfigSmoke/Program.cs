@@ -102,12 +102,14 @@ internal static class Program
         const uint testSerial = 1234567890;
         var fixtureRoot = Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(path)!, "drive")).FullName + Path.DirectorySeparatorChar;
         var snapshot = new Dictionary<uint, (string Root, string Label)> { [testSerial] = (fixtureRoot, "Test volume") };
-        var app = new App(store, () => new(snapshot));
+        var app = new App(store, () => snapshot.Select(pair =>
+            new DriveSnapshot(pair.Key, pair.Value.Root, pair.Value.Label, DriveType.Removable)).ToList());
         var result = 0;
-        app.Startup += (_, _) => app.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(async () =>
+        app.Startup += (_, _) => app.Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(async () =>
         {
             try
             {
+                if (phase is "write" or "corrupt") Call(app, "RegisterDrive", testSerial);
                 var view = Field<GlobalViewSettings>(app, "_viewSettings");
                 var zone = Field<ZoneSettings>(app, "_zoneSettings");
                 var panels = Field<Dictionary<uint, DrivePanelWindow>>(app, "_panels");
