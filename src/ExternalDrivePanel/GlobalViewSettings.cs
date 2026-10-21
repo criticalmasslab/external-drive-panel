@@ -8,6 +8,19 @@ public sealed class GlobalViewSettings
 
     public event EventHandler? Changed;
 
+    public void Restore(GlobalViewConfig config)
+    {
+        ViewMode = config.ViewMode;
+        IconSize = config.IconSize;
+        ShowHiddenItems = config.ShowHidden;
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    public GlobalViewConfig Capture() => new()
+    {
+        ViewMode = ViewMode, IconSize = IconSize, ShowHidden = ShowHiddenItems
+    };
+
     public void ToggleHiddenItems()
     {
         ShowHiddenItems = !ShowHiddenItems;

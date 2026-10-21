@@ -26,7 +26,8 @@ public partial class DrivePanelWindow : Window
     private string _sortProperty = nameof(FileSystemEntry.Name);
     private ListSortDirection _sortDirection = ListSortDirection.Ascending;
 
-    public DrivePanelWindow(string root, string label, GlobalViewSettings viewSettings, EjectService ejectService)
+    public DrivePanelWindow(string root, string label, GlobalViewSettings viewSettings, EjectService ejectService,
+        DriveConfig? savedSettings = null)
     {
         _viewSettings = viewSettings;
         _ejectService = ejectService;
@@ -47,10 +48,42 @@ public partial class DrivePanelWindow : Window
         DriveRootButton.Content = driveName;
         _favorites.Items.CollectionChanged += (_, _) => UpdateEmptyFavoritesMessage();
         FavoriteItemsList.ItemsSource = _favorites.Items;
+        if (savedSettings is not null)
+        {
+            _sortProperty = savedSettings.SortKey;
+            _sortDirection = savedSettings.SortReverse ? ListSortDirection.Descending : ListSortDirection.Ascending;
+            foreach (var favorite in savedSettings.Favorites)
+            {
+                if (!ConfigStore.IsSafeRelativePath(favorite.RelativePath)) continue;
+                var path = Path.GetFullPath(Path.Combine(_root, favorite.RelativePath));
+                if (FileCopyService.IsWithin(path, _root))
+                    _favorites.Add(path, favorite.IsDirectory ?? Directory.Exists(path), favorite.DisplayName);
+            }
+        }
+        _favorites.Changed += (_, _) => SettingsChanged?.Invoke(this, EventArgs.Empty);
+        foreach (var column in DetailsGrid.Columns)
+            column.SortDirection = column.SortMemberPath == _sortProperty ? _sortDirection : null;
         ShowFavorites();
         _appliedShowHiddenItems = !_viewSettings.ShowHiddenItems;
         ApplyGlobalViewSettings();
     }
+
+    public event EventHandler? SettingsChanged;
+    public string RootPath => _root;
+
+    public DriveConfig CaptureSettings(string label) => new()
+    {
+        LastKnownLabel = label,
+        SortKey = _sortProperty,
+        SortReverse = _sortDirection == ListSortDirection.Descending,
+        Favorites = _favorites.Items.Where(item => FileCopyService.IsWithin(item.Path, _root))
+            .Select(item => new FavoriteConfig
+            {
+                RelativePath = Path.GetRelativePath(_root, item.Path),
+                DisplayName = item.Name,
+                IsDirectory = item.IsDirectory
+            }).ToList()
+    };
 
     public void SetPlacement(LayoutRect rectangle)
     {
@@ -277,13 +310,27 @@ public partial class DrivePanelWindow : Window
 
         if (favorite.IsDirectory)
         {
+            if (!Directory.Exists(favorite.Path))
+            {
+                ShowMissingFavorite(favorite.Path);
+                return;
+            }
             NavigateTo(favorite.Path);
         }
         else
         {
+            if (!File.Exists(favorite.Path))
+            {
+                ShowMissingFavorite(favorite.Path);
+                return;
+            }
             OpenWithShell(favorite.Path);
         }
     }
+
+    private void ShowMissingFavorite(string path) => DialogActivation.Show(this,
+        () => MessageBox.Show(this, $"경로를 찾을 수 없습니다.\n{path}", "즐겨찾기",
+            MessageBoxButton.OK, MessageBoxImage.Information));
 
     private void Items_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
@@ -471,6 +518,7 @@ public partial class DrivePanelWindow : Window
         }
         e.Column.SortDirection = _sortDirection;
         ApplySort();
+        SettingsChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private bool IsWithinDrive(string path)

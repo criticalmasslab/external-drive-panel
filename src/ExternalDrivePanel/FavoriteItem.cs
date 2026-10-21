@@ -2,7 +2,7 @@ namespace ExternalDrivePanel;
 
 public sealed class FavoriteItem
 {
-    public FavoriteItem(string path, bool isDirectory)
+    public FavoriteItem(string path, bool isDirectory, string? displayName = null)
     {
         Path = path;
         IsDirectory = isDirectory;
@@ -11,6 +11,7 @@ public sealed class FavoriteItem
         {
             Name = path.TrimEnd(System.IO.Path.DirectorySeparatorChar);
         }
+        if (!string.IsNullOrWhiteSpace(displayName)) Name = displayName;
     }
 
     public string Path { get; }
