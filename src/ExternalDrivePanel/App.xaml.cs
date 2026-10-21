@@ -49,6 +49,7 @@ public partial class App : Application
         _saveTimer.Tick += (_, _) => SaveConfig();
 
         _viewSettings.Changed += ViewSettings_OnChanged;
+        _viewSettings.ViewModeApplied += ViewSettings_OnViewModeApplied;
         _trayIcon = CreateTrayIcon();
         _topBar = new TopBarWindow(_viewSettings);
         _topBar.SettingsRequested += TopBar_OnSettingsRequested;
@@ -111,6 +112,7 @@ public partial class App : Application
                 saved.Favorites = state.Favorites;
                 saved.SortKey = state.SortKey;
                 saved.SortReverse = state.SortReverse;
+                saved.ViewMode = state.ViewMode;
                 ScheduleSave();
             }
             panel.SettingsChanged += (_, _) => CapturePanel();
@@ -243,6 +245,12 @@ public partial class App : Application
         ScheduleSave();
     }
 
+    private void ViewSettings_OnViewModeApplied(object? sender, EventArgs e)
+    {
+        PanelViewPolicy.ApplyGlobally(_config, _viewSettings.ViewMode);
+        foreach (var panel in _panels.Values) panel.ClearViewModeOverride();
+    }
+
     private void ScheduleSave()
     {
         if (_isExiting) return;
@@ -287,6 +295,7 @@ public partial class App : Application
         _pollTimer.Stop();
         SaveConfig();
         _viewSettings.Changed -= ViewSettings_OnChanged;
+        _viewSettings.ViewModeApplied -= ViewSettings_OnViewModeApplied;
         _trayIcon?.Dispose();
         base.OnExit(e);
     }

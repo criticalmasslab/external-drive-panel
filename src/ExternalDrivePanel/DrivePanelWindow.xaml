@@ -8,12 +8,17 @@
         ResizeMode="NoResize"
         Background="#FFF7F7F7">
     <Window.Resources>
-        <Style x:Key="ToolbarButton" TargetType="Button">
-            <Setter Property="MinWidth" Value="34" />
-            <Setter Property="Height" Value="30" />
-            <Setter Property="Margin" Value="2" />
-            <Setter Property="Padding" Value="7,2" />
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ViewModeButtonStyle.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="ToolbarButton" TargetType="Button">
+                <Setter Property="MinWidth" Value="34" />
+                <Setter Property="Height" Value="30" />
+                <Setter Property="Margin" Value="2" />
+                <Setter Property="Padding" Value="7,2" />
+            </Style>
+        </ResourceDictionary>
     </Window.Resources>
     <Border BorderBrush="#FFD0D0D0" BorderThickness="1">
         <Grid>
@@ -37,8 +42,8 @@
                 <Button x:Name="DriveRootButton" Style="{StaticResource ToolbarButton}" ToolTip="드라이브 루트" Click="DriveRootButton_OnClick" />
                 <Button Style="{StaticResource ToolbarButton}" Content="⏏" ToolTip="안전하게 꺼내기" Click="EjectButton_OnClick" />
                 <Separator />
-                <Button x:Name="IconViewButton" Style="{StaticResource ToolbarButton}" Content="▦ 아이콘" ToolTip="아이콘 보기" Click="IconViewButton_OnClick" />
-                <Button x:Name="DetailsViewButton" Style="{StaticResource ToolbarButton}" Content="☷ 상세" ToolTip="상세 보기" Click="DetailsViewButton_OnClick" />
+                <ToggleButton x:Name="IconViewButton" Style="{StaticResource ViewModeButtonStyle}" ToolBar.OverflowMode="Never" Content="⊞" ToolTip="이 패널 아이콘 보기" Click="IconViewButton_OnClick" />
+                <ToggleButton x:Name="DetailsViewButton" Style="{StaticResource ViewModeButtonStyle}" ToolBar.OverflowMode="Never" Content="☰" ToolTip="이 패널 상세 보기" Click="DetailsViewButton_OnClick" />
             </ToolBar>
 
             <Border Grid.Row="2" Margin="6,3,6,5" Padding="7,3" BorderBrush="#FFBFC5CC"
@@ -49,7 +54,7 @@
             </Border>
 
             <AdornerDecorator Grid.Row="3">
-            <Grid x:Name="ContentArea" Background="Transparent">
+            <Grid x:Name="ContentArea" Background="Transparent" PreviewMouseDown="ContentArea_OnPreviewMouseDown">
                 <ListBox x:Name="FavoriteItemsList" BorderThickness="0" Background="Transparent"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          SelectionChanged="FavoriteItemsList_OnSelectionChanged"
@@ -79,6 +84,7 @@
                 </ListBox>
 
                 <TextBlock x:Name="EmptyFavoritesMessage" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           IsHitTestVisible="False" Panel.ZIndex="1"
                            Margin="24" TextAlignment="Center" TextWrapping="Wrap" Foreground="#FF68717C"
                            Text="즐겨찾기가 없습니다. 폴더나 파일을 우클릭해서 추가해보세요." />
 
@@ -106,9 +112,13 @@
                           IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
                           CanUserReorderColumns="False" GridLinesVisibility="Horizontal"
                           MouseDoubleClick="Items_OnMouseDoubleClick" Sorting="DetailsGrid_OnSorting"
+                          SelectionChanged="DetailsGrid_OnSelectionChanged"
                           PreviewMouseRightButtonDown="Items_OnPreviewMouseRightButtonDown">
                     <DataGrid.ContextMenu>
-                        <ContextMenu><MenuItem Header="즐겨찾기에 추가" Click="AddFavorite_OnClick" /></ContextMenu>
+                        <ContextMenu>
+                            <MenuItem x:Name="DetailsAddFavoriteMenuItem" Header="즐겨찾기에 추가" Click="AddFavorite_OnClick" />
+                            <MenuItem x:Name="DetailsRemoveFavoriteMenuItem" Header="즐겨찾기에서 제거" Click="RemoveFavorite_OnClick" />
+                        </ContextMenu>
                     </DataGrid.ContextMenu>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="이름" Binding="{Binding DisplayName}" SortMemberPath="Name" Width="2*" />

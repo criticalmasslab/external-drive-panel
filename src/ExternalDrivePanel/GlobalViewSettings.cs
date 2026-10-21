@@ -7,6 +7,7 @@ public sealed class GlobalViewSettings
     public GlobalViewMode ViewMode { get; private set; } = GlobalViewMode.Icon;
 
     public event EventHandler? Changed;
+    public event EventHandler? ViewModeApplied;
 
     public void Restore(GlobalViewConfig config)
     {
@@ -41,12 +42,8 @@ public sealed class GlobalViewSettings
 
     public void SetViewMode(GlobalViewMode mode)
     {
-        if (ViewMode == mode)
-        {
-            return;
-        }
-
         ViewMode = mode;
+        ViewModeApplied?.Invoke(this, EventArgs.Empty);
         Changed?.Invoke(this, EventArgs.Empty);
     }
 }

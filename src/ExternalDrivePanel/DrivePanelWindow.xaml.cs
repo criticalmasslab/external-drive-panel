@@ -22,6 +22,8 @@ public partial class DrivePanelWindow : Window
     private string _currentPath;
     private PanelContentMode _contentMode;
     private bool _isDetailsView;
+    private GlobalViewMode? _viewModeOverride;
+    private List<FavoriteDetailsRow> _favoriteRows = [];
     private bool _appliedShowHiddenItems;
     private string _sortProperty = nameof(FileSystemEntry.Name);
     private ListSortDirection _sortDirection = ListSortDirection.Ascending;
@@ -30,6 +32,7 @@ public partial class DrivePanelWindow : Window
         DriveConfig? savedSettings = null)
     {
         _viewSettings = viewSettings;
+        _viewModeOverride = savedSettings?.ViewMode;
         _ejectService = ejectService;
         InitializeComponent();
         _placement = new PhysicalWindowPlacement(this);
@@ -43,10 +46,10 @@ public partial class DrivePanelWindow : Window
         {
             if (_contentMode == PanelContentMode.Folder && FileCopyService.IsWithin(_currentPath, destination))
                 LoadDirectory(_currentPath);
+            else if (_contentMode == PanelContentMode.Favorites) RefreshFavoriteRows();
         }, new DropDialogs(this), () => _contentMode == PanelContentMode.Folder ? _currentPath : null);
         Closed += (_, _) => _dragDrop.Dispose();
         DriveRootButton.Content = driveName;
-        _favorites.Items.CollectionChanged += (_, _) => UpdateEmptyFavoritesMessage();
         FavoriteItemsList.ItemsSource = _favorites.Items;
         if (savedSettings is not null)
         {
@@ -60,6 +63,7 @@ public partial class DrivePanelWindow : Window
                     _favorites.Add(path, favorite.IsDirectory ?? Directory.Exists(path), favorite.DisplayName);
             }
         }
+        _favorites.Items.CollectionChanged += (_, _) => { RefreshFavoriteRows(); UpdateEmptyFavoritesMessage(); };
         _favorites.Changed += (_, _) => SettingsChanged?.Invoke(this, EventArgs.Empty);
         foreach (var column in DetailsGrid.Columns)
             column.SortDirection = column.SortMemberPath == _sortProperty ? _sortDirection : null;
@@ -70,12 +74,15 @@ public partial class DrivePanelWindow : Window
 
     public event EventHandler? SettingsChanged;
     public string RootPath => _root;
+    public GlobalViewMode EffectiveViewMode => PanelViewPolicy.EffectiveMode(_viewSettings.ViewMode, _viewModeOverride);
+    public void ClearViewModeOverride() => _viewModeOverride = null;
 
     public DriveConfig CaptureSettings(string label) => new()
     {
         LastKnownLabel = label,
         SortKey = _sortProperty,
         SortReverse = _sortDirection == ListSortDirection.Descending,
+        ViewMode = _viewModeOverride,
         Favorites = _favorites.Items.Where(item => FileCopyService.IsWithin(item.Path, _root))
             .Select(item => new FavoriteConfig
             {
@@ -92,8 +99,9 @@ public partial class DrivePanelWindow : Window
 
     public void ApplyGlobalViewSettings()
     {
+        var favorite = GetSelectedFavorite();
         Resources["IconGlyphSize"] = _viewSettings.IconSize;
-        _isDetailsView = _viewSettings.ViewMode == GlobalViewMode.Details;
+        _isDetailsView = EffectiveViewMode == GlobalViewMode.Details;
         var hiddenSettingChanged = _appliedShowHiddenItems != _viewSettings.ShowHiddenItems;
         _appliedShowHiddenItems = _viewSettings.ShowHiddenItems;
 
@@ -103,18 +111,18 @@ public partial class DrivePanelWindow : Window
             {
                 LoadDirectory(_currentPath);
             }
-            ApplyFolderViewVisibility();
         }
+        else RefreshFavoriteRows();
+        ApplyViewVisibility();
+        if (_contentMode == PanelContentMode.Favorites) SelectFavorite(favorite);
     }
 
     private bool ShowFavorites(bool addToHistory = true)
     {
         _contentMode = PanelContentMode.Favorites;
-        FavoriteItemsList.Visibility = Visibility.Visible;
-        IconItemsList.Visibility = Visibility.Collapsed;
-        DetailsGrid.Visibility = Visibility.Collapsed;
-        FavoriteItemsList.SelectedItem = null;
-        ShowFavoriteAddress(null);
+        RefreshFavoriteRows();
+        ApplyViewVisibility();
+        SelectFavorite(null);
 
         if (addToHistory)
         {
@@ -135,8 +143,7 @@ public partial class DrivePanelWindow : Window
 
         _contentMode = PanelContentMode.Folder;
         _currentPath = fullPath;
-        FavoriteItemsList.Visibility = Visibility.Collapsed;
-        ApplyFolderViewVisibility();
+        ApplyViewVisibility();
 
         if (addToHistory)
         {
@@ -223,13 +230,47 @@ public partial class DrivePanelWindow : Window
 
         var visibleItems = _currentItems.ToList();
         IconItemsList.ItemsSource = visibleItems;
-        DetailsGrid.ItemsSource = visibleItems;
+        if (_contentMode == PanelContentMode.Folder) DetailsGrid.ItemsSource = visibleItems;
     }
 
-    private void ApplyFolderViewVisibility()
+    private void ApplyViewVisibility()
     {
-        IconItemsList.Visibility = _isDetailsView ? Visibility.Collapsed : Visibility.Visible;
+        var home = _contentMode == PanelContentMode.Favorites;
+        FavoriteItemsList.Visibility = home && !_isDetailsView ? Visibility.Visible : Visibility.Collapsed;
+        IconItemsList.Visibility = !home && !_isDetailsView ? Visibility.Visible : Visibility.Collapsed;
         DetailsGrid.Visibility = _isDetailsView ? Visibility.Visible : Visibility.Collapsed;
+        DetailsGrid.ItemsSource = home ? _favoriteRows : IconItemsList.ItemsSource;
+        DetailsGrid.CanUserSortColumns = !home;
+        DetailsAddFavoriteMenuItem.Visibility = home ? Visibility.Collapsed : Visibility.Visible;
+        DetailsRemoveFavoriteMenuItem.Visibility = home ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var column in DetailsGrid.Columns)
+            column.SortDirection = !home && column.SortMemberPath == _sortProperty ? _sortDirection : null;
+        IconViewButton.IsChecked = !_isDetailsView;
+        DetailsViewButton.IsChecked = _isDetailsView;
+        UpdateEmptyFavoritesMessage();
+    }
+
+    private void RefreshFavoriteRows()
+    {
+        var selected = GetSelectedFavorite();
+        _favoriteRows = _favorites.Items.Select(item => new FavoriteDetailsRow(item)).ToList();
+        if (_contentMode == PanelContentMode.Favorites)
+        {
+            DetailsGrid.ItemsSource = _favoriteRows;
+            SelectFavorite(selected);
+        }
+    }
+
+    private FavoriteItem? GetSelectedFavorite() => _contentMode != PanelContentMode.Favorites ? null
+        : _isDetailsView ? (DetailsGrid.SelectedItem as FavoriteDetailsRow)?.Favorite
+        : FavoriteItemsList.SelectedItem as FavoriteItem;
+
+    private void SelectFavorite(FavoriteItem? favorite)
+    {
+        FavoriteItemsList.SelectedItem = favorite;
+        DetailsGrid.SelectedItem = _contentMode == PanelContentMode.Favorites
+            ? _favoriteRows.FirstOrDefault(row => ReferenceEquals(row.Favorite, favorite)) : null;
+        ShowFavoriteAddress(favorite);
     }
 
     private void BuildFolderBreadcrumb()
@@ -279,7 +320,7 @@ public partial class DrivePanelWindow : Window
 
     private void UpdateEmptyFavoritesMessage()
     {
-        EmptyFavoritesMessage.Visibility = _contentMode == PanelContentMode.Favorites && _favorites.Items.Count == 0
+        EmptyFavoritesMessage.Visibility = PanelViewPolicy.ShowEmptyFavorites(_contentMode == PanelContentMode.Favorites, _favorites.Items.Count)
             ? Visibility.Visible
             : Visibility.Collapsed;
     }
@@ -289,25 +330,24 @@ public partial class DrivePanelWindow : Window
         BackButton.IsEnabled = _historyIndex > 0;
         ForwardButton.IsEnabled = _historyIndex >= 0 && _historyIndex < _history.Count - 1;
         UpButton.IsEnabled = _contentMode == PanelContentMode.Folder && !PathsEqual(_currentPath, _root);
-        IconViewButton.IsEnabled = _contentMode == PanelContentMode.Folder;
-        DetailsViewButton.IsEnabled = _contentMode == PanelContentMode.Folder;
     }
 
     private void FavoriteItemsList_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_contentMode == PanelContentMode.Favorites)
         {
-            ShowFavoriteAddress(FavoriteItemsList.SelectedItem as FavoriteItem);
+            ShowFavoriteAddress(GetSelectedFavorite());
         }
     }
 
     private void FavoriteItemsList_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (FavoriteItemsList.SelectedItem is not FavoriteItem favorite)
-        {
-            return;
-        }
+        if (DragDropService.FindTarget(e.OriginalSource as DependencyObject).Container?.DataContext is FavoriteItem favorite)
+            OpenFavorite(favorite);
+    }
 
+    private void OpenFavorite(FavoriteItem favorite)
+    {
         if (favorite.IsDirectory)
         {
             if (!Directory.Exists(favorite.Path))
@@ -334,6 +374,12 @@ public partial class DrivePanelWindow : Window
 
     private void Items_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
+        if (_contentMode == PanelContentMode.Favorites)
+        {
+            if (DragDropService.FindTarget(e.OriginalSource as DependencyObject).Container?.DataContext is FavoriteDetailsRow row)
+                OpenFavorite(row.Favorite);
+            return;
+        }
         var entry = sender switch
         {
             ListBox listBox => listBox.SelectedItem as FileSystemEntry,
@@ -404,10 +450,28 @@ public partial class DrivePanelWindow : Window
 
     private void RemoveFavorite_OnClick(object sender, RoutedEventArgs e)
     {
-        if (FavoriteItemsList.SelectedItem is FavoriteItem favorite && _favorites.Remove(favorite))
+        if (GetSelectedFavorite() is FavoriteItem favorite && _favorites.Remove(favorite))
         {
-            FavoriteItemsList.SelectedItem = null;
+            SelectFavorite(null);
         }
+    }
+
+    private void DetailsGrid_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_contentMode == PanelContentMode.Favorites) ShowFavoriteAddress(GetSelectedFavorite());
+    }
+
+    private void ContentArea_OnPreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton is not (MouseButton.Left or MouseButton.Right)) return;
+        if (_contentMode != PanelContentMode.Favorites || e.OriginalSource is not DependencyObject source) return;
+        if (DragDropService.FindTarget(source).Container is not null) return;
+        // Headers and scrollbars are controls, not empty list space.
+        for (var current = source; current is not null; current = current is System.Windows.Media.Visual
+            ? System.Windows.Media.VisualTreeHelper.GetParent(current) : LogicalTreeHelper.GetParent(current))
+            if (current is System.Windows.Controls.Primitives.ScrollBar or System.Windows.Controls.Primitives.DataGridColumnHeader)
+                return;
+        SelectFavorite(null);
     }
 
     private void BackButton_OnClick(object sender, RoutedEventArgs e)
@@ -482,23 +546,25 @@ public partial class DrivePanelWindow : Window
 
     private void IconViewButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (_contentMode == PanelContentMode.Folder)
-        {
-            _viewSettings.SetViewMode(GlobalViewMode.Icon);
-        }
+        SetPanelViewMode(GlobalViewMode.Icon);
     }
 
     private void DetailsViewButton_OnClick(object sender, RoutedEventArgs e)
     {
-        if (_contentMode == PanelContentMode.Folder)
-        {
-            _viewSettings.SetViewMode(GlobalViewMode.Details);
-        }
+        SetPanelViewMode(GlobalViewMode.Details);
+    }
+
+    private void SetPanelViewMode(GlobalViewMode mode)
+    {
+        _viewModeOverride = mode;
+        ApplyGlobalViewSettings();
+        SettingsChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void DetailsGrid_OnSorting(object sender, DataGridSortingEventArgs e)
     {
         e.Handled = true;
+        if (_contentMode == PanelContentMode.Favorites) return;
         var property = e.Column.SortMemberPath;
         if (string.Equals(_sortProperty, property, StringComparison.Ordinal))
         {

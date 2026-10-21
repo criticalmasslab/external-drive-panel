@@ -85,7 +85,7 @@ internal static class Program
             && Favorites(rebased).Items[1].Name == "메모", "missing favorites retain type/name");
         Require(rebased.CaptureSettings("test").SortKey == "Size" && rebased.CaptureSettings("test").SortReverse, "sort restored");
         Require(Field<int>(rebased, "_historyIndex") == 0
-            && ((ListBox)rebased.FindName("FavoriteItemsList")).Visibility == Visibility.Visible, "recreated panel starts at home");
+            && ((DataGrid)rebased.FindName("DetailsGrid")).ItemsSource is IEnumerable<FavoriteDetailsRow>, "recreated panel starts at home in the restored details mode");
         var changes = 0;
         rebased.SettingsChanged += (_, _) => changes++;
         Favorites(rebased).Add(@"E:\new-favorite", true);
@@ -134,6 +134,7 @@ internal static class Program
                         var pair = panels.First();
                         var missing = Path.Combine(pair.Value.RootPath, "__ExternalDeskPanel_Missing_Test__");
                         Favorites(pair.Value).Add(missing, true);
+                        Call(pair.Value, "NavigateTo", fixtureRoot, true);
                         var grid = (DataGrid)pair.Value.FindName("DetailsGrid");
                         var sort = new DataGridSortingEventArgs(grid.Columns.Single(c => c.SortMemberPath == "Size"));
                         Call(pair.Value, "DetailsGrid_OnSorting", grid, sort);

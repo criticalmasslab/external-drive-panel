@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ExternalDrivePanel;
 
 public sealed class AppConfig
@@ -20,6 +22,9 @@ public sealed class GlobalViewConfig
 
 public sealed class DriveConfig
 {
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonConverter(typeof(DriveViewModeConverter))]
+    public GlobalViewMode? ViewMode { get; set; }
     public bool Registered { get; set; }
     public bool Hidden { get; set; }
     public string LastKnownLabel { get; set; } = string.Empty;

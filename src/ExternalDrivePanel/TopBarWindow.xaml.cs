@@ -38,6 +38,8 @@ public partial class TopBarWindow : Window
     {
         HiddenButton.ToolTip = _viewSettings.ShowHiddenItems ? "숨김 항목 숨기기" : "숨김 항목 표시";
         HiddenButton.Opacity = _viewSettings.ShowHiddenItems ? 1.0 : 0.65;
+        IconViewButton.IsChecked = _viewSettings.ViewMode == GlobalViewMode.Icon;
+        DetailsViewButton.IsChecked = _viewSettings.ViewMode == GlobalViewMode.Details;
     }
 
     protected override void OnClosed(EventArgs e)

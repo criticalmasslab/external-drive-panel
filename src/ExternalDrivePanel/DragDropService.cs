@@ -78,6 +78,7 @@ public sealed class DragDropService : IDisposable
             var target = container.DataContext switch
             {
                 FavoriteItem favorite => new DropTarget(favorite.Path, favorite.IsDirectory),
+                FavoriteDetailsRow row => new DropTarget(row.FullPath, row.IsDirectory),
                 FileSystemEntry entry => new DropTarget(entry.FullPath, entry.IsDirectory),
                 _ => null
             };

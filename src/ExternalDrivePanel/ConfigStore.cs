@@ -98,6 +98,7 @@ public sealed class ConfigStore
         foreach (var (serial, drive) in config.Drives)
         {
             if (!uint.TryParse(serial, out _) || drive is null || drive.Favorites is null
+                || (drive.ViewMode is { } mode && !Enum.IsDefined(mode))
                 || drive.LastKnownLabel is null || !DriveConfig.IsValidSortKey(drive.SortKey)
                 || drive.Favorites.Any(favorite => favorite is null || !IsSafeRelativePath(favorite.RelativePath)
                     || favorite.DisplayName is null))
