@@ -29,6 +29,7 @@ public partial class App : Application
     private UpdateNotificationWindow? _updateBar;
     private readonly IUpdateDialogs _updateDialogs;
     private bool _updateArmed;
+    private PanelRevealService? _panelReveal;
     public bool IsSoftwareRendering { get; private set; }
     private readonly ConfigStore _configStore;
     private readonly Func<IReadOnlyList<DriveSnapshot>> _snapshotProvider;
@@ -108,6 +109,8 @@ public partial class App : Application
         _pollTimer.Tick += PollTimer_OnTick;
         _pollTimer.Start();
         RefreshPanels();
+        if (!_customSnapshotProvider)
+            _panelReveal = new PanelRevealService(PanelWindows, () => _panelLayout.Cell, RestorePanels, () => _isExiting || _exitRequested);
         _updates.UpdateReady += Updates_OnReady;
         if (_enableUpdates) _updates.Start(ShowNotification);
     }
@@ -214,6 +217,16 @@ public partial class App : Application
 
     private IEnumerable<Window> PanelWindows() => _panels.Values.Cast<Window>()
         .Concat(new Window?[] { _topBar, _updateBar }.OfType<Window>());
+
+    private void RestorePanels()
+    {
+        var windows = PanelWindows().Where(window => window.IsVisible).ToArray();
+        foreach (var window in windows)
+            if (window.WindowState == WindowState.Minimized) window.WindowState = WindowState.Normal;
+        var target = Windows.OfType<Window>().LastOrDefault(window => window.IsVisible && window.IsEnabled && window is not PanelRevealWindow && !windows.Contains(window))
+            ?? windows.FirstOrDefault(window => window.IsEnabled);
+        if (target is not null) PanelActivation.Raise(target, windows.Concat(Windows.OfType<Window>().Where(window => window.IsVisible && window is not PanelRevealWindow)));
+    }
 
     private void Updates_OnReady(object? sender, EventArgs e)
     {
@@ -476,6 +489,7 @@ public partial class App : Application
         if (!_updateArmed) _configStore.Save(_config); // Update preflight already flushed; do not delay the updater's exit timeout with another disk write.
         _updates.UpdateReady -= Updates_OnReady;
         _updates.Dispose();
+        _panelReveal?.Dispose(); _panelReveal = null;
         _viewSettings.Changed -= ViewSettings_OnChanged;
         _viewSettings.ViewModeApplied -= ViewSettings_OnViewModeApplied;
         SessionEnding -= App_OnSessionEnding;

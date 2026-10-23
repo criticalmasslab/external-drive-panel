@@ -15,11 +15,15 @@
                 <Button x:Name="HeaderCloseButton" Grid.Column="1" Style="{StaticResource ChromeButton}" ToolTip="닫기 — 변경사항 유지" AutomationProperties.Name="설정 닫기" Click="CloseButton_OnClick"><local:SymbolIcon Kind="Close" /></Button>
             </Grid>
         </Border>
-        <ScrollViewer x:Name="SettingsScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12,10">
-            <StackPanel>
+        <Viewbox x:Name="SettingsBodyFit" Grid.Row="1" Stretch="Uniform" StretchDirection="DownOnly" VerticalAlignment="Top">
+            <Border Width="388" Padding="12,10"><StackPanel>
                 <TextBlock Text="시작 옵션" Style="{StaticResource SettingsSection}" />
                 <CheckBox x:Name="StartupCheck" Content="Windows 시작 시 자동 실행" Margin="0,6,0,0" Checked="Startup_OnChanged" Unchecked="Startup_OnChanged" />
-                <TextBlock x:Name="StartupMessage" Style="{StaticResource SettingsHint}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                <TextBlock x:Name="StartupMessage" TextWrapping="Wrap" Margin="0,4,0,0">
+                    <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource SettingsHint}"><Style.Triggers>
+                        <Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed" /></Trigger>
+                    </Style.Triggers></Style></TextBlock.Style>
+                </TextBlock>
                 <Border Style="{StaticResource SettingsSeparator}" />
                 <TextBlock Text="모니터" Style="{StaticResource SettingsSection}" />
                 <StackPanel x:Name="MonitorOptions" Margin="0,5,0,0" />
@@ -54,8 +58,8 @@
                     <TextBlock Text="오른쪽" Grid.Row="1" Grid.Column="3" VerticalAlignment="Center" /><TextBox x:Name="MarginRightText" Grid.Row="1" Grid.Column="4" AutomationProperties.Name="오른쪽 여백" TextChanged="Form_OnChanged" />
                 </Grid>
                 <TextBlock Text="선택 영역 가장자리와 패널 사이의 간격입니다. (px)" Style="{StaticResource SettingsHint}" FontSize="11" Margin="0,6,0,0" />
-            </StackPanel>
-        </ScrollViewer>
+            </StackPanel></Border>
+        </Viewbox>
         <Border Grid.Row="2" Background="#FFF4F5F7" BorderBrush="#FFD0D5DC" BorderThickness="0,1,0,0" Padding="12,8"><Grid>
             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
             <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">

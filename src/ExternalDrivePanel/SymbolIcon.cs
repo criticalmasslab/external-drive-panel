@@ -34,6 +34,11 @@ public sealed class SymbolIcon : Control
     public static readonly DependencyProperty KindProperty = DependencyProperty.Register(nameof(Kind), typeof(string),
         typeof(SymbolIcon), new FrameworkPropertyMetadata("Grid", FrameworkPropertyMetadataOptions.AffectsRender));
     public string Kind { get => (string)GetValue(KindProperty); set => SetValue(KindProperty, value); }
+    public static readonly DependencyProperty IsColorizedProperty = DependencyProperty.Register(nameof(IsColorized), typeof(bool),
+        typeof(SymbolIcon), new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender));
+    public bool IsColorized { get => (bool)GetValue(IsColorizedProperty); set => SetValue(IsColorizedProperty, value); }
+    private static readonly Geometry PreviewMountains = CreateFrozenGeometry("M3,17 L9,11 14,16 17,13 21,17 V21 H3 Z");
+    private static Geometry CreateFrozenGeometry(string data) { var geometry = Geometry.Parse(data); geometry.Freeze(); return geometry; }
 
     private static readonly IReadOnlyDictionary<string, Geometry> Shapes = new Dictionary<string, string>
     {
@@ -82,8 +87,20 @@ public sealed class SymbolIcon : Control
         drawingContext.PushTransform(new TranslateTransform((ActualWidth - 24 * scale) / 2, (ActualHeight - 24 * scale) / 2));
         drawingContext.PushTransform(new ScaleTransform(scale, scale));
         var filled = Kind is "StarFill" or "HomeFill";
-        drawingContext.DrawGeometry(filled ? Foreground : null, filled ? null : new Pen(Foreground, 1.7) { StartLineCap = PenLineCap.Round,
-            EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round }, shape);
+        if (Kind == "Preview" && IsColorized)
+        {
+            drawingContext.DrawRectangle(Brushes.SkyBlue, null, new Rect(3, 3, 18, 18));
+            drawingContext.DrawEllipse(Brushes.DarkOrange, null, new Point(16, 7), 2, 2);
+            drawingContext.DrawGeometry(Brushes.ForestGreen, null, PreviewMountains);
+            drawingContext.DrawRectangle(null, new Pen(Foreground, 1.7), new Rect(3, 3, 18, 18));
+        }
+        else
+            drawingContext.DrawGeometry(filled ? Foreground : null, filled ? null : new Pen(Foreground, 1.7)
+            {
+                StartLineCap = PenLineCap.Round,
+                EndLineCap = PenLineCap.Round,
+                LineJoin = PenLineJoin.Round
+            }, shape);
         drawingContext.Pop(); drawingContext.Pop();
     }
 }

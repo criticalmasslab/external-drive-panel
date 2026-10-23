@@ -164,6 +164,9 @@ internal static class Program
             var view = (System.Windows.Controls.Primitives.Selector)panel.FindName(details ? "DetailsGrid" : home ? "FavoriteItemsList" : "IconItemsList");
             var selected = view.Items.Cast<object>().First(item => ItemMenuTarget.FromItem(item)!.Path.EndsWith("사진.png"));
             view.SelectedItem = selected; panel.Activate(); view.Focus(); await Layout(panel);
+            Require(view.FocusVisualStyle is null, "content view has no dotted keyboard-focus adorner");
+            if (view.ItemContainerGenerator.ContainerFromItem(selected) is Control container)
+                Require(container.FocusVisualStyle is null, "selected item has no dotted keyboard-focus adorner");
             var args = new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(panel), 0, Key.Space) { RoutedEvent = Keyboard.PreviewKeyDownEvent };
             panel.RaiseEvent(args);
             Require(args.Handled && controller.CurrentWindow is not null, "Space opens popup in each of four views");
@@ -176,9 +179,9 @@ internal static class Program
             panel.RaiseEvent(restoreKey); await Layout(existing);
             Require(restoreKey.Handled && controller.CurrentWindow == existing && existing.WindowState == WindowState.Normal,
                 "Space restores minimized preview rather than closing or replacing it");
-            var key = new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(controller.CurrentWindow), 0, Key.Escape) { RoutedEvent = Keyboard.PreviewKeyDownEvent };
+            var key = new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(controller.CurrentWindow), 0, Key.Space) { RoutedEvent = Keyboard.PreviewKeyDownEvent };
             controller.CurrentWindow.RaiseEvent(key);
-            Require(controller.CurrentWindow is null && view.SelectedItem == selected, "Escape closes without changing selection");
+            Require(controller.CurrentWindow is null && view.SelectedItem == selected, "Space closes without changing selection");
         }
         var list = (ListBox)panel.FindName("IconItemsList");
         if (panel.EffectiveViewMode == GlobalViewMode.Details) Click((Button)panel.FindName("ViewModeButton"));

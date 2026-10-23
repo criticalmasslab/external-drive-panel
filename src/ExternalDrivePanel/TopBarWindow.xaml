@@ -19,7 +19,7 @@
                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <Button Style="{StaticResource ChromeButton}" ToolTip="화면 영역 설정" Click="SettingsButton_OnClick"><local:SymbolIcon Kind="Settings" /></Button>
-                <Button x:Name="PreviewButton" Style="{StaticResource ChromeButton}" AutomationProperties.Name="파일 미리보기 전환" Click="PreviewButton_OnClick"><local:SymbolIcon Kind="Preview" /></Button>
+                <Button x:Name="PreviewButton" Style="{StaticResource ChromeButton}" AutomationProperties.Name="파일 미리보기 전환" Click="PreviewButton_OnClick"><local:SymbolIcon x:Name="PreviewIcon" Kind="Preview" /></Button>
                 <Button x:Name="HiddenButton" Style="{StaticResource ChromeButton}" ToolTip="숨김 항목 표시" Click="HiddenButton_OnClick"><local:SymbolIcon Kind="Eye" /></Button>
                 <Button x:Name="SmallerButton" Style="{StaticResource ChromeButton}" ToolTip="아이콘 작게" Click="SmallerButton_OnClick"><local:SymbolIcon Kind="Minus" /></Button>
                 <Button x:Name="LargerButton" Style="{StaticResource ChromeButton}" ToolTip="아이콘 크게" Click="LargerButton_OnClick"><local:SymbolIcon Kind="Plus" /></Button>

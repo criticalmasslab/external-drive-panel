@@ -108,8 +108,11 @@ internal static class Program
                         Require(ClientToScreen(handle, ref clientOrigin) && Math.Abs(clientOrigin.Y - bounds.Top) <= 1,
                             "client area starts at window top: no native white resize/title strip");
                         Require((bounds.Right - bounds.Left) / dpi.DpiScaleX <= 392
-                            && (bounds.Bottom - bounds.Top) / dpi.DpiScaleY < 560,
-                            "dialog uses compact width and content-based height instead of 500x700");
+                            && bounds.Bottom - bounds.Top <= monitor.Height,
+                            "dialog keeps compact width and fits all content within monitor work area");
+                        Require(dialog.FindName("SettingsScroll") is null
+                            && ((Viewbox)dialog.FindName("SettingsBodyFit")).StretchDirection == StretchDirection.DownOnly,
+                            "settings body has no scrolling; small work areas fit by scaling down");
                         Require(System.Windows.Shell.WindowChrome.GetWindowChrome(dialog)?.ResizeBorderThickness.Left == 5,
                             "invisible resize border preserved without the native frame");
                         var resizePoint = new IntPtr(((bounds.Top + 2) << 16) | ((bounds.Left + (bounds.Right - bounds.Left) / 2) & 0xffff));
@@ -178,6 +181,12 @@ internal static class Program
                     Require(settings.MarginLeft == 9 && !settings.MarginUniform && settings.SplitDirection == SplitDirection.Horizontal
                         && settings.CellCol == 1, "restyled input/choice/grid controls still apply immediately");
                     chromeDialog.UpdateLayout(); SavePreview(chromeDialog, $"settings-individual-{index}.png");
+                    chromeDialog.Height = 300; chromeDialog.UpdateLayout();
+                    var fit = (Viewbox)chromeDialog.FindName("SettingsBodyFit");
+                    var body = (FrameworkElement)fit.Child;
+                    var fittedBounds = body.TransformToAncestor(fit).TransformBounds(new Rect(body.RenderSize));
+                    Require(fittedBounds.Top >= -1 && fittedBounds.Bottom <= fit.ActualHeight + 1,
+                        "small settings window fits the full body without clipping or scrolling");
                     ((Button)chromeDialog.FindName("HeaderCloseButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 }
                 catch (Exception ex) { chromeFailure = ex; chromeDialog.Close(); }

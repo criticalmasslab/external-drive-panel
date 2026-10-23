@@ -30,7 +30,7 @@ public partial class ZoneSettingsWindow : Window
             // Fit the actual controls instead of keeping an oversized, fixed 700-DIP canvas.
             // Physical placement still clamps to the owner's monitor work area.
             SettingsFrame.Measure(new Size(390, double.PositiveInfinity));
-            _placement.CenterOnOwner(390, Math.Clamp(Math.Ceiling(SettingsFrame.DesiredSize.Height), 320, 540));
+            _placement.CenterOnOwner(390, Math.Max(320, Math.Ceiling(SettingsFrame.DesiredSize.Height)));
         };
         _target = settings; _draft = settings.Clone(); _original = settings.Clone(); _monitors = monitors;
         GridColsText.Text = _draft.GridCols.ToString(CultureInfo.InvariantCulture);

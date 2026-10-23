@@ -36,6 +36,8 @@ jobs:
             dotnet run --project "tests/$test" -c Release
             if ($LASTEXITCODE -ne 0) { throw "Test failed: $test" }
           }
+          dotnet run --project tests/PanelAccessSmoke -c Release -- --logic-only
+          if ($LASTEXITCODE -ne 0) { throw 'Panel access geometry tests failed.' }
       - name: Build installer and feed
         shell: pwsh
         run: ./scripts/Publish-Installer.ps1 -Version $env:RELEASE_VERSION

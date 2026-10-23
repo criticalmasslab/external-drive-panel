@@ -23,6 +23,7 @@
                 <Style.Triggers><DataTrigger Binding="{Binding IsFavorite}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
             </Style>
             <Style x:Key="IconTile" TargetType="ListBoxItem">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                 <Setter Property="Margin" Value="2" /><Setter Property="Padding" Value="4" />
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                 <Setter Property="VerticalContentAlignment" Value="Top" />
@@ -147,6 +148,7 @@
                     </DockPanel>
                 </Border>
                 <ListBox x:Name="FavoriteItemsList" Grid.Row="1" BorderThickness="0" Background="Transparent" SelectionMode="Extended" ScrollViewer.CanContentScroll="False"
+                         FocusVisualStyle="{x:Null}"
                          ItemContainerStyle="{StaticResource IconTile}"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          SelectionChanged="FavoriteItemsList_OnSelectionChanged"
@@ -171,6 +173,7 @@
                            Text="즐겨찾기가 없습니다. 폴더나 파일을 우클릭해서 추가해보세요." />
 
                 <ListBox x:Name="IconItemsList" Grid.Row="1" Visibility="Collapsed" BorderThickness="0" Background="Transparent" SelectionMode="Extended" ScrollViewer.CanContentScroll="False"
+                         FocusVisualStyle="{x:Null}"
                          ItemContainerStyle="{StaticResource IconTile}"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                          MouseDoubleClick="Items_OnMouseDoubleClick"
@@ -192,11 +195,20 @@
                 </ListBox>
 
                 <DataGrid x:Name="DetailsGrid" Grid.Row="1" Visibility="Collapsed" AutoGenerateColumns="False"
+                          FocusVisualStyle="{x:Null}"
                           SelectionMode="Extended" SelectionUnit="FullRow" VirtualizingPanel.ScrollUnit="Pixel"
                           IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
                           CanUserReorderColumns="False" GridLinesVisibility="Horizontal"
                           MouseDoubleClick="Items_OnMouseDoubleClick" Sorting="DetailsGrid_OnSorting"
                           SelectionChanged="Items_OnSelectionChanged">
+                    <DataGrid.Resources>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                        </Style>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                        </Style>
+                    </DataGrid.Resources>
                     <DataGrid.Columns>
                         <DataGridTemplateColumn Header="이름" SortMemberPath="Name" Width="2*">
                             <DataGridTemplateColumn.CellTemplate><DataTemplate>

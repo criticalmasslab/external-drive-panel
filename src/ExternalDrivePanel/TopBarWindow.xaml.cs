@@ -48,7 +48,8 @@ public partial class TopBarWindow : Window
     {
         PreviewButton.ToolTip = _viewSettings.ShowPreviews ? "파일 미리보기 켜짐 — 클릭하면 끄기" : "파일 미리보기 끔 — 클릭하면 켜기";
         PreviewButton.Opacity = _viewSettings.ShowPreviews ? 1 : .65;
-        PreviewButton.Background = _viewSettings.ShowPreviews ? System.Windows.Media.Brushes.SlateGray : System.Windows.Media.Brushes.Transparent;
+        PreviewIcon.IsColorized = _viewSettings.ShowPreviews;
+        PreviewButton.Background = System.Windows.Media.Brushes.Transparent;
         HiddenButton.ToolTip = _viewSettings.ShowHiddenItems ? "숨김 항목 숨기기" : "숨김 항목 표시";
         HiddenButton.Opacity = _viewSettings.ShowHiddenItems ? 1.0 : 0.65;
         var details = _viewSettings.ViewMode == GlobalViewMode.Details;
