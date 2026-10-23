@@ -73,7 +73,11 @@ internal static class Program
                 if (scenarioName is "failure" or "save-failure")
                 {
                     if (scenarioName == "failure") backend.ThrowOnce = true;
-                    else Directory.CreateDirectory(store.FilePath + ".tmp");
+                    else
+                    {
+                        ((GlobalViewSettings)Field(app, "_viewSettings")).TogglePreviews();
+                        Directory.CreateDirectory(store.FilePath + ".tmp");
+                    }
                     button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                     for (var i = 0; i < 100 && dialogs.Errors == 0; i++) await Task.Delay(10);
                     Require(dialogs.Errors == 1 && bar.IsVisible && button.IsEnabled && updates.IsReady, "apply failure keeps app open and allows retry");

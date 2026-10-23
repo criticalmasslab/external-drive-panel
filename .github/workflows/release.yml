@@ -38,16 +38,49 @@ jobs:
           }
           dotnet run --project tests/PanelAccessSmoke -c Release -- --logic-only
           if ($LASTEXITCODE -ne 0) { throw 'Panel access geometry tests failed.' }
+          dotnet run --project tests/MaintenanceSmoke -c Release -- --logic-only
+          if ($LASTEXITCODE -ne 0) { throw 'Backup and diagnostic log tests failed.' }
       - name: Build installer and feed
         shell: pwsh
         run: ./scripts/Publish-Installer.ps1 -Version $env:RELEASE_VERSION
-      - name: Install and uninstall on disposable Windows runner
+      - name: Upgrade previous installation, restart, preserve settings, fresh install and uninstall
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           $setup = (Resolve-Path "dist/releases/$env:RELEASE_VERSION/ExternalDrivePanel-win-Setup.exe").Path
-          $process = Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -WindowStyle Hidden
+          $previousTag = gh release view --repo criticalmasslab/external-drive-panel --json tagName --jq .tagName
+          if ($LASTEXITCODE -ne 0 -or $previousTag -notmatch '^v\d+\.\d+\.\d+$') { throw 'Previous stable release missing.' }
+          $previousDirectory = Join-Path $env:RUNNER_TEMP 'panel-previous'
+          New-Item -ItemType Directory -Path $previousDirectory -Force | Out-Null
+          gh release download $previousTag --repo criticalmasslab/external-drive-panel --pattern ExternalDrivePanel-win-Setup.exe --dir $previousDirectory
+          if ($LASTEXITCODE -ne 0) { throw 'Previous installer download failed.' }
+          $process = Start-Process -FilePath (Join-Path $previousDirectory 'ExternalDrivePanel-win-Setup.exe') -ArgumentList '--silent' -PassThru -WindowStyle Hidden
           if (!$process.WaitForExit(120000) -or $process.ExitCode -ne 0) { throw 'Silent installation failed or timed out.' }
           $installed = Join-Path $env:LOCALAPPDATA 'ExternalDrivePanel'
+          $installedExe = Join-Path $installed 'current/ExternalDrivePanel.exe'
+          $previousVersion = $previousTag -replace '^v', ''
+          if ((Get-Item -LiteralPath $installedExe).VersionInfo.FileVersion -ne "$previousVersion.0") { throw 'Baseline installed version mismatch.' }
+          dotnet run --project tests/UpdateLogicSmoke -c Release -- --apply-installed $installed $previousVersion "dist/releases/$env:RELEASE_VERSION"
+          if ($LASTEXITCODE -ne 0) { throw 'Real update harness failed.' }
+          $deadline = [DateTime]::UtcNow.AddSeconds(120)
+          do {
+            Start-Sleep -Seconds 1
+            $version = if (Test-Path -LiteralPath $installedExe) { (Get-Item -LiteralPath $installedExe).VersionInfo.FileVersion } else { '' }
+            $appProcesses = @(Get-Process ExternalDrivePanel -ErrorAction SilentlyContinue | Where-Object { $_.Path -ieq $installedExe })
+          } while (($version -ne "$env:RELEASE_VERSION.0" -or $appProcesses.Count -eq 0) -and [DateTime]::UtcNow -lt $deadline)
+          if ($version -ne "$env:RELEASE_VERSION.0" -or $appProcesses.Count -eq 0) { throw 'Updater failed to replace and restart installation.' }
+          Start-Sleep -Seconds 3
+          $configPath = Join-Path $env:APPDATA 'ExternalDeskPanel/config.json'
+          $expectedHash = (Get-FileHash -LiteralPath (Join-Path $env:RUNNER_TEMP 'panel-upgrade-config.json')).Hash
+          if ((Get-FileHash -LiteralPath $configPath).Hash -ne $expectedHash) { throw 'Upgrade changed settings or favorites.' }
+          # Only this disposable runner's fixture app; no user files or live installation.
+          $appProcesses | Stop-Process
+          $process = Start-Process -FilePath (Join-Path $installed 'Update.exe') -ArgumentList '--uninstall', '--silent' -PassThru -WindowStyle Hidden
+          if (!$process.WaitForExit(120000) -or $process.ExitCode -ne 0) { throw 'Upgraded installation uninstall failed.' }
+          if ((Get-FileHash -LiteralPath $configPath).Hash -ne $expectedHash) { throw 'Uninstall removed user settings.' }
+          $process = Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -WindowStyle Hidden
+          if (!$process.WaitForExit(120000) -or $process.ExitCode -ne 0) { throw 'Fresh installation failed.' }
           Get-ChildItem -LiteralPath $installed | Select-Object Name
           foreach ($file in @('Update.exe', 'current/ExternalDrivePanel.exe', 'current/sq.version')) {
             if (!(Test-Path -LiteralPath (Join-Path $installed $file))) { throw "Installed file missing: $file" }

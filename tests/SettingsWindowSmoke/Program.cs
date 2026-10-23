@@ -102,6 +102,11 @@ internal static class Program
                             "Dialog not centered on owner monitor");
                         Console.WriteLine($"Monitor {index}, reopen {pass}: dialog [{bounds.Left},{bounds.Top},{bounds.Right},{bounds.Bottom}]");
                         var header = (Border)dialog.FindName("SettingsHeader");
+                        var copyright = (TextBlock)dialog.FindName("CopyrightVersion");
+                        Require(copyright.IsVisible && copyright.FontSize == 11
+                            && copyright.Text == $"© 2026 criticalmasslab · v{typeof(ZoneSettingsWindow).Assembly.GetName().Version?.ToString(3)}"
+                            && copyright.TransformToAncestor(dialog).Transform(new Point()).Y > ((Button)dialog.FindName("CloseButton")).TransformToAncestor(dialog).Transform(new Point()).Y,
+                            "bottom footer displays copyright and the actual assembly version");
                         var dpi = VisualTreeHelper.GetDpi(dialog);
                         var handle = new WindowInteropHelper(dialog).Handle;
                         var clientOrigin = new NativePoint();

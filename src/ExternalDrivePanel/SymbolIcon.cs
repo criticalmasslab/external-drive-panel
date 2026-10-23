@@ -37,7 +37,7 @@ public sealed class SymbolIcon : Control
     public static readonly DependencyProperty IsColorizedProperty = DependencyProperty.Register(nameof(IsColorized), typeof(bool),
         typeof(SymbolIcon), new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender));
     public bool IsColorized { get => (bool)GetValue(IsColorizedProperty); set => SetValue(IsColorizedProperty, value); }
-    private static readonly Geometry PreviewMountains = CreateFrozenGeometry("M3,17 L9,11 14,16 17,13 21,17 V21 H3 Z");
+    private static readonly Geometry PreviewMountains = CreateFrozenGeometry("M2.15,17 L9,11 14,16 17,13 21.85,17 V21.85 H2.15 Z");
     private static Geometry CreateFrozenGeometry(string data) { var geometry = Geometry.Parse(data); geometry.Freeze(); return geometry; }
 
     private static readonly IReadOnlyDictionary<string, Geometry> Shapes = new Dictionary<string, string>
@@ -89,10 +89,10 @@ public sealed class SymbolIcon : Control
         var filled = Kind is "StarFill" or "HomeFill";
         if (Kind == "Preview" && IsColorized)
         {
-            drawingContext.DrawRectangle(Brushes.SkyBlue, null, new Rect(3, 3, 18, 18));
+            // Keep the former outline's outer footprint without drawing its white stroke.
+            drawingContext.DrawRectangle(Brushes.SkyBlue, null, new Rect(2.15, 2.15, 19.7, 19.7));
             drawingContext.DrawEllipse(Brushes.DarkOrange, null, new Point(16, 7), 2, 2);
             drawingContext.DrawGeometry(Brushes.ForestGreen, null, PreviewMountains);
-            drawingContext.DrawRectangle(null, new Pen(Foreground, 1.7), new Rect(3, 3, 18, 18));
         }
         else
             drawingContext.DrawGeometry(filled ? Foreground : null, filled ? null : new Pen(Foreground, 1.7)

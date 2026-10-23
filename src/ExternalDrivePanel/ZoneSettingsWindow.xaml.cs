@@ -20,6 +20,7 @@ public partial class ZoneSettingsWindow : Window
     {
         _startup = startup ?? new StartupRegistration();
         InitializeComponent();
+        CopyrightVersion.Text = $"© 2026 criticalmasslab · v{typeof(ZoneSettingsWindow).Assembly.GetName().Version?.ToString(3)}";
         try { StartupCheck.IsChecked = _originalStartup = _startup.IsEnabled; }
         catch (Exception ex) { StartupCheck.IsEnabled = false; StartupMessage.Text = "시작 설정을 읽지 못했습니다: " + ex.Message; }
         UpdateChrome(new DpiScale(1, 1));

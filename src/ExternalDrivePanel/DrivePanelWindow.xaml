@@ -132,10 +132,11 @@
             </Grid>
             </Border>
 
-            <Border Grid.Row="3" Margin="6,3,6,5" Padding="7,3" BorderBrush="#FFBFC5CC"
+            <Border x:Name="AddressBox" Grid.Row="3" Height="32" Margin="6,3,6,5" Padding="7,3" BorderBrush="#FFBFC5CC"
                     BorderThickness="1" CornerRadius="3" Background="White">
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                    <StackPanel x:Name="BreadcrumbPanel" Orientation="Horizontal" />
+                <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" VerticalContentAlignment="Center"
+                              PreviewMouseWheel="AddressScroll_OnMouseWheel">
+                    <StackPanel x:Name="BreadcrumbPanel" Orientation="Horizontal" VerticalAlignment="Center" />
                 </ScrollViewer>
             </Border>
 

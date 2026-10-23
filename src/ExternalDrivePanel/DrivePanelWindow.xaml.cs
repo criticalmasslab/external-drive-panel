@@ -418,7 +418,7 @@ public partial class DrivePanelWindow : Window
         var accumulated = _root;
         foreach (var segment in relativePath.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
         {
-            BreadcrumbPanel.Children.Add(new TextBlock { Text = "›", Margin = new Thickness(4, 3, 4, 0) });
+            BreadcrumbPanel.Children.Add(new TextBlock { Text = "›", Margin = new Thickness(4, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center });
             accumulated = Path.Combine(accumulated, segment);
             AddBreadcrumbButton(segment, accumulated);
         }
@@ -426,13 +426,22 @@ public partial class DrivePanelWindow : Window
 
     private void ShowFavoriteAddress(FavoriteItem? favorite) => ShowItemAddress(favorite?.Path ?? "즐겨찾기");
 
+    private void AddressScroll_OnMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (sender is not ScrollViewer { ScrollableWidth: > 0 } scroll) return;
+        scroll.ScrollToHorizontalOffset(scroll.HorizontalOffset - e.Delta);
+        e.Handled = true;
+    }
+
     private void ShowItemAddress(string path)
     {
         BreadcrumbPanel.Children.Clear();
         BreadcrumbPanel.Children.Add(new TextBlock
         {
             Text = path,
-            Margin = new Thickness(5, 2, 5, 2),
+            ToolTip = path,
+            Margin = new Thickness(5, 0, 5, 0),
+            VerticalAlignment = VerticalAlignment.Center,
             TextTrimming = TextTrimming.CharacterEllipsis
         });
     }
@@ -442,8 +451,10 @@ public partial class DrivePanelWindow : Window
         var button = new Button
         {
             Content = caption,
+            ToolTip = targetPath,
             Tag = targetPath,
             Padding = new Thickness(5, 1, 5, 1),
+            VerticalAlignment = VerticalAlignment.Center,
             Background = null,
             BorderThickness = new Thickness(0)
         };

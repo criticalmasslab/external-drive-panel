@@ -3,6 +3,31 @@ using Velopack;
 using Velopack.Locators;
 using Velopack.Sources;
 
+if (args.Length == 4 && args[0] == "--apply-installed")
+{
+    // This integration mode may replace an installation: fail closed everywhere
+    // except GitHub's disposable Windows runner and its exact per-user app folder.
+    var installed = Path.GetFullPath(args[1]);
+    Require(Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true"
+        && string.Equals(installed, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ExternalDrivePanel"), StringComparison.OrdinalIgnoreCase),
+        "actual replacement is restricted to the disposable CI installation");
+    var configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ExternalDeskPanel", "config.json");
+    var fixture = new AppConfig { NotifyNewDrive = false };
+    fixture.GlobalView.IconSize = 36; fixture.DriveOrder.Add("4000000000");
+    fixture.Drives["4000000000"] = new() { Registered = true, Hidden = true, LastKnownLabel = "CI offline fixture",
+        Favorites = [new() { RelativePath = "Offline\\favorite.txt", DisplayName = "Preserved", IsDirectory = false }] };
+    Require(await new ConfigStore(configPath).SaveAsync(fixture), "CI settings fixture saved");
+    File.Copy(configPath, Path.Combine(Environment.GetEnvironmentVariable("RUNNER_TEMP")!, "panel-upgrade-config.json"), overwrite: true);
+    var locator = new InstalledLocator(installed, args[2]);
+    var manager = new UpdateManager(Path.GetFullPath(args[3]), locator: locator);
+    var update = await manager.CheckForUpdatesAsync();
+    Require(update?.TargetFullRelease.Version.ToString() == typeof(App).Assembly.GetName().Version!.ToString(3), "real upgrade selects target package");
+    await manager.DownloadUpdatesAsync(update!);
+    manager.WaitExitThenApplyUpdates(update!.TargetFullRelease, silent: true, restart: true);
+    Console.WriteLine("PASS real updater scheduled; this harness exits so updater can replace and restart the installed app.");
+    return;
+}
+
 if (args.Length == 2 && args[0] is "--feed" or "--github")
 {
     var root = Path.Combine(Path.GetTempPath(), "ExternalDeskPanel-UpdateFeed-" + Guid.NewGuid().ToString("N"));
@@ -43,6 +68,9 @@ foreach (var direction in Enum.GetValues<SplitDirection>())
     Require(layout.Panels().Max(rect => rect.Y + rect.Height) == 900, "no update means no reserved empty space");
 }
 
+Require(new InstalledLocator(Path.GetTempPath(), "1.0.0").Process.GetCurrentProcessId() == (uint)Environment.ProcessId,
+    "installed upgrade harness waits for its real process id, not the mock id");
+
 var uninstalled = new Backend { IsInstalled = false };
 using (var service = Create(uninstalled))
 {
@@ -74,6 +102,24 @@ using (var service = Create(canceled))
     Require(canceled.Applies == 0, "incomplete download never applies on exit");
 }
 Console.WriteLine("PASS update lifecycle; no real network, registry, clipboard or process replacement.");
+var manual = new Backend { WaitForRelease = true };
+using (var service = new AutoUpdateService(() => manual, TimeSpan.FromHours(1)))
+{
+    service.Start((_, _) => { });
+    var first = service.CheckNowAsync();
+    await manual.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    var second = service.CheckNowAsync();
+    Require(ReferenceEquals(first, second) && manual.Checks == 1 && service.State == UpdateCheckState.Checking, "concurrent manual checks share one download");
+    manual.Release.TrySetResult();
+    Require(await first == UpdateCheckState.Ready && await service.CheckNowAsync() == UpdateCheckState.Ready && manual.Checks == 1, "manual ready state reuses the verified pending package");
+}
+var latest = new Backend { NoUpdate = true };
+using (var service = Create(latest)) Require(await service.CheckNowAsync() == UpdateCheckState.UpToDate, "manual check reports current version");
+using (var service = Create(new Backend { FailFirst = true }))
+{
+    Require(await service.CheckNowAsync() == UpdateCheckState.Failed, "manual failure is visible");
+    Require(await service.CheckNowAsync() == UpdateCheckState.Ready, "manual failure can retry immediately");
+}
 static AutoUpdateService Create(Backend backend) => new(() => backend, TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1));
 static void Require(bool ok, string message) { if (!ok) throw new Exception(message); Console.WriteLine("PASS " + message); }
 sealed class Backend : IAppUpdateBackend
@@ -81,6 +127,9 @@ sealed class Backend : IAppUpdateBackend
     public bool IsInstalled { get; init; } = true;
     public bool FailFirst { get; init; }
     public bool WaitForCancellation { get; init; }
+    public bool WaitForRelease { get; init; }
+    public bool NoUpdate { get; init; }
+    public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     public int Checks, Applies;
     public bool Restart;
     public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -89,7 +138,18 @@ sealed class Backend : IAppUpdateBackend
         Checks++; Started.TrySetResult();
         if (FailFirst && Checks == 1) throw new IOException("offline fixture");
         if (WaitForCancellation) await Task.Delay(Timeout.Infinite, token);
-        return true;
+        if (WaitForRelease) await Release.Task.WaitAsync(token);
+        return !NoUpdate;
     }
     public void ApplyAfterExit(bool restart) { Applies++; Restart = restart; }
+}
+
+// TestVelopackLocator's default process id is zero. Use the actual harness pid
+// for the disposable-runner upgrade so replacement genuinely waits for exit.
+sealed class InstalledLocator(string root, string version)
+    : TestVelopackLocator("ExternalDrivePanel", version, Path.Combine(root, "packages"), Path.Combine(root, "current"),
+        root, Path.Combine(root, "Update.exe"), "win"), IProcessImpl
+{
+    uint IProcessImpl.GetCurrentProcessId() => (uint)Environment.ProcessId;
+    string IProcessImpl.GetCurrentProcessPath() => Path.Combine(AppContentDir!, "ExternalDrivePanel.exe");
 }

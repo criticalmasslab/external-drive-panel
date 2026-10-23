@@ -9,6 +9,9 @@ namespace ExternalDrivePanel;
 public sealed class ConfigStore
 {
     public string FilePath { get; }
+    public string BackupPath => Path.ChangeExtension(FilePath, "previous.json");
+    private readonly bool _keepBackup;
+    public const int MaximumBytes = 8 * 1024 * 1024;
     private readonly object _saveLock = new();
     private Task<bool> _pendingSave = Task.FromResult(true);
     private static readonly JsonSerializerOptions Options = new()
@@ -19,8 +22,9 @@ public sealed class ConfigStore
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) }
     };
 
-    public ConfigStore(string? filePath = null)
+    public ConfigStore(string? filePath = null, bool keepBackup = true)
     {
+        _keepBackup = keepBackup;
         FilePath = filePath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "ExternalDeskPanel", "config.json");
     }
@@ -30,29 +34,33 @@ public sealed class ConfigStore
         try
         {
             if (!File.Exists(FilePath)) return new();
-            using var document = JsonDocument.Parse(File.ReadAllText(FilePath));
-            var root = document.RootElement;
-            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("version", out var version)
-                || version.ValueKind != JsonValueKind.Number || !version.TryGetInt32(out var versionNumber) || versionNumber != 1
-                || !root.TryGetProperty("zone", out _) || !root.TryGetProperty("globalView", out _)
-                || !root.TryGetProperty("drives", out _))
-                throw new JsonException("최상위 설정 스키마가 올바르지 않습니다.");
-            var config = root.Deserialize<AppConfig>(Options)
-                ?? throw new JsonException("설정이 null입니다.");
-            Validate(config);
-            return config;
+            return ReadValidated(FilePath);
         }
         catch (JsonException ex)
         {
             Debug.WriteLine($"Config load: {ex}");
+            DiagnosticLog.Record("config.load.invalid", ex);
             try { File.Move(FilePath, FilePath + ".bak", overwrite: true); }
             catch (Exception backupError) { Debug.WriteLine($"Config backup: {backupError}"); }
         }
-        catch (Exception ex) { Debug.WriteLine($"Config load: {ex}"); }
+        catch (Exception ex) { Debug.WriteLine($"Config load: {ex}"); DiagnosticLog.Record("config.load.failed", ex); }
         return new();
     }
 
     public bool Save(AppConfig config) => SaveAsync(config).GetAwaiter().GetResult();
+    public static AppConfig ReadValidated(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        if (stream.Length > MaximumBytes) throw new JsonException("설정 파일이 너무 큽니다. (최대 8MB)");
+        using var document = JsonDocument.Parse(stream);
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("version", out var version)
+            || version.ValueKind != JsonValueKind.Number || !version.TryGetInt32(out var versionNumber) || versionNumber != 1
+            || !root.TryGetProperty("zone", out _) || !root.TryGetProperty("globalView", out _) || !root.TryGetProperty("drives", out _))
+            throw new JsonException("최상위 설정 스키마가 올바르지 않습니다.");
+        var config = root.Deserialize<AppConfig>(Options) ?? throw new JsonException("설정이 null입니다.");
+        Validate(config); return config;
+    }
     public Task<bool> FlushAsync() { lock (_saveLock) return _pendingSave; }
 
     public Task<bool> SaveAsync(AppConfig config)
@@ -62,11 +70,12 @@ public sealed class ConfigStore
             Validate(config);
             // Snapshot on the caller's thread; the mutable config never crosses threads.
             var bytes = JsonSerializer.SerializeToUtf8Bytes(config, Options);
+            if (bytes.Length > MaximumBytes) throw new JsonException("설정 파일이 너무 큽니다.");
             lock (_saveLock)
                 return _pendingSave = _pendingSave.ContinueWith(_ => SaveBytes(bytes),
                     CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
         }
-        catch (Exception ex) { Debug.WriteLine($"Config snapshot: {ex}"); return Task.FromResult(false); }
+        catch (Exception ex) { Debug.WriteLine($"Config snapshot: {ex}"); DiagnosticLog.Record("config.snapshot.failed", ex); return Task.FromResult(false); }
     }
 
     private bool SaveBytes(byte[] bytes)
@@ -74,19 +83,32 @@ public sealed class ConfigStore
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(FilePath))!);
+            var exists = File.Exists(FilePath);
+            var validPrevious = false;
+            if (exists)
+            {
+                // Saves are debounced; identical snapshots do no disk writes or backup rotation.
+                if (new FileInfo(FilePath).Length <= MaximumBytes && File.ReadAllBytes(FilePath).AsSpan().SequenceEqual(bytes)) return true;
+                if (_keepBackup)
+                {
+                    try { _ = ReadValidated(FilePath); validPrevious = true; }
+                    catch (JsonException) { } // Never replace a good backup with externally corrupted JSON.
+                }
+            }
             var temporaryPath = FilePath + ".tmp";
             using (var stream = new FileStream(temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
                 stream.Write(bytes);
                 stream.Flush(flushToDisk: true);
             }
-            if (File.Exists(FilePath)) File.Replace(temporaryPath, FilePath, null);
+            if (exists) File.Replace(temporaryPath, FilePath, validPrevious ? BackupPath : null);
             else File.Move(temporaryPath, FilePath);
             return true;
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Config save: {ex}");
+            DiagnosticLog.Record("config.save.failed", ex);
             return false;
         }
     }

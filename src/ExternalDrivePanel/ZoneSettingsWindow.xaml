@@ -8,7 +8,7 @@
     </WindowChrome.WindowChrome>
     <Window.Resources><ResourceDictionary Source="SettingsChrome.xaml" /></Window.Resources>
     <Border x:Name="SettingsFrame" BorderBrush="#FF607084" BorderThickness="1"><Grid>
-        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
         <Border x:Name="SettingsHeader" Height="{DynamicResource SettingsHeaderHeight}" Background="#FF243447" Padding="{DynamicResource ChromeHeaderPadding}" MouseLeftButtonDown="Header_OnMouseLeftButtonDown">
             <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center"><local:SymbolIcon Kind="Settings" Foreground="White" Margin="0,0,8,0" /><TextBlock Text="화면 영역 설정" Foreground="White" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" /></StackPanel>
@@ -71,5 +71,7 @@
                 <Button x:Name="CloseButton" Content="닫기" Style="{StaticResource SettingsPrimaryButton}" MinWidth="64" IsDefault="True" Click="CloseButton_OnClick" />
             </StackPanel>
         </Grid></Border>
+        <TextBlock x:Name="CopyrightVersion" Grid.Row="3" FontSize="11" Foreground="#FF68717C"
+                   HorizontalAlignment="Center" Margin="8,6,8,7" IsHitTestVisible="False" />
     </Grid></Border>
 </Window>

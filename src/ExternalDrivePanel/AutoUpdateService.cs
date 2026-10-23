@@ -4,6 +4,8 @@ using Velopack.Sources;
 
 namespace ExternalDrivePanel;
 
+public enum UpdateCheckState { Idle, Checking, Ready, UpToDate, Failed, Unavailable }
+
 /// <summary>Download in background; apply only after the app has drained writers and saved config.</summary>
 public sealed class AutoUpdateService : IDisposable
 {
@@ -11,12 +13,26 @@ public sealed class AutoUpdateService : IDisposable
     private readonly CancellationTokenSource _stop = new();
     private IAppUpdateBackend? _backend;
     private Task? _loop;
+    private readonly object _checkLock = new();
+    private Task<UpdateCheckState>? _activeCheck;
+    private Action<string, bool>? _notify;
     private volatile bool _ready;
     private readonly Func<IAppUpdateBackend> _createBackend;
     private readonly TimeSpan _initialDelay, _interval;
     public Task Completion => _loop ?? Task.CompletedTask;
     public bool IsReady => _ready;
     public event EventHandler? UpdateReady;
+    public event EventHandler? StateChanged;
+    public UpdateCheckState State { get; private set; }
+    public string StatusText => State switch
+    {
+        UpdateCheckState.Checking => "업데이트 확인·다운로드 중…",
+        UpdateCheckState.Ready => "업데이트 준비 완료 — 패널 하단에서 다시 시작",
+        UpdateCheckState.UpToDate => "최신 버전입니다",
+        UpdateCheckState.Failed => "업데이트 확인 실패 — 연결을 확인하고 다시 시도하세요",
+        UpdateCheckState.Unavailable => "설치본에서만 자동 업데이트를 사용할 수 있습니다",
+        _ => "아직 업데이트를 확인하지 않았습니다"
+    };
     public string? LastApplyError { get; private set; }
     public AutoUpdateService(Func<IAppUpdateBackend>? createBackend = null, TimeSpan? initialDelay = null, TimeSpan? interval = null)
     {
@@ -27,37 +43,62 @@ public sealed class AutoUpdateService : IDisposable
     }
     public void Start(Action<string, bool> notify)
     {
-        _loop ??= RunAsync(notify);
+        _notify ??= notify;
+        _loop ??= RunAsync();
     }
-    private async Task RunAsync(Action<string, bool> notify)
+    public Task<UpdateCheckState> CheckNowAsync()
+    {
+        lock (_checkLock)
+        {
+            if (_activeCheck is { IsCompleted: false }) return _activeCheck;
+            return _activeCheck = CheckCoreAsync();
+        }
+    }
+    private void SetState(UpdateCheckState state) { State = state; StateChanged?.Invoke(this, EventArgs.Empty); }
+    private async Task<UpdateCheckState> CheckCoreAsync()
+    {
+        await Task.Yield(); // Publish the shared task before any state events can reenter.
+        if (_stop.IsCancellationRequested) return State;
+        if (_ready) return UpdateCheckState.Ready;
+        try
+        {
+            _backend ??= _createBackend();
+            if (!_backend.IsInstalled) { SetState(UpdateCheckState.Unavailable); return State; }
+            SetState(UpdateCheckState.Checking);
+            var ready = await _backend.PrepareUpdateAsync(_stop.Token);
+            if (_stop.IsCancellationRequested) return State;
+            if (ready)
+            {
+                _ready = true; SetState(UpdateCheckState.Ready);
+                DiagnosticLog.Record("update.ready");
+                UpdateReady?.Invoke(this, EventArgs.Empty);
+                _notify?.Invoke("새 버전을 준비했습니다. 패널 하단의 ‘업데이트 후 다시 시작’을 눌러주세요.", false);
+            }
+            else SetState(UpdateCheckState.UpToDate);
+        }
+        catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Update check/download: {ex}"); DiagnosticLog.Record("update.check.failed", ex);
+            SetState(UpdateCheckState.Failed);
+        }
+        return State;
+    }
+    private async Task RunAsync()
     {
         try
         {
-            _backend = _createBackend();
-            if (!_backend.IsInstalled) return; // Portable/debug copies do not self-replace.
+            _backend ??= _createBackend();
+            if (!_backend.IsInstalled) { SetState(UpdateCheckState.Unavailable); return; }
             await Task.Delay(_initialDelay, _stop.Token);
             while (!_stop.IsCancellationRequested)
             {
-                try
-                {
-                    if (await _backend.PrepareUpdateAsync(_stop.Token))
-                    {
-                        if (!_stop.IsCancellationRequested)
-                        {
-                            _ready = true;
-                            UpdateReady?.Invoke(this, EventArgs.Empty);
-                            notify("새 버전을 준비했습니다. 패널 하단의 ‘업데이트 후 다시 시작’을 눌러주세요.", false);
-                            return;
-                        }
-                    }
-                }
-                catch (OperationCanceledException) when (_stop.IsCancellationRequested) { return; }
-                catch (Exception ex) { Debug.WriteLine($"Update check/download: {ex}"); }
+                if (_ready || await CheckNowAsync() == UpdateCheckState.Ready) return;
                 await Task.Delay(_interval, _stop.Token);
             }
         }
         catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
-        catch (Exception ex) { Debug.WriteLine($"Auto update: {ex}"); }
+        catch (Exception ex) { Debug.WriteLine($"Auto update: {ex}"); DiagnosticLog.Record("update.loop.failed", ex); }
     }
     public bool TryApplyAfterExit(bool restart)
     {
@@ -72,7 +113,7 @@ public sealed class AutoUpdateService : IDisposable
                 return true;
             }
         }
-        catch (Exception ex) { LastApplyError = ex.Message; Debug.WriteLine($"Update on exit: {ex}"); }
+        catch (Exception ex) { LastApplyError = ex.Message; Debug.WriteLine($"Update on exit: {ex}"); DiagnosticLog.Record("update.apply.failed", ex); }
         return false;
     }
     public void Dispose() => _stop.Cancel();

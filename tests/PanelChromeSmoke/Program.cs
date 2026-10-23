@@ -86,6 +86,24 @@ internal static class Program
                         var searchIcon = (SymbolIcon)((Button)panel.FindName("SearchButton")).Content;
                         Require(Math.Abs(searchIcon.ActualWidth * dpi.DpiScaleX - 22) < .1, "magnifier matches the 22px toolbar icon family");
                         Require(Bounds(panel, "BreadcrumbPanel").Top >= header.ActualHeight + toolbar.ActualHeight, "address below the two compact rows");
+                        var addressBounds = Bounds(panel, "AddressBox");
+                        var contentTop = Bounds(panel, "ContentArea").Top;
+                        var nested = Path.Combine(root, "하위 폴더", new string('가', 45));
+                        Directory.CreateDirectory(nested);
+                        foreach (var path in new[] { root, nested })
+                        {
+                            typeof(DrivePanelWindow).GetMethod("NavigateTo", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                                .Invoke(panel, [path, true]);
+                            await panel.Dispatcher.InvokeAsync(() => panel.UpdateLayout(), DispatcherPriority.ApplicationIdle);
+                            var navigatedAddress = Bounds(panel, "AddressBox");
+                            Require(Math.Abs(navigatedAddress.Top - addressBounds.Top) < .1 && navigatedAddress.Height == addressBounds.Height
+                                && Math.Abs(Bounds(panel, "ContentArea").Top - contentTop) < .1,
+                                "root and long nested paths never change address height or shift the file list");
+                        }
+                        ((Button)panel.FindName("HomeButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                        await panel.Dispatcher.InvokeAsync(() => panel.UpdateLayout(), DispatcherPriority.ApplicationIdle);
+                        Require(Bounds(panel, "AddressBox").Height == addressBounds.Height && ((Border)panel.FindName("AddressBox")).Height == 32,
+                            "favorites return retains the same fixed address height");
                         if (monitorIndex == 0 && width == 480)
                         {
                             var image = new RenderTargetBitmap((int)Math.Round(panel.ActualWidth * dpi.DpiScaleX), (int)Math.Round(panel.ActualHeight * dpi.DpiScaleY), 96 * dpi.DpiScaleX, 96 * dpi.DpiScaleY, PixelFormats.Pbgra32);

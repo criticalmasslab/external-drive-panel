@@ -30,6 +30,7 @@ public partial class App : Application
     private readonly IUpdateDialogs _updateDialogs;
     private bool _updateArmed;
     private PanelRevealService? _panelReveal;
+    private DiagnosticLog? _diagnostics;
     public bool IsSoftwareRendering { get; private set; }
     private readonly ConfigStore _configStore;
     private readonly Func<IReadOnlyList<DriveSnapshot>> _snapshotProvider;
@@ -79,6 +80,14 @@ public partial class App : Application
             Shutdown(1); return;
         }
         if (_instance is null) { _isHelperProcess = true; Shutdown(); return; }
+        if (!_customSnapshotProvider)
+        {
+            _diagnostics = new DiagnosticLog(DiagnosticLog.DefaultDirectory);
+            DiagnosticLog.Current = _diagnostics;
+            DiagnosticLog.Record("app.start.v" + typeof(App).Assembly.GetName().Version?.ToString(3));
+            DispatcherUnhandledException += App_OnUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += App_OnDomainException;
+        }
         // One-run diagnostic switch: isolate GPU rendering without changing the
         // user's saved settings, window geometry or normal-launch defaults.
         IsSoftwareRendering = e.Args.Contains("--software-rendering", StringComparer.OrdinalIgnoreCase);
@@ -112,6 +121,7 @@ public partial class App : Application
         if (!_customSnapshotProvider)
             _panelReveal = new PanelRevealService(PanelWindows, () => _panelLayout.Cell, RestorePanels, () => _isExiting || _exitRequested);
         _updates.UpdateReady += Updates_OnReady;
+        _updates.StateChanged += Updates_OnStateChanged;
         if (_enableUpdates) _updates.Start(ShowNotification);
     }
 
@@ -125,6 +135,7 @@ public partial class App : Application
                 () => TopBar_OnSettingsRequested(this, EventArgs.Empty), RegisterDrive,
                 key => { if (_coordinator.ToggleHidden(key)) RegistrationChanged(); },
                 UnregisterDrive, ExitApplication);
+            AddMaintenanceMenu(contextMenu);
         };
         contextMenu.Closed += (_, _) => ScheduleNoticePump();
 
@@ -147,7 +158,7 @@ public partial class App : Application
             var snapshot = await Task.Run(_snapshotProvider);
             if (!_isExiting && revision == _snapshotRevision) RefreshPanelsFromSnapshot(snapshot);
         }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Drive polling: {ex}"); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Drive polling: {ex}"); DiagnosticLog.Record("drives.poll.failed", ex); }
         finally { _polling = false; }
     }
 
@@ -488,6 +499,7 @@ public partial class App : Application
         _config.GlobalView = _viewSettings.Capture();
         if (!_updateArmed) _configStore.Save(_config); // Update preflight already flushed; do not delay the updater's exit timeout with another disk write.
         _updates.UpdateReady -= Updates_OnReady;
+        _updates.StateChanged -= Updates_OnStateChanged;
         _updates.Dispose();
         _panelReveal?.Dispose(); _panelReveal = null;
         _viewSettings.Changed -= ViewSettings_OnChanged;
@@ -498,5 +510,13 @@ public partial class App : Application
         _trayImage?.Dispose();
         _trayImage = null;
         _instance?.Dispose(); _instance = null;
+        DispatcherUnhandledException -= App_OnUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException -= App_OnDomainException;
+        DiagnosticLog.Record("app.exit"); _diagnostics?.Dispose(); _diagnostics = null;
     }
+
+    private void App_OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    { DiagnosticLog.Record("app.dispatcher.unhandled", e.Exception); _diagnostics?.Dispose(); }
+    private void App_OnDomainException(object sender, UnhandledExceptionEventArgs e)
+    { DiagnosticLog.Record("app.domain.unhandled", e.ExceptionObject as Exception); _diagnostics?.Dispose(); }
 }
