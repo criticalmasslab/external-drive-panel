@@ -1,4 +1,4 @@
-# External Drive Panel 1.0.0
+# External Drive Panel 1.0.1
 
 Windows x64용 C#/WPF 버전입니다.
 

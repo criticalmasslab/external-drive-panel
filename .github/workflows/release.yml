@@ -17,8 +17,8 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-dotnet@v6.0.0
         with:
           global-json-file: global.json
       - name: Select and validate version
@@ -46,7 +46,8 @@ jobs:
           $process = Start-Process -FilePath $setup -ArgumentList '--silent' -PassThru -WindowStyle Hidden
           if (!$process.WaitForExit(120000) -or $process.ExitCode -ne 0) { throw 'Silent installation failed or timed out.' }
           $installed = Join-Path $env:LOCALAPPDATA 'ExternalDrivePanel'
-          foreach ($file in @('ExternalDrivePanel.exe', 'Update.exe', 'current/ExternalDrivePanel.exe', 'current/sq.version')) {
+          Get-ChildItem -LiteralPath $installed | Select-Object Name
+          foreach ($file in @('Update.exe', 'current/ExternalDrivePanel.exe', 'current/sq.version')) {
             if (!(Test-Path -LiteralPath (Join-Path $installed $file))) { throw "Installed file missing: $file" }
           }
           $registration = @(Get-ChildItem 'HKCU:/Software/Microsoft/Windows/CurrentVersion/Uninstall' | Get-ItemProperty | Where-Object { $_.DisplayName -eq 'External Drive Panel' })

@@ -10,7 +10,7 @@ public interface IStartupRegistration
     void SetEnabled(bool enabled);
 }
 
-/// <summary>Current user only. The stable installed launcher survives version replacement.</summary>
+/// <summary>Current user only. Velopack's stable current directory survives version replacement.</summary>
 public sealed class StartupRegistration : IStartupRegistration
 {
     private const string KeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
@@ -24,8 +24,8 @@ public sealed class StartupRegistration : IStartupRegistration
         get
         {
             var locator = VelopackLocator.Current;
-            var root = locator?.CurrentlyInstalledVersion is not null ? locator.RootAppDir : null;
-            return !string.IsNullOrEmpty(root) ? Path.Combine(root, "ExternalDrivePanel.exe")
+            var content = locator?.CurrentlyInstalledVersion is not null ? locator.AppContentDir : null;
+            return !string.IsNullOrEmpty(content) ? Path.Combine(content, "ExternalDrivePanel.exe")
                 : Environment.ProcessPath ?? throw new IOException("실행 파일 경로를 찾지 못했습니다.");
         }
     }

@@ -20,10 +20,10 @@ ZIP/개발 실행본은 자동 업데이트하지 않습니다. 기존 ZIP 사�
 다운로드 파일에는 개인 설정이나 GitHub 토큰을 포함하지 않습니다.
 
 ```powershell
-./scripts/Publish-Installer.ps1 -Version 1.0.0
+./scripts/Publish-Installer.ps1 -Version 1.0.1
 ```
 
-결과: `dist/releases/1.0.0`의 Setup.exe, full.nupkg, `releases.win.json`, 체크섬입니다.
+결과: `dist/releases/1.0.1`의 Setup.exe, full.nupkg, `releases.win.json`, 체크섬입니다.
 설치 EXE만 사용자에게 전달해도 됩니다. 단 **업데이트 제공을 위해 GitHub Release에는 피드와 nupkg도 함께 게시**해야 합니다.
 미서명 무료 배포본이므로 SmartScreen/백신의 평판 경고가 나타날 수 있습니다.
 

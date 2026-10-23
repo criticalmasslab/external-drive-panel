@@ -1,9 +1,10 @@
-param([string]$Version = '1.0.0', [switch]$SkipPublish)
+param([string]$Version = '', [switch]$SkipPublish)
 $ErrorActionPreference = 'Stop'
-if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Version must be a stable major.minor.patch version.' }
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $project = Join-Path $repo 'src\ExternalDrivePanel\ExternalDrivePanel.csproj'
 $projectVersion = ((dotnet msbuild $project -getProperty:Version) | Out-String).Trim()
+if (!$Version) { $Version = $projectVersion }
+if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Version must be a stable major.minor.patch version.' }
 if ($LASTEXITCODE -ne 0 -or $projectVersion -ne $Version) { throw "Project version ($projectVersion) must match release version ($Version)." }
 Push-Location $repo
 try {

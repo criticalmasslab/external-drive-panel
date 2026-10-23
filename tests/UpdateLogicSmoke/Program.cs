@@ -16,9 +16,11 @@ if (args.Length == 2 && args[0] is "--feed" or "--github")
             ? new UpdateManager(new GithubSource(args[1], null, false), locator: locator)
             : new UpdateManager(Path.GetFullPath(args[1]), locator: locator);
         var update = await manager.CheckForUpdatesAsync();
-        Require(update is not null && update.TargetFullRelease.Version.ToString() == "1.0.0", "real local feed selects newer stable release");
+        var assemblyVersion = typeof(App).Assembly.GetName().Version!;
+        var expectedVersion = $"{assemblyVersion.Major}.{assemblyVersion.Minor}.{assemblyVersion.Build}";
+        Require(update is not null && update.TargetFullRelease.Version.ToString() == expectedVersion, "real feed selects current project's newer stable release");
         await manager.DownloadUpdatesAsync(update!);
-        Require(manager.UpdatePendingRestart?.Version.ToString() == "1.0.0", "real package downloaded, verified and ready; no installed app replaced");
+        Require(manager.UpdatePendingRestart?.Version.ToString() == expectedVersion, "real package downloaded, verified and ready; no installed app replaced");
         Console.WriteLine($"PASS real Velopack {args[0]} feed/download integrity integration (no GitHub credentials supplied).");
     }
     finally { Directory.Delete(root, true); }
