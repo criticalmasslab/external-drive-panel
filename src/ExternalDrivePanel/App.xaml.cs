@@ -24,7 +24,11 @@ public partial class App : Application
     private bool _isHelperProcess;
     private bool _exitRequested;
     private SingleInstanceGuard? _instance;
-    private readonly AutoUpdateService _updates = new();
+    private readonly AutoUpdateService _updates;
+    private readonly bool _enableUpdates;
+    private UpdateNotificationWindow? _updateBar;
+    private readonly IUpdateDialogs _updateDialogs;
+    private bool _updateArmed;
     public bool IsSoftwareRendering { get; private set; }
     private readonly ConfigStore _configStore;
     private readonly Func<IReadOnlyList<DriveSnapshot>> _snapshotProvider;
@@ -42,11 +46,14 @@ public partial class App : Application
 
     public App() : this(new ConfigStore()) { }
 
-    public App(ConfigStore configStore, Func<IReadOnlyList<DriveSnapshot>>? snapshotProvider = null)
+    public App(ConfigStore configStore, Func<IReadOnlyList<DriveSnapshot>>? snapshotProvider = null, AutoUpdateService? updates = null, IUpdateDialogs? updateDialogs = null)
     {
         _configStore = configStore;
         _snapshotProvider = snapshotProvider ?? _driveService.SnapshotDrives;
         _customSnapshotProvider = snapshotProvider is not null;
+        _updates = updates ?? new AutoUpdateService();
+        _enableUpdates = updates is not null || !_customSnapshotProvider;
+        _updateDialogs = updateDialogs ?? new UpdateDialogs();
     }
 
     protected override void OnStartup(StartupEventArgs e)
@@ -101,7 +108,8 @@ public partial class App : Application
         _pollTimer.Tick += PollTimer_OnTick;
         _pollTimer.Start();
         RefreshPanels();
-        if (!_customSnapshotProvider) _updates.Start(ShowNotification);
+        _updates.UpdateReady += Updates_OnReady;
+        if (_enableUpdates) _updates.Start(ShowNotification);
     }
 
     private TaskbarIcon CreateTrayIcon()
@@ -204,8 +212,21 @@ public partial class App : Application
         ScheduleNoticePump();
     }
 
-    private IEnumerable<Window> PanelWindows() => _topBar is null
-        ? _panels.Values.Cast<Window>() : _panels.Values.Cast<Window>().Append(_topBar);
+    private IEnumerable<Window> PanelWindows() => _panels.Values.Cast<Window>()
+        .Concat(new Window?[] { _topBar, _updateBar }.OfType<Window>());
+
+    private void Updates_OnReady(object? sender, EventArgs e)
+    {
+        if (_isExiting || _updateBar is not null) return;
+        _resizeController.Cancel();
+        _updateBar = new UpdateNotificationWindow();
+        _updateBar.RestartRequested += async (_, _) => await ShutdownApplicationAsync(update: true);
+        PanelActivation.Attach(_updateBar, PanelWindows);
+        _resizeController.Attach(_updateBar);
+        _panelLayout.FooterHeight = UpdateNotificationWindow.BarHeight;
+        RepositionWindows();
+        _updateBar.Show();
+    }
 
     private void RegistrationChanged()
     {
@@ -304,6 +325,7 @@ public partial class App : Application
         {
             panels[index].SetPlacement(rectangles[index]);
         }
+        _updateBar?.SetPlacement(_panelLayout.Footer);
     }
 
     private void TopBar_OnSettingsRequested(object? sender, EventArgs e)
@@ -364,12 +386,17 @@ public partial class App : Application
         if (FileOperationRegistry.IsBusy()) e.Cancel = true;
     }
 
-    private async void ExitApplication()
+    private async void ExitApplication() => await ShutdownApplicationAsync(update: false);
+
+    private async Task ShutdownApplicationAsync(bool update)
     {
         if (_exitRequested) return;
+        if (update && !_updates.IsReady) return;
         _exitRequested = true;
         using var pause = FileOperationRegistry.Pause();
-        if (FileOperationRegistry.IsBusy() && _topBar is { } owner
+        if (update && _topBar is { } updateOwner && !_updateDialogs.ConfirmRestart(updateOwner))
+        { _exitRequested = false; return; }
+        if (!update && FileOperationRegistry.IsBusy() && _topBar is { } owner
             && DialogActivation.Show(owner, () => MessageBox.Show(owner,
                 "진행 중인 복사·이동·압축 작업이 있습니다. 작업이 끝난 뒤 종료할까요?",
                 "작업 완료 후 종료", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No)) != MessageBoxResult.Yes)
@@ -380,24 +407,64 @@ public partial class App : Application
         _saveTimer.Stop();
         _notices.Clear();
         _newDriveWindow?.Close();
-        await FileOperationRegistry.WaitForIdleAsync();
-        await Task.WhenAll(_panels.Values.Select(panel => panel.PrepareForShutdownAsync()));
-        foreach (var panel in _panels.Values.ToList())
+        _updateBar?.SetWaiting(true);
+        var disabled = update ? Windows.OfType<Window>().Where(window => window.IsEnabled).ToArray() : [];
+        foreach (var window in disabled) window.IsEnabled = false;
+        try
         {
-            panel.Close();
-        }
-        _panels.Clear();
+            await FileOperationRegistry.WaitForIdleAsync();
+            await Task.WhenAll(_panels.Values.Select(panel => panel.PrepareForShutdownAsync()));
+            if (update)
+            {
+                _config.GlobalView = _viewSettings.Capture();
+                var saved = await _configStore.SaveAsync(_config);
+                // Start the updater's 60-second exit wait only AFTER all potentially
+                // slow file operations, preview cleanup and config saving have ended.
+                if (!saved || !_updates.TryApplyAfterExit(restart: true))
+                {
+                    foreach (var window in disabled) window.IsEnabled = true;
+                    _isExiting = false; _exitRequested = false; _pollTimer.Start();
+                    _updateBar?.SetWaiting(false);
+                    if (_topBar is { } errorOwner) _updateDialogs.ShowError(errorOwner,
+                        !saved ? "설정을 저장하지 못해 업데이트를 중단했습니다. 저장 공간과 권한을 확인한 뒤 다시 시도해주세요."
+                        : "업데이트를 시작하지 못했습니다. 다시 시도해주세요.\n" + _updates.LastApplyError);
+                    return;
+                }
+                _updateArmed = true;
+            }
+            foreach (var panel in _panels.Values.ToList())
+            {
+                panel.Close();
+            }
+            _panels.Clear();
+            _updateBar?.CloseForShutdown(); _updateBar = null;
 
-        if (_topBar is not null)
+            if (_topBar is not null)
+            {
+                _topBar.SettingsRequested -= TopBar_OnSettingsRequested;
+                _topBar.Close();
+                _topBar = null;
+            }
+
+            _trayIcon?.Dispose();
+            _trayIcon = null;
+            Shutdown();
+        }
+        catch (Exception ex)
         {
-            _topBar.SettingsRequested -= TopBar_OnSettingsRequested;
-            _topBar.Close();
-            _topBar = null;
+            if (_updateArmed)
+            {
+                System.Diagnostics.Debug.WriteLine($"Update shutdown cleanup: {ex}");
+                Shutdown(); // The updater is already waiting; never reopen a half-closed UI.
+                return;
+            }
+            foreach (var window in disabled.Where(window => window.IsVisible)) window.IsEnabled = true;
+            _isExiting = false; _exitRequested = false; _pollTimer.Start();
+            _updateBar?.SetWaiting(false);
+            if (_topBar is { } recoveryOwner) DialogActivation.Show(recoveryOwner, () => MessageBox.Show(recoveryOwner,
+                "종료/업데이트 준비 중 문제가 발생했습니다. 다시 시도해주세요.\n" + ex.Message,
+                "External Drive Panel", MessageBoxButton.OK, MessageBoxImage.Warning));
         }
-
-        _trayIcon?.Dispose();
-        _trayIcon = null;
-        Shutdown();
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -406,8 +473,8 @@ public partial class App : Application
         _pollTimer.Stop();
         _saveTimer.Stop();
         _config.GlobalView = _viewSettings.Capture();
-        _configStore.Save(_config); // Wait behind queued snapshots, then persist the final state.
-        if (!FileOperationRegistry.IsBusy()) _updates.StopAndApplyAfterExit();
+        if (!_updateArmed) _configStore.Save(_config); // Update preflight already flushed; do not delay the updater's exit timeout with another disk write.
+        _updates.UpdateReady -= Updates_OnReady;
         _updates.Dispose();
         _viewSettings.Changed -= ViewSettings_OnChanged;
         _viewSettings.ViewModeApplied -= ViewSettings_OnViewModeApplied;

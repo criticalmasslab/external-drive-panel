@@ -16,6 +16,15 @@ public sealed class PanelLayoutState
     private int _revision;
     public LayoutRect Cell { get; private set; } = new(0, 0, 480, 800);
     public SplitDirection Direction => _direction;
+    private double _footerHeight;
+    public double FooterHeight
+    {
+        get => _footerHeight;
+        set { if (_footerHeight == value) return; if (!double.IsFinite(value) || value < 0) throw new ArgumentOutOfRangeException(nameof(value)); _footerHeight = value; _revision++; }
+    }
+    private double ContentHeader => LayoutCalculator.TopBarHeight + FooterHeight;
+    public LayoutRect Footer => new(Cell.X, Math.Max(Cell.Y + Math.Min(Cell.Height, LayoutCalculator.TopBarHeight), Cell.Y + Cell.Height - FooterHeight), Cell.Width,
+        Math.Min(FooterHeight, Math.Max(0, Cell.Height - LayoutCalculator.TopBarHeight)));
 
     public void Reset() { _defaultCell = null; _revision++; }
 
@@ -33,7 +42,7 @@ public sealed class PanelLayoutState
         var left = Math.Round(Cell.X);
         var right = Math.Round(Cell.X + Cell.Width);
         var top = Math.Round(Cell.Y + Math.Min(Cell.Height, LayoutCalculator.TopBarHeight));
-        var bottom = Math.Max(top + 1, Math.Round(Cell.Y + Cell.Height));
+        var bottom = Math.Max(top + 1, Math.Round(Footer.Y));
         var horizontal = _direction == SplitDirection.Horizontal;
         var start = horizontal ? left : top;
         var end = horizontal ? right : bottom;
@@ -69,7 +78,7 @@ public sealed class PanelLayoutState
         {
             var panel = panels[i];
             if (_direction == SplitDirection.Vertical && Math.Abs(y - panel.Y - panel.Height) <= grip
-                || _direction == SplitDirection.Horizontal && y >= panel.Y && Math.Abs(x - panel.X - panel.Width) <= grip)
+                || _direction == SplitDirection.Horizontal && y >= panel.Y && y <= panel.Y + panel.Height && Math.Abs(x - panel.X - panel.Width) <= grip)
                 return new(ResizeEdges.None, i);
         }
         return null;
@@ -88,7 +97,7 @@ public sealed class PanelLayoutState
         {
             var i = gesture.Hit.Boundary;
             if (i + 1 >= _weights.Length) return;
-            var extent = _direction == SplitDirection.Horizontal ? original.Width : Math.Max(1, original.Height - LayoutCalculator.TopBarHeight);
+            var extent = _direction == SplitDirection.Horizontal ? original.Width : Math.Max(1, original.Height - ContentHeader);
             var minimum = Math.Min((_direction == SplitDirection.Horizontal ? 300 : MinimumPanelHeight) / extent, Math.Min(_weights[i], _weights[i + 1]));
             var delta = Math.Clamp((_direction == SplitDirection.Horizontal ? dx : dy) / extent,
                 minimum - _weights[i], _weights[i + 1] - minimum);
@@ -100,7 +109,7 @@ public sealed class PanelLayoutState
         // Unequal divisions need the same protection as an equal split when the
         // whole group shrinks; otherwise a previously small neighbor can vanish.
         var minWidth = Math.Min(original.Width, _direction == SplitDirection.Horizontal ? 300 / smallestShare : 300);
-        var minHeight = Math.Min(original.Height, LayoutCalculator.TopBarHeight + (_direction == SplitDirection.Vertical ? MinimumPanelHeight / smallestShare : MinimumPanelHeight));
+        var minHeight = Math.Min(original.Height, ContentHeader + (_direction == SplitDirection.Vertical ? MinimumPanelHeight / smallestShare : MinimumPanelHeight));
         var left = original.X; var right = original.X + original.Width;
         var top = original.Y; var bottom = original.Y + original.Height;
         if (edges.HasFlag(ResizeEdges.Left)) left = Math.Min(right - minWidth, left + dx);

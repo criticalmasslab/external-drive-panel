@@ -39,7 +39,7 @@ internal static class Program
                 Require(fake.IsEnabled, "close keeps startup choice");
                 using var updates = new AutoUpdateService();
                 updates.Start((_, _) => throw new Exception("Development build must not update"));
-                updates.StopAndApplyAfterExit();
+                Require(!updates.TryApplyAfterExit(restart: true), "uninstalled copy cannot restart for update");
                 Console.WriteLine("PASS deployment smoke; real Run registry and user clipboard untouched.");
             }
             catch (Exception ex) { Console.Error.WriteLine(ex); result = 1; }

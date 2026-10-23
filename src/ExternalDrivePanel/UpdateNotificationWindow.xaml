@@ -1,0 +1,14 @@
+<Window x:Class="ExternalDrivePanel.UpdateNotificationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="External Drive Panel 업데이트" WindowStyle="None" ResizeMode="NoResize"
+        ShowInTaskbar="False" ShowActivated="False" Topmost="False" Background="#FF243447"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+    <Border BorderBrush="#FF50637A" BorderThickness="0,1,0,0" Padding="8,3">
+        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <TextBlock Text="새 업데이트 준비됨" Foreground="#FFD9E3ED" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+            <Button x:Name="RestartButton" Grid.Column="1" Content="업데이트 후 다시 시작" Padding="10,3" FontSize="12"
+                    Background="#FFFFD463" Foreground="#FF243447" BorderThickness="0" Click="Restart_OnClick" />
+        </Grid>
+    </Border>
+</Window>

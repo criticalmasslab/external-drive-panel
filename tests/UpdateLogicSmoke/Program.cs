@@ -27,12 +27,28 @@ if (args.Length == 2 && args[0] is "--feed" or "--github")
     return;
 }
 
+foreach (var direction in Enum.GetValues<SplitDirection>())
+{
+    var layout = new PanelLayoutState(); layout.Configure(new(0, 0, 900, 900), 2, direction);
+    var original = layout.Cell;
+    var stale = layout.Begin(new(ResizeEdges.Bottom), 400, 900);
+    layout.FooterHeight = UpdateNotificationWindow.BarHeight;
+    layout.Drag(stale, 400, 1000);
+    Require(layout.Cell == original, "footer appearance invalidates an active resize snapshot");
+    Require(layout.Panels().All(rect => rect.Y + rect.Height <= layout.Footer.Y), "footer reserves space in both split directions");
+    var edge = layout.Panels()[0];
+    if (direction == SplitDirection.Horizontal)
+        Require(layout.HitTest(edge.X + edge.Width, layout.Footer.Y + 20) is null, "footer does not act as a column divider");
+    layout.FooterHeight = 0;
+    Require(layout.Panels().Max(rect => rect.Y + rect.Height) == 900, "no update means no reserved empty space");
+}
+
 var uninstalled = new Backend { IsInstalled = false };
 using (var service = Create(uninstalled))
 {
     service.Start((_, _) => throw new Exception("uninstalled notification"));
     await service.Completion.WaitAsync(TimeSpan.FromSeconds(5));
-    service.StopAndApplyAfterExit();
+    service.TryApplyAfterExit(restart: true);
     Require(uninstalled.Checks == 0 && uninstalled.Applies == 0, "portable/development do not check or replace");
 }
 var retry = new Backend { FailFirst = true };
@@ -43,17 +59,17 @@ using (var service = Create(retry))
     service.Start((_, _) => throw new Exception("second loop"));
     await service.Completion.WaitAsync(TimeSpan.FromSeconds(5));
     Require(retry.Checks == 2 && notifications == 1 && retry.Applies == 0, "offline failure retries; downloads without forced exit; single loop");
-    using (FileOperationRegistry.Begin([Path.GetTempPath()])) service.StopAndApplyAfterExit();
+    using (FileOperationRegistry.Begin([Path.GetTempPath()])) service.TryApplyAfterExit(restart: true);
     Require(retry.Applies == 0, "active writer prevents update replacement");
-    service.StopAndApplyAfterExit(); service.StopAndApplyAfterExit();
-    Require(retry.Applies == 1, "after writers drain, replacement schedules exactly once");
+    service.TryApplyAfterExit(restart: true); service.TryApplyAfterExit(restart: true);
+    Require(retry.Applies == 1 && retry.Restart, "after writers drain, replacement schedules exactly once with restart");
 }
 var canceled = new Backend { WaitForCancellation = true };
 using (var service = Create(canceled))
 {
     service.Start((_, _) => throw new Exception("canceled notification"));
     await canceled.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
-    service.StopAndApplyAfterExit();
+    service.Dispose();
     await service.Completion.WaitAsync(TimeSpan.FromSeconds(5));
     Require(canceled.Applies == 0, "incomplete download never applies on exit");
 }
@@ -66,6 +82,7 @@ sealed class Backend : IAppUpdateBackend
     public bool FailFirst { get; init; }
     public bool WaitForCancellation { get; init; }
     public int Checks, Applies;
+    public bool Restart;
     public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     public async Task<bool> PrepareUpdateAsync(CancellationToken token)
     {
@@ -74,5 +91,5 @@ sealed class Backend : IAppUpdateBackend
         if (WaitForCancellation) await Task.Delay(Timeout.Infinite, token);
         return true;
     }
-    public void ApplyAfterExit() => Applies++;
+    public void ApplyAfterExit(bool restart) { Applies++; Restart = restart; }
 }

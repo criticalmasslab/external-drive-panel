@@ -15,6 +15,9 @@ public sealed class AutoUpdateService : IDisposable
     private readonly Func<IAppUpdateBackend> _createBackend;
     private readonly TimeSpan _initialDelay, _interval;
     public Task Completion => _loop ?? Task.CompletedTask;
+    public bool IsReady => _ready;
+    public event EventHandler? UpdateReady;
+    public string? LastApplyError { get; private set; }
     public AutoUpdateService(Func<IAppUpdateBackend>? createBackend = null, TimeSpan? initialDelay = null, TimeSpan? interval = null)
     {
         _createBackend = createBackend ?? (() => new VelopackUpdateBackend());
@@ -42,7 +45,8 @@ public sealed class AutoUpdateService : IDisposable
                         if (!_stop.IsCancellationRequested)
                         {
                             _ready = true;
-                            notify("새 버전을 준비했습니다. 앱을 정상 종료하면 자동 업데이트됩니다.", false);
+                            UpdateReady?.Invoke(this, EventArgs.Empty);
+                            notify("새 버전을 준비했습니다. 패널 하단의 ‘업데이트 후 다시 시작’을 눌러주세요.", false);
                             return;
                         }
                     }
@@ -55,18 +59,21 @@ public sealed class AutoUpdateService : IDisposable
         catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
         catch (Exception ex) { Debug.WriteLine($"Auto update: {ex}"); }
     }
-    public void StopAndApplyAfterExit()
+    public bool TryApplyAfterExit(bool restart)
     {
-        _stop.Cancel();
+        LastApplyError = null;
         try
         {
             if (_ready && !FileOperationRegistry.IsBusy())
             {
+                _backend!.ApplyAfterExit(restart);
                 _ready = false;
-                _backend!.ApplyAfterExit();
+                _stop.Cancel();
+                return true;
             }
         }
-        catch (Exception ex) { Debug.WriteLine($"Update on exit: {ex}"); }
+        catch (Exception ex) { LastApplyError = ex.Message; Debug.WriteLine($"Update on exit: {ex}"); }
+        return false;
     }
     public void Dispose() => _stop.Cancel();
 }
@@ -75,7 +82,7 @@ public interface IAppUpdateBackend
 {
     bool IsInstalled { get; }
     Task<bool> PrepareUpdateAsync(CancellationToken token);
-    void ApplyAfterExit();
+    void ApplyAfterExit(bool restart);
 }
 
 internal sealed class VelopackUpdateBackend : IAppUpdateBackend
@@ -96,8 +103,9 @@ internal sealed class VelopackUpdateBackend : IAppUpdateBackend
         _ready = update.TargetFullRelease;
         return true;
     }
-    public void ApplyAfterExit()
+    public void ApplyAfterExit(bool restart)
     {
-        if (_ready is not null) _manager.WaitExitThenApplyUpdates(_ready, silent: true, restart: false);
+        if (_ready is null) throw new InvalidOperationException("설치할 업데이트가 준비되지 않았습니다.");
+        _manager.WaitExitThenApplyUpdates(_ready, silent: true, restart: restart);
     }
 }

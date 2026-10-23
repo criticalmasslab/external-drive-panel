@@ -80,9 +80,14 @@ internal static class Program
         grid.SelectedItem = grid.Items[0];
         Require(Address(first) == Path.Combine(root, "Zeta"), "details single selection displays absolute path");
         var surface = Control<Grid>(first, "ContentArea");
-        surface.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
-            { RoutedEvent = Mouse.PreviewMouseDownEvent, Source = surface });
-        Require(grid.SelectedItem is null && Address(first) == "즐겨찾기", "details blank click clears selection and address");
+        var blankClick = new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
+            { RoutedEvent = Mouse.PreviewMouseDownEvent, Source = surface };
+        // This synthetic event has no physical coordinates. Routing it through
+        // the outer resize grip accidentally uses the user's real cursor; when
+        // that cursor happens to be on an edge it correctly starts a resize.
+        // Exercise the blank-click handler directly without moving the cursor.
+        Call(first, "ContentArea_OnPreviewMouseDown", surface, blankClick);
+        Require(grid.SelectedItem is null && Address(first) == "즐겨찾기", $"details blank click clears selection and address; handled={blankClick.Handled}, modifiers={Keyboard.Modifiers}, cursor={Mouse.GetPosition(first)}");
         Call(first, "DetailsGrid_OnSorting", grid, new DataGridSortingEventArgs(grid.Columns[0]));
         Require(first.CaptureSettings("").SortKey == "Size" && first.CaptureSettings("").SortReverse, "home header click cannot alter folder sort");
 
