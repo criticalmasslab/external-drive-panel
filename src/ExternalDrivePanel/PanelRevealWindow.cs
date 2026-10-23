@@ -14,7 +14,7 @@ public sealed class PanelRevealWindow : Window
         ShowInTaskbar = false; ShowActivated = false; Topmost = true;
         AllowsTransparency = true; Background = Brushes.Transparent;
         UseLayoutRounding = true; SnapsToDevicePixels = true;
-        var button = new Button { ToolTip = "External Drive Panel 앞으로", Padding = new Thickness(3),
+        var button = new Button { ToolTip = "External Drive Panel 앞으로", Padding = new Thickness(4),
             BorderThickness = new Thickness(0), Background = Brushes.Transparent,
             FocusVisualStyle = null,
             Content = new Image { Source = PanelTrayIcon.Render(64), Stretch = Stretch.Uniform } };
@@ -29,7 +29,7 @@ public sealed class PanelRevealWindow : Window
         surface.AppendChild(presenter);
         var template = new ControlTemplate(typeof(Button)) { VisualTree = surface };
         var hover = new Trigger { Property = IsMouseOverProperty, Value = true };
-        hover.Setters.Add(new Setter(RenderTransformProperty, new ScaleTransform(1.08, 1.08), "IconPresenter"));
+        hover.Setters.Add(new Setter(RenderTransformProperty, new ScaleTransform(1.2, 1.2), "IconPresenter"));
         template.Triggers.Add(hover); button.Template = template;
         System.Windows.Automation.AutomationProperties.SetName(button, "패널 앞으로");
         button.Click += (_, _) => RevealRequested?.Invoke(this, EventArgs.Empty);

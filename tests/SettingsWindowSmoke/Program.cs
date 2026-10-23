@@ -103,6 +103,12 @@ internal static class Program
                         Console.WriteLine($"Monitor {index}, reopen {pass}: dialog [{bounds.Left},{bounds.Top},{bounds.Right},{bounds.Bottom}]");
                         var header = (Border)dialog.FindName("SettingsHeader");
                         var copyright = (TextBlock)dialog.FindName("CopyrightVersion");
+                        var copyrightFooter = (Border)dialog.FindName("CopyrightFooter");
+                        Require(((SolidColorBrush)copyrightFooter.Background).Color == ((SolidColorBrush)header.Background).Color
+                            && Math.Abs(copyrightFooter.ActualHeight * VisualTreeHelper.GetDpi(dialog).DpiScaleY - 28) < 1
+                            && copyrightFooter.ActualHeight < header.ActualHeight
+                            && ((TextBlock)dialog.FindName("ValidationMessage")).Visibility == Visibility.Collapsed,
+                            "compact navy footer matches header, removes the unused validation gap and centers copyright");
                         Require(copyright.IsVisible && copyright.FontSize == 11
                             && copyright.Text == $"© 2026 criticalmasslab · v{typeof(ZoneSettingsWindow).Assembly.GetName().Version?.ToString(3)}"
                             && copyright.TransformToAncestor(dialog).Transform(new Point()).Y > ((Button)dialog.FindName("CloseButton")).TransformToAncestor(dialog).Transform(new Point()).Y,

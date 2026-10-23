@@ -64,7 +64,15 @@ try
     Require(rows.Select(row => row.Favorite).SequenceEqual(favorites), "row creation retains insertion order");
     Require(rows[0].ModifiedDate is not null && rows[0].Size is null && rows[0].Type == "파일 폴더", "folder metadata");
     Require(rows[1].Name == "Second file" && rows[1].DisplayName == "📄 Second file" && rows[1].Size == 3
-        && rows[1].ModifiedDate == File.GetLastWriteTime(file) && rows[1].Type == "TXT 파일", "file metadata and same icon format");
+        && rows[1].ModifiedDate == File.GetLastWriteTime(file) && rows[1].Type == "TXT", "file metadata uses extension only and same icon format");
+    foreach (var (name, expected) in new[] { ("photo.jPg", "JPG"), ("document.pdf", "PDF"), ("archive.tar.gz", "GZ"), ("README", "파일") })
+    {
+        var typedPath = Path.Combine(directory, name);
+        File.WriteAllText(typedPath, "fixture");
+        Require(FileSystemEntry.FromPath(typedPath).Type == expected
+            && new FavoriteDetailsRow(new FavoriteItem(typedPath, false)).Type == expected,
+            "folder/search/favorite rows share extension-only type: " + name);
+    }
     Require(rows[2].ModifiedDate is null && rows[2].Size is null && rows[2].SizeDisplay == "" && rows[2].Type == "(경로 없음)", "missing favorite row data");
     Console.WriteLine("PASS (no windows): effective modes, explicit/repeated global apply, shared settings isolation, JSON compatibility/omission, empty-home condition, favorite metadata/order/missing paths.");
 }

@@ -64,14 +64,20 @@
             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
             <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
                 <TextBlock Text="변경 즉시 반영" Foreground="#FF3B4C60" /><TextBlock Text="취소하면 이전 설정으로 돌아갑니다." FontSize="11" Style="{StaticResource SettingsHint}" Margin="0,3,0,0" />
-                <TextBlock x:Name="ValidationMessage" Foreground="#FFB64E3B" TextWrapping="Wrap" Margin="0,3,0,0" />
+                <TextBlock x:Name="ValidationMessage" Foreground="#FFB64E3B" TextWrapping="Wrap" Margin="0,3,0,0">
+                    <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers>
+                        <Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed" /></Trigger>
+                    </Style.Triggers></Style></TextBlock.Style>
+                </TextBlock>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <Button x:Name="CancelButton" Content="취소" MinWidth="64" Margin="0,0,6,0" IsCancel="True" Click="CancelButton_OnClick" />
                 <Button x:Name="CloseButton" Content="닫기" Style="{StaticResource SettingsPrimaryButton}" MinWidth="64" IsDefault="True" Click="CloseButton_OnClick" />
             </StackPanel>
         </Grid></Border>
-        <TextBlock x:Name="CopyrightVersion" Grid.Row="3" FontSize="11" Foreground="#FF68717C"
-                   HorizontalAlignment="Center" Margin="8,6,8,7" IsHitTestVisible="False" />
+        <Border x:Name="CopyrightFooter" Grid.Row="3" Height="{DynamicResource SettingsFooterHeight}" Background="#FF243447">
+            <TextBlock x:Name="CopyrightVersion" FontSize="11" Foreground="White" Opacity="0.85"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,0" IsHitTestVisible="False" />
+        </Border>
     </Grid></Border>
 </Window>

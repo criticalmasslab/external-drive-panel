@@ -132,7 +132,7 @@
             </Grid>
             </Border>
 
-            <Border x:Name="AddressBox" Grid.Row="3" Height="32" Margin="6,3,6,5" Padding="7,3" BorderBrush="#FFBFC5CC"
+            <Border x:Name="AddressBox" Grid.Row="3" Height="{DynamicResource ChromeButtonHeight}" Margin="6,3,6,5" Padding="7,0" BorderBrush="#FFBFC5CC"
                     BorderThickness="1" CornerRadius="3" Background="White">
                 <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" VerticalContentAlignment="Center"
                               PreviewMouseWheel="AddressScroll_OnMouseWheel">
@@ -199,15 +199,18 @@
                           FocusVisualStyle="{x:Null}"
                           SelectionMode="Extended" SelectionUnit="FullRow" VirtualizingPanel.ScrollUnit="Pixel"
                           IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
-                          CanUserReorderColumns="False" GridLinesVisibility="Horizontal"
+                          CanUserReorderColumns="False" GridLinesVisibility="None" BorderThickness="0"
+                          RowBackground="White" AlternatingRowBackground="#FFF1F4F8" AlternationCount="2"
                           MouseDoubleClick="Items_OnMouseDoubleClick" Sorting="DetailsGrid_OnSorting"
                           SelectionChanged="Items_OnSelectionChanged">
                     <DataGrid.Resources>
                         <Style TargetType="DataGridRow">
                             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                            <Setter Property="BorderThickness" Value="0" />
                         </Style>
                         <Style TargetType="DataGridCell">
                             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                            <Setter Property="BorderThickness" Value="0" />
                         </Style>
                     </DataGrid.Resources>
                     <DataGrid.Columns>

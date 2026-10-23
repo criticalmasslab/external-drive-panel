@@ -102,14 +102,19 @@ internal static class Program
                         }
                         ((Button)panel.FindName("HomeButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                         await panel.Dispatcher.InvokeAsync(() => panel.UpdateLayout(), DispatcherPriority.ApplicationIdle);
-                        Require(Bounds(panel, "AddressBox").Height == addressBounds.Height && ((Border)panel.FindName("AddressBox")).Height == 32,
-                            "favorites return retains the same fixed address height");
+                        Require(Bounds(panel, "AddressBox").Height == addressBounds.Height
+                            && Math.Abs(addressBounds.Height - Bounds(panel, "SearchBoxBorder").Height) < .1,
+                            "address and search boxes share the same fixed height, including favorites return");
                         if (monitorIndex == 0 && width == 480)
                         {
                             var image = new RenderTargetBitmap((int)Math.Round(panel.ActualWidth * dpi.DpiScaleX), (int)Math.Round(panel.ActualHeight * dpi.DpiScaleY), 96 * dpi.DpiScaleX, 96 * dpi.DpiScaleY, PixelFormats.Pbgra32);
                             image.Render(panel);
                             var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(image));
                             using var stream = File.Create(Path.Combine(AppContext.BaseDirectory, "chrome-preview.png")); encoder.Save(stream);
+                            var headerImage = new RenderTargetBitmap((int)Math.Round(panel.ActualWidth * dpi.DpiScaleX), 180, 96 * dpi.DpiScaleX, 96 * dpi.DpiScaleY, PixelFormats.Pbgra32);
+                            headerImage.Render(panel);
+                            var headerEncoder = new PngBitmapEncoder(); headerEncoder.Frames.Add(BitmapFrame.Create(headerImage));
+                            using var headerStream = File.Create(Path.Combine(AppContext.BaseDirectory, "address-search-preview.png")); headerEncoder.Save(headerStream);
                         }
                         Console.WriteLine($"PASS monitor {monitorIndex}, DPI {dpi.DpiScaleY}, width {width}px: 42px rows, 34px buttons, vector icons and aligned right/vertical insets.");
                     }

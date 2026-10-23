@@ -71,6 +71,18 @@ internal static class Program
         Require(grid.Visibility == Visibility.Visible && !grid.CanUserSortColumns && grid.Items.Count == 2, "favorites use the shared details grid without sorting and prune confirmed missing paths");
         Require(grid.Items.Cast<FavoriteDetailsRow>().Select(row => row.Name).SequenceEqual(new[] { "Zeta", "Alpha" }), "favorite insertion order");
         Require(new FavoriteDetailsRow(new FavoriteItem(Path.Combine(root, "Missing"), true)).Type == "(경로 없음)", "metadata safely handles a path disappearing mid-read");
+        Require(grid.GridLinesVisibility == DataGridGridLinesVisibility.None && grid.BorderThickness == new Thickness(0)
+            && grid.AlternationCount == 2 && ((SolidColorBrush)grid.RowBackground).Color == Colors.White
+            && ((SolidColorBrush)grid.AlternatingRowBackground).Color == Color.FromRgb(241, 244, 248),
+            "shared details view uses borderless alternating light rows");
+        for (var index = 0; index < 2; index++)
+        {
+            var stripeRow = (DataGridRow)grid.ItemContainerGenerator.ContainerFromIndex(index);
+            Require(stripeRow.BorderThickness == new Thickness(0) && ItemsControl.GetAlternationIndex(stripeRow) == index,
+                "realized rows alternate without row borders");
+            var cell = Descendants(stripeRow).OfType<DataGridCell>().First();
+            Require(cell.BorderThickness == new Thickness(0), "realized cells do not draw focus or selection borders");
+        }
         SavePreview(first);
         var menus = Field<ItemContextMenuBuilder>(first, "_itemMenus");
         menus.Populate(grid.ContextMenu, ItemMenuTarget.FromItem(grid.Items[0])!);

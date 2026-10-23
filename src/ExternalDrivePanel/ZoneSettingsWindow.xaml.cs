@@ -56,6 +56,7 @@ public partial class ZoneSettingsWindow : Window
     {
         HeaderChromeMetrics.Apply(this, dpi);
         Resources["SettingsHeaderHeight"] = LayoutCalculator.TopBarHeight / dpi.DpiScaleY;
+        Resources["SettingsFooterHeight"] = 28 / dpi.DpiScaleY;
     }
     protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
     {

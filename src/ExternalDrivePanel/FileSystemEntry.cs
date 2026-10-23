@@ -51,7 +51,7 @@ public sealed class FileSystemEntry : INotifyPropertyChanged
     private static string GetFileType(string name)
     {
         var extension = Path.GetExtension(name);
-        return string.IsNullOrWhiteSpace(extension) ? "파일" : $"{extension.TrimStart('.').ToUpperInvariant()} 파일";
+        return string.IsNullOrWhiteSpace(extension) ? "파일" : extension.TrimStart('.').ToUpperInvariant();
     }
 
     private static string FormatSize(long bytes)

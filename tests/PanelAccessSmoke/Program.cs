@@ -84,11 +84,14 @@ internal static class Program
             var hover = button.Template.Triggers.OfType<Trigger>().Single(trigger => trigger.Property == UIElement.IsMouseOverProperty);
             var setter = hover.Setters.OfType<Setter>().Single();
             Require(setter.Property == UIElement.RenderTransformProperty && setter.TargetName == "IconPresenter"
-                && setter.Value is ScaleTransform { ScaleX: 1.08, ScaleY: 1.08 }, "hover only scales the icon, without theme hover chrome");
+                && setter.Value is ScaleTransform { ScaleX: 1.2, ScaleY: 1.2 }, "hover enlarges the icon by twenty percent, without theme hover chrome");
             var presenter = (ContentPresenter)button.Template.FindName("IconPresenter", button);
             var restingSize = button.RenderSize;
+            var normalSnapshot = SaveHelper(helper, "reveal-normal.png");
             presenter.RenderTransform = (ScaleTransform)setter.Value;
             helper.UpdateLayout();
+            var hoverSnapshot = SaveHelper(helper, "reveal-hover.png");
+            SaveHoverComparison(normalSnapshot, hoverSnapshot);
             Require(button.RenderSize == restingSize && button.FocusVisualStyle is null, "hover enlargement keeps button layout and hit target unchanged");
             presenter.ClearValue(UIElement.RenderTransformProperty);
             Require(helper.Topmost && !helper.ShowInTaskbar && !helper.ShowActivated && cover.IsActive, "helper stays accessible without stealing focus");
@@ -111,6 +114,34 @@ internal static class Program
     {
         var window = new Window { Title = title, WindowStyle = WindowStyle.None, ResizeMode = ResizeMode.NoResize, Width = 300, Height = 220, Topmost = true, Background = Brushes.SlateGray };
         window.Show(); return window;
+    }
+    private static BitmapSource SaveHelper(Window window, string fileName)
+    {
+        var dpi = VisualTreeHelper.GetDpi(window);
+        var bitmap = new RenderTargetBitmap((int)Math.Round(window.ActualWidth * dpi.DpiScaleX), (int)Math.Round(window.ActualHeight * dpi.DpiScaleY),
+            96 * dpi.DpiScaleX, 96 * dpi.DpiScaleY, PixelFormats.Pbgra32);
+        bitmap.Render(window);
+        var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(bitmap));
+        using var output = System.IO.File.Create(System.IO.Path.Combine(AppContext.BaseDirectory, fileName)); png.Save(output);
+        return bitmap;
+    }
+    private static void SaveHoverComparison(BitmapSource normal, BitmapSource hover)
+    {
+        // Two-times magnification of the real 44px WPF renders for visual review.
+        var visual = new DrawingVisual();
+        using (var draw = visual.RenderOpen())
+        {
+            draw.DrawRectangle(Brushes.WhiteSmoke, null, new Rect(0, 0, 244, 128));
+            void Label(string text, double x) => draw.DrawText(new FormattedText(text,
+                System.Globalization.CultureInfo.GetCultureInfo("ko-KR"), FlowDirection.LeftToRight,
+                new Typeface("Malgun Gothic"), 12, Brushes.Black, 1), new Point(x, 6));
+            Label("기본", 12); Label("호버 +20%", 132);
+            draw.DrawImage(normal, new Rect(12, 28, 88, 88));
+            draw.DrawImage(hover, new Rect(132, 28, 88, 88));
+        }
+        var bitmap = new RenderTargetBitmap(244, 128, 96, 96, PixelFormats.Pbgra32); bitmap.Render(visual);
+        var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(bitmap));
+        using var output = System.IO.File.Create(System.IO.Path.Combine(AppContext.BaseDirectory, "reveal-comparison.png")); png.Save(output);
     }
     private static void Place(Window window, LayoutRect bounds) => SetWindowPos(new WindowInteropHelper(window).Handle, new nint(-1), (int)bounds.X, (int)bounds.Y, (int)bounds.Width, (int)bounds.Height, 0x10);
     private static void Require(bool ok, string message) { if (!ok) throw new Exception(message); }

@@ -10,7 +10,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>ExternalDrivePanel</AssemblyName>
     <RootNamespace>ExternalDrivePanel</RootNamespace>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <Product>External Drive Panel</Product>
     <Authors>criticalmasslab</Authors>
     <Description>외장하드 파일과 즐겨찾기를 관리하는 Windows 데스크톱 패널</Description>
