@@ -19,7 +19,7 @@ internal static class Program
         {
             var directory = Path.Combine(Path.GetTempPath(), "ExternalDeskPanel-Menu-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
-            try { await Test(directory); }
+            try { await Test(directory, !args.Contains("--no-clipboard")); }
             catch (Exception ex) { Console.Error.WriteLine(ex); result = 1; }
             finally { app.Shutdown(); Directory.Delete(directory, true); }
         }));
@@ -49,7 +49,7 @@ internal static class Program
         return 0;
     }
 
-    private static async Task Test(string directory)
+    private static async Task Test(string directory, bool testClipboard)
     {
         var folder = Directory.CreateDirectory(Path.Combine(directory, "folder")).FullName;
         var file = Path.Combine(directory, "file.txt");
@@ -69,7 +69,7 @@ internal static class Program
         foreach (var details in new[] { false, true })
         {
             Call(panel, "ShowFavorites", true);
-            Click(panel, details ? "DetailsViewButton" : "IconViewButton");
+            SetViewMode(panel, details);
             Selector list = details ? grid : favoriteList;
             list.SelectedIndex = 0;
             list.UpdateLayout();
@@ -80,7 +80,7 @@ internal static class Program
             menus.Populate(list.ContextMenu, ItemMenuTarget.FromItem(list.SelectedItem)!);
             Require(Menu(list, ItemMenuCommand.ToggleFavorite).Header.Equals("즐겨찾기에서 제거")
                 && Menu(list, ItemMenuCommand.OpenWith).IsEnabled && Menu(list, ItemMenuCommand.EditText).IsEnabled, "shared home file menu");
-            var ghost = ItemMenuTarget.FromItem(list.Items[2])!;
+            var ghost = new ItemMenuTarget(Path.Combine(directory, "missing.txt"), false);
             menus.Populate(list.ContextMenu, ghost);
             Require(list.ContextMenu.Items.OfType<MenuItem>().Where(item => item.IsEnabled).Select(item => (ItemMenuCommand)item.Tag)
                 .Order().SequenceEqual(new[] { ItemMenuCommand.ToggleFavorite, ItemMenuCommand.CopyPath }.Order()), "missing favorite enables only remove/copy-path");
@@ -88,7 +88,7 @@ internal static class Program
         foreach (var details in new[] { false, true })
         {
             Call(panel, "NavigateTo", directory, true);
-            Click(panel, details ? "DetailsViewButton" : "IconViewButton");
+            SetViewMode(panel, details);
             Selector list = details ? grid : icons;
             list.UpdateLayout();
             var index = list.Items.Cast<FileSystemEntry>().ToList().FindIndex(item => item.FullPath == file);
@@ -100,7 +100,7 @@ internal static class Program
             menus.Populate(list.ContextMenu, new(file, false));
             Require(Menu(list, ItemMenuCommand.ToggleFavorite).Header.Equals("즐겨찾기에 추가"), "removal reflected on rebuild");
             await menus.ExecuteAsync(ItemMenuCommand.ToggleFavorite, new(file, false));
-            Require(favorites.Items.Count == 3, "add preserves original favorite behavior");
+            Require(favorites.Items.Count == 2, "add preserves original favorite behavior without deleted paths");
         }
         Require(ItemContextMenuBuilder.Shortcut(Key.Enter, Key.None, ModifierKeys.None) == ItemMenuCommand.Open
             && ItemContextMenuBuilder.Shortcut(Key.System, Key.Enter, ModifierKeys.Alt) == ItemMenuCommand.Properties
@@ -112,8 +112,11 @@ internal static class Program
         var key = new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(panel), 0, Key.Enter) { RoutedEvent = Keyboard.PreviewKeyDownEvent };
         grid.RaiseEvent(key);
         Require(key.Handled && Field<string>(panel, "_currentPath") == folder, "Enter preview suppresses DataGrid default and opens inside panel");
-        await menus.ExecuteAsync(ItemMenuCommand.CopyPath, new(file, false));
-        Require(Clipboard.GetText() == ShellActions.QuotedPath(file), "clipboard contains quoted absolute path");
+        if (testClipboard)
+        {
+            await menus.ExecuteAsync(ItemMenuCommand.CopyPath, new(file, false));
+            Require(Clipboard.GetText() == ShellActions.QuotedPath(file), "clipboard contains quoted absolute path");
+        }
         Call(panel, "NavigateTo", directory, true);
         var notices = new List<(string Message, bool Error)>();
         panel.NotificationRequested += (message, error) => notices.Add((message, error));
@@ -125,8 +128,58 @@ internal static class Program
         using (var handle = new FileStream(locked, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
             await menus.ExecuteAsync(ItemMenuCommand.Zip, new(locked, false));
         Require(notices.Last().Error && notices.Last().Message.Contains("압축 실패") && !File.Exists(Path.Combine(directory, "locked.zip")), "ZIP failure notification and cleanup");
+        var pair = new ItemMenuTarget[] { new(folder, true), new(file, false) };
+        foreach (var home in new[] { true, false })
+        foreach (var details in new[] { false, true })
+        {
+            if (home) Call(panel, "ShowFavorites", true); else Call(panel, "NavigateTo", directory, true);
+            SetViewMode(panel, details);
+            Selector list = details ? grid : home ? favoriteList : icons;
+            list.UpdateLayout();
+            var selected = ItemContextMenuBuilder.SelectedItems(list);
+            selected.Clear();
+            foreach (var item in list.Items.Cast<object>().Where(item => pair.Any(target => target.Path == ItemMenuTarget.FromItem(item)?.Path))) selected.Add(item);
+            Require(selected.Count == 2, "all four views allow multiple full-item selections");
+            var selectedIndex = list.Items.IndexOf(selected[1]);
+            RightClick((UIElement)list.ItemContainerGenerator.ContainerFromIndex(selectedIndex));
+            Require(selected.Count == 2, "right-click on selected item preserves all selections");
+            menus.PopulateSelection(list.ContextMenu, ItemContextMenuBuilder.SelectedTargets(list));
+            Require(!list.ContextMenu.Items.OfType<MenuItem>().Any(item => Equals(item.Tag, ItemMenuCommand.OpenWith) || Equals(item.Tag, ItemMenuCommand.Explore)), "mixed selection shows only common actions");
+            SetViewMode(panel, !details);
+            Selector changed = details ? home ? favoriteList : icons : grid;
+            Require(ItemContextMenuBuilder.SelectedTargets(changed).Count == 2, "view switch preserves multiple selection");
+        }
+        if (testClipboard)
+        {
+            await menus.ExecuteSelectionAsync(ItemMenuCommand.CopyPath, pair);
+            Require(Clipboard.GetText() == string.Join(Environment.NewLine, pair.Select(target => ShellActions.QuotedPath(target.Path))), "batch path copy preserves every quoted path");
+        }
+        await menus.ExecuteSelectionAsync(ItemMenuCommand.ToggleFavorite, pair);
+        Require(!favorites.Items.Any(item => pair.Any(target => target.Path == item.Path)), "batch remove applies to every favorite");
+        // One already-favorite plus one new item must add all, not toggle existing ones off.
+        favorites.Add(folder, true);
+        await menus.ExecuteSelectionAsync(ItemMenuCommand.ToggleFavorite, pair);
+        Require(favorites.Items.Count(item => pair.Any(target => target.Path == item.Path)) == 2, "mixed favorite batch adds without removing existing favorites");
+        Call(panel, "NavigateTo", directory, true);
+        SetViewMode(panel, true);
+        grid.SelectedItems.Clear();
+        foreach (var item in grid.Items.Cast<FileSystemEntry>().Where(item => pair.Any(target => target.Path == item.FullPath))) grid.SelectedItems.Add(item);
+        favorites.Remove(favorites.Items.Single(item => item.Path == file));
+        favorites.Remove(favorites.Items.Single(item => item.Path == folder));
+        Control<Button>(panel, "AddFavoritesButton").RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+        Require(favorites.Items.Count(item => pair.Any(target => target.Path == item.Path)) == 2, "toolbar adds all selected items");
+        grid.SelectedItems.Clear();
+        Control<Button>(panel, "AddFavoritesButton").RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+        Require(favorites.Items.Any(item => item.Path == Path.TrimEndingDirectorySeparator(directory)), "toolbar without selection adds current folder");
+        await menus.ExecuteSelectionAsync(ItemMenuCommand.Zip, pair);
+        Require(File.Exists(Path.Combine(directory, "folder.zip")) && File.Exists(Path.Combine(directory, "file (2).zip")), "batch ZIP processes every selected file and folder");
+        var firstSet = new object[] { "a", "b" };
+        Require(SelectionPolicy.Combine(firstSet, new object[] { "b", "c" }, ModifierKeys.None).SetEquals(new object[] { "b", "c" })
+            && SelectionPolicy.Combine(firstSet, new object[] { "b", "c" }, ModifierKeys.Control).SetEquals(new object[] { "a", "c" })
+            && SelectionPolicy.Combine(firstSet, new object[] { "b", "c" }, ModifierKeys.Shift).SetEquals(new object[] { "a", "b", "c" }), "rectangle replace/control toggle/shift extend policy");
         panel.Close();
-        Console.WriteLine("PASS WPF: common menus across all four views, right-click selection/address, missing favorites, add/remove, Enter/default handling, system-key shortcut mapping, ZIP notifications/refresh/failure.");
+        if (!testClipboard) Console.WriteLine("NOTE clipboard mutation assertions skipped; existing clipboard left untouched.");
+        Console.WriteLine("PASS WPF: four-view multi-selection/right-click preservation/mode switch, common batch menus, all-item favorite add/remove/toolbar/ZIP, rectangle modifiers, plus single-item regressions. Clipboard checks: " + testClipboard);
     }
 
     private static void RightClick(UIElement element) => element.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Right)
@@ -134,7 +187,11 @@ internal static class Program
     private static MenuItem Menu(Selector list, ItemMenuCommand command) => list.ContextMenu.Items.OfType<MenuItem>().Single(item => Equals(item.Tag, command));
     private static string Address(DrivePanelWindow panel) => Control<StackPanel>(panel, "BreadcrumbPanel").Children.OfType<TextBlock>().Single().Text;
     private static T Control<T>(FrameworkElement window, string name) => (T)window.FindName(name);
-    private static void Click(FrameworkElement window, string name) => Control<ToggleButton>(window, name).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+    private static void SetViewMode(DrivePanelWindow panel, bool details)
+    {
+        if ((panel.EffectiveViewMode == GlobalViewMode.Details) != details)
+            Control<Button>(panel, "ViewModeButton").RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+    }
     private static T Field<T>(object instance, string name) => (T)instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(instance)!;
     private static void Call(object instance, string name, params object[] args) => instance.GetType().GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(instance, args);
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }

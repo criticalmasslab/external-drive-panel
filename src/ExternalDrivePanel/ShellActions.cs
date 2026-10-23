@@ -19,11 +19,13 @@ public static class ShellActions
     }
 
     public static string QuotedPath(string path) => $"\"{System.IO.Path.GetFullPath(path)}\"";
-    public static async Task CopyPathAsync(string path)
+    public static Task CopyPathAsync(string path) => CopyPathsAsync([path]);
+    public static async Task CopyPathsAsync(IEnumerable<string> paths)
     {
+        var text = string.Join(Environment.NewLine, paths.Select(QuotedPath));
         for (var attempt = 0; attempt < 5; attempt++)
         {
-            try { Clipboard.SetText(QuotedPath(path)); return; }
+            try { Clipboard.SetText(text); return; }
             catch (ExternalException ex)
             {
                 Debug.WriteLine($"Clipboard: {ex}");
@@ -54,6 +56,12 @@ public static class ShellActions
 
     public static Task OpenWithAsync(IntPtr owner, string path) => InvokeVerbAsync(owner, path, "openas", false);
     public static Task ShowPropertiesAsync(IntPtr owner, string path) => InvokeVerbAsync(owner, path, "properties", true);
+
+    public static async Task RunStaAsync(Action action)
+    {
+        var dispatcher = await ShellDispatcher.Value;
+        await dispatcher.InvokeAsync(action);
+    }
 
     private static async Task InvokeVerbAsync(IntPtr owner, string path, string verb, bool invokeIdList)
     {

@@ -113,6 +113,13 @@ internal static class Program
                 var view = Field<GlobalViewSettings>(app, "_viewSettings");
                 var zone = Field<ZoneSettings>(app, "_zoneSettings");
                 var panels = Field<Dictionary<uint, DrivePanelWindow>>(app, "_panels");
+                var ending = (SessionEndingCancelEventArgs)Activator.CreateInstance(typeof(SessionEndingCancelEventArgs),
+                    BindingFlags.NonPublic | BindingFlags.Instance, null, [ReasonSessionEnding.Logoff], null)!;
+                using (FileOperationRegistry.Begin([fixtureRoot]))
+                {
+                    Call(app, "App_OnSessionEnding", app, ending);
+                    Require(ending.Cancel, "normal OS logout is deferred while a file writer is active");
+                }
                 if (phase == "write")
                 {
                     var top = Field<TopBarWindow>(app, "_topBar");
@@ -120,7 +127,7 @@ internal static class Program
                     {
                         var dialog = app.Windows.OfType<ZoneSettingsWindow>().Single();
                         ((TextBox)dialog.FindName("MarginAllText")).Text = "17";
-                        ((Button)dialog.FindName("SaveButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                        ((Button)dialog.FindName("CloseButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                     }));
                     Call(app, "TopBar_OnSettingsRequested", top, EventArgs.Empty);
                     view.IncreaseIconSize();
@@ -128,11 +135,13 @@ internal static class Program
                     view.ToggleHiddenItems();
                     Require(!File.Exists(path), "changes debounce before disk write");
                     await Task.Delay(700);
+                    await store.FlushAsync();
                     Require(store.Load().Zone.MarginAll == 17 && store.Load().GlobalView.IconSize == 28, "debounced zone/view save");
                     if (panels.Count > 0)
                     {
                         var pair = panels.First();
                         var missing = Path.Combine(pair.Value.RootPath, "__ExternalDeskPanel_Missing_Test__");
+                        Directory.CreateDirectory(missing); // Connected volumes now prune genuinely missing paths.
                         Favorites(pair.Value).Add(missing, true);
                         Call(pair.Value, "NavigateTo", fixtureRoot, true);
                         var grid = (DataGrid)pair.Value.FindName("DetailsGrid");

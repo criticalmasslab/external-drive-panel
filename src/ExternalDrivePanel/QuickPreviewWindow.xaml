@@ -1,0 +1,71 @@
+<Window x:Class="ExternalDrivePanel.QuickPreviewWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:ExternalDrivePanel"
+        Title="파일 미리보기" Width="720" Height="600" WindowStyle="None" WindowStartupLocation="Manual"
+        ResizeMode="CanResize" ShowInTaskbar="True" Background="#FFF7F7F7" Foreground="#FF243447"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+    <WindowChrome.WindowChrome><WindowChrome CaptionHeight="0" ResizeBorderThickness="5" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False" /></WindowChrome.WindowChrome>
+    <Window.Resources><ResourceDictionary Source="SettingsChrome.xaml" /></Window.Resources>
+    <Border BorderBrush="#FF607084" BorderThickness="1"><Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+        <Border Background="#FF243447" Height="{DynamicResource PreviewHeaderHeight}" Padding="{DynamicResource ChromeHeaderPadding}" MouseLeftButtonDown="Header_OnMouseLeftButtonDown">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock x:Name="FileTitle" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="PreviewMinimizeButton" Style="{StaticResource ChromeButton}" ToolTip="최소화" AutomationProperties.Name="최소화" Click="Minimize_OnClick"><local:SymbolIcon Kind="Minimize" /></Button>
+                    <Button x:Name="PreviewMaximizeButton" Style="{StaticResource ChromeButton}" ToolTip="최대화" AutomationProperties.Name="최대화" Click="Maximize_OnClick"><local:SymbolIcon x:Name="PreviewMaximizeIcon" Kind="Maximize" /></Button>
+                    <Button x:Name="PreviewCloseButton" Style="{StaticResource ChromeButton}" ToolTip="미리보기 닫기 (Esc / Space)" AutomationProperties.Name="닫기" Click="Close_OnClick"><local:SymbolIcon Kind="Close" /></Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <Border Grid.Row="1" Background="#FFF4F5F7" BorderBrush="#FFD0D5DC" BorderThickness="0,0,0,1" Padding="8,4">
+            <DockPanel LastChildFill="False">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                    <Button x:Name="PreviousFileButton" ToolTip="이전 항목 (↑)" Click="PreviousFile_OnClick"><local:SymbolIcon Kind="Back" Width="16" Height="16" /></Button>
+                    <Button x:Name="NextFileButton" ToolTip="다음 항목 (↓)" Click="NextFile_OnClick"><local:SymbolIcon Kind="Forward" Width="16" Height="16" /></Button>
+                    <TextBlock x:Name="FilePosition" VerticalAlignment="Center" Margin="6,0,10,0" />
+                </StackPanel>
+                <StackPanel x:Name="PageControls" Orientation="Horizontal" DockPanel.Dock="Left" Visibility="Collapsed">
+                    <Button x:Name="PreviousPageButton" ToolTip="이전 페이지 (←)" Click="PreviousPage_OnClick"><local:SymbolIcon Kind="Back" Width="16" Height="16" /></Button>
+                    <TextBlock x:Name="PagePosition" VerticalAlignment="Center" Margin="4,0" />
+                    <Button x:Name="NextPageButton" ToolTip="다음 페이지 (→)" Click="NextPage_OnClick"><local:SymbolIcon Kind="Forward" Width="16" Height="16" /></Button>
+                </StackPanel>
+                <StackPanel x:Name="ZoomControls" Orientation="Horizontal" DockPanel.Dock="Right" Visibility="Collapsed">
+                    <Button x:Name="ZoomOutButton" ToolTip="축소 (-)" Click="ZoomOut_OnClick"><local:SymbolIcon Kind="Minus" Width="16" Height="16" /></Button>
+                    <Button x:Name="FitButton" Content="맞춤" ToolTip="창에 맞추기 (0)" Click="Fit_OnClick" />
+                    <Button x:Name="ZoomInButton" ToolTip="확대 (+)" Click="ZoomIn_OnClick"><local:SymbolIcon Kind="Plus" Width="16" Height="16" /></Button>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        <Grid Grid.Row="2" x:Name="PreviewBody" Background="#FFE8EBEF">
+            <ScrollViewer x:Name="ImageScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Visibility="Collapsed" Padding="12">
+                <Grid HorizontalAlignment="Center" VerticalAlignment="Center"><Image x:Name="PreviewImage" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" /></Grid>
+            </ScrollViewer>
+            <TextBox x:Name="TextPreview" Visibility="Collapsed" IsReadOnly="True" FontFamily="Consolas" FontSize="13" BorderThickness="0" Padding="12" VerticalContentAlignment="Top"
+                     TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+            <Grid x:Name="MediaPreview" Visibility="Collapsed" Background="#FF182330">
+                <Grid.RowDefinitions><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                <Grid x:Name="MediaHost" />
+                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="8">
+                    <Button x:Name="PlayButton" Content="재생" Click="Play_OnClick" Background="White" Margin="0,0,8,0" />
+                    <TextBlock x:Name="MediaPosition" Foreground="White" VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+            <Border x:Name="InformationPanel" Background="#FFF7F7F7" Padding="24" Visibility="Collapsed">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="InformationTitle" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,12" />
+                    <TextBlock x:Name="InformationText" TextWrapping="Wrap" Foreground="#FF68717C" />
+                </StackPanel>
+            </Border>
+            <TextBlock x:Name="LoadingMessage" Text="미리보기를 불러오는 중…" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#FF3B4C60" IsHitTestVisible="False" />
+        </Grid>
+        <Border Grid.Row="3" Background="#FFF4F5F7" BorderBrush="#FFD0D5DC" BorderThickness="0,1,0,0" Padding="10,6">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center" Margin="0,0,8,0">
+                    <TextBlock x:Name="PreviewStatus" TextTrimming="CharacterEllipsis" Foreground="#FF68717C" />
+                    <TextBlock x:Name="FilePathText" TextTrimming="CharacterEllipsis" FontSize="11" Foreground="#FF68717C" />
+                </StackPanel>
+                <Button x:Name="OpenInAppButton" Grid.Column="1" Content="기본 앱으로 열기" ToolTip="이 파일을 연결된 프로그램으로 열기" Click="OpenInApp_OnClick" />
+            </Grid>
+        </Border>
+    </Grid></Border>
+</Window>

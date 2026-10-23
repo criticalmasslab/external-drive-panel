@@ -51,6 +51,8 @@ public sealed class DriveCoordinator
         foreach (var drive in connected.Values.Where(drive => IsRegistered(drive.Serial)))
         {
             var saved = _config.Drives[Key(drive.Serial)];
+            var preference = VolumeLabelService.MatchingPreference(drive.Label, saved.PreferredLabel);
+            if (saved.PreferredLabel != preference) { saved.PreferredLabel = preference; changed = true; }
             if (saved.LastKnownLabel != drive.Label) { saved.LastKnownLabel = drive.Label; changed = true; }
         }
         var notices = new List<DriveNotice>();
@@ -111,9 +113,13 @@ public sealed class DriveCoordinator
 
     public string DisplayName(string key)
     {
+        _config.Drives.TryGetValue(key, out var saved);
         if (_connected.TryGetValue(uint.Parse(key, CultureInfo.InvariantCulture), out var drive))
-            return drive.Root.TrimEnd('\\', '/') + (string.IsNullOrWhiteSpace(drive.Label) ? "" : " " + drive.Label);
-        var label = _config.Drives.TryGetValue(key, out var saved) ? saved.LastKnownLabel : "";
+        {
+            var displayed = VolumeLabelService.MatchingPreference(drive.Label, saved?.PreferredLabel) ?? drive.Label;
+            return drive.Root.TrimEnd('\\', '/') + (string.IsNullOrWhiteSpace(displayed) ? "" : " " + displayed);
+        }
+        var label = saved?.PreferredLabel ?? saved?.LastKnownLabel ?? "";
         return "(연결 안 됨) " + (string.IsNullOrWhiteSpace(label) ? "외장하드" : label);
     }
 }

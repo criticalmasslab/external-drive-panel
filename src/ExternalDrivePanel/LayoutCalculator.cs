@@ -2,7 +2,7 @@ namespace ExternalDrivePanel;
 
 public sealed class LayoutCalculator
 {
-    public const double TopBarHeight = 32;
+    public const double TopBarHeight = 42;
 
     public LayoutRect CalculateCell(MonitorDescriptor monitor, ZoneSettings settings)
     {

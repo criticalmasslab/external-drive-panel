@@ -4,7 +4,9 @@ build/
 dist/
 *.spec
 icon.ico
+!src/ExternalDrivePanel/Assets/App.ico
 .venv/
 venv/
 bin/
 obj/
+tools/velopack/

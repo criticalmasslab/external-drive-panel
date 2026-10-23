@@ -18,6 +18,7 @@ public sealed class GlobalViewConfig
     public GlobalViewMode ViewMode { get; set; } = GlobalViewMode.Icon;
     public double IconSize { get; set; } = 24;
     public bool ShowHidden { get; set; }
+    public bool ShowPreviews { get; set; }
 }
 
 public sealed class DriveConfig
@@ -28,6 +29,8 @@ public sealed class DriveConfig
     public bool Registered { get; set; }
     public bool Hidden { get; set; }
     public string LastKnownLabel { get; set; } = string.Empty;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PreferredLabel { get; set; }
     public List<FavoriteConfig> Favorites { get; set; } = [];
     public string SortKey { get; set; } = nameof(FileSystemEntry.Name);
     public bool SortReverse { get; set; }

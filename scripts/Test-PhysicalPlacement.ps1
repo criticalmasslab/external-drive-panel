@@ -1,5 +1,7 @@
 param([Parameter(Mandatory = $true)][string]$ExePath)
 $ErrorActionPreference = 'Stop'
+# Legacy manual probe: requires the saved default primary/right-quarter layout.
+# For isolated automated coverage prefer scripts/Test-All.ps1 (PanelResizeSmoke).
 
 # Read native rectangles in the same physical-pixel coordinate space as the app.
 Add-Type -TypeDefinition @'
@@ -65,7 +67,7 @@ try {
             throw 'Window is not aligned to the rightmost quarter of the primary work area.'
         }
         if ($rect.Top -lt $work.Top -or $rect.Bottom -gt $work.Bottom) { throw 'Window extends outside the primary work area.' }
-        if ($rect.Top -eq $work.Top -and $rect.Bottom -eq ($work.Top + 32)) { $topBarFound = $true }
+        if ($rect.Top -eq $work.Top -and $rect.Bottom -eq ($work.Top + 42)) { $topBarFound = $true }
     }
     if (!$topBarFound) { throw 'Top bar rectangle not found.' }
     Write-Output "PASS: $($windows.Count) visible windows in the primary rightmost quarter; $($monitors.Count) monitors connected."

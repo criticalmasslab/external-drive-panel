@@ -11,6 +11,8 @@ public sealed class FileCopyService
     public CopyReport Copy(IEnumerable<string> sources, string destination,
         Func<string, string, CopyConflictChoice> resolveConflict, CancellationToken cancellationToken)
     {
+        var sourcePaths = sources.ToArray();
+        using var operation = FileOperationRegistry.Begin(sourcePaths.Append(destination));
         var copied = 0;
         var skipped = 0;
         var cancelled = false;
@@ -18,7 +20,7 @@ public sealed class FileCopyService
         {
             RejectLinks(destination);
             if (!Directory.Exists(destination)) throw new DirectoryNotFoundException(destination);
-            foreach (var source in sources)
+            foreach (var source in sourcePaths)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(source));

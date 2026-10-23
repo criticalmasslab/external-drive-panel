@@ -3,6 +3,7 @@ namespace ExternalDrivePanel;
 public sealed class GlobalViewSettings
 {
     public bool ShowHiddenItems { get; private set; }
+    public bool ShowPreviews { get; private set; }
     public double IconSize { get; private set; } = 24;
     public GlobalViewMode ViewMode { get; private set; } = GlobalViewMode.Icon;
 
@@ -14,17 +15,24 @@ public sealed class GlobalViewSettings
         ViewMode = config.ViewMode;
         IconSize = config.IconSize;
         ShowHiddenItems = config.ShowHidden;
+        ShowPreviews = config.ShowPreviews;
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
     public GlobalViewConfig Capture() => new()
     {
-        ViewMode = ViewMode, IconSize = IconSize, ShowHidden = ShowHiddenItems
+        ViewMode = ViewMode, IconSize = IconSize, ShowHidden = ShowHiddenItems, ShowPreviews = ShowPreviews
     };
 
     public void ToggleHiddenItems()
     {
         ShowHiddenItems = !ShowHiddenItems;
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void TogglePreviews()
+    {
+        ShowPreviews = !ShowPreviews;
         Changed?.Invoke(this, EventArgs.Empty);
     }
 

@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Interop;
 
 namespace ExternalDrivePanel;
 
@@ -94,23 +95,35 @@ public sealed class DragDropService : IDisposable
     {
         e.Handled = true;
         e.Effects = DragDropEffects.None;
-        SetHighlight(null);
-        if (_busy || _disposed || (e.AllowedEffects & DragDropEffects.Copy) == 0) return;
+        if (_busy || _disposed) { SetHighlight(null); return; }
+        FrameworkElement? highlight = null;
         try
         {
             var paths = Paths(e.Data);
             if (paths.Length == 0) return;
             var hit = FindTarget(e.OriginalSource as DependencyObject);
+            if (PanelFileDragSource.Session(e.Data) is { } session)
+            {
+                var destination = PanelTransferPolicy.Destination(_root, _currentFolder(), hit.Target);
+                if (destination is null || !Directory.Exists(destination) || !FileCopyService.IsWithin(destination, _root)
+                    || paths.Any(path => Directory.Exists(path) && FileCopyService.IsWithin(destination, path))) return;
+                if (PanelTransferPolicy.ActionableSources(paths, destination).Length == 0) return;
+                e.Effects = PanelTransferPolicy.Effect(session.Root, _root, e.KeyStates, e.AllowedEffects);
+                if (e.Effects != DragDropEffects.None && hit.Target?.IsDirectory == true) highlight = hit.Container;
+                return;
+            }
+            if ((e.AllowedEffects & DragDropEffects.Copy) == 0) return;
             var local = paths.Any(path => FileCopyService.IsWithin(path, _root));
             var external = paths.Any(path => !FileCopyService.IsWithin(path, _root));
             var folder = hit.Target is { IsDirectory: true } target
                 && FileCopyService.IsWithin(target.Path, _root) && Directory.Exists(target.Path);
             // Accept blank-space drops so the user can receive the requested guidance.
             if (local || folder || hit.Target is null) e.Effects = DragDropEffects.Copy;
-            if (external && folder) SetHighlight(hit.Container);
+            if (external && folder) highlight = hit.Container;
         }
         catch (Exception ex) when (ex is IOException or ArgumentException or NotSupportedException
             or UnauthorizedAccessException or System.Runtime.InteropServices.COMException) { }
+        finally { SetHighlight(highlight); }
     }
 
     private void OnDragLeave(object sender, DragEventArgs e) => SetHighlight(null);
@@ -120,17 +133,50 @@ public sealed class DragDropService : IDisposable
         e.Handled = true;
         e.Effects = DragDropEffects.None;
         SetHighlight(null);
-        if (_busy || _disposed || (e.AllowedEffects & DragDropEffects.Copy) == 0) return;
+        if (_busy || _disposed) return;
         try
         {
             var paths = Paths(e.Data);
             var target = FindTarget(e.OriginalSource as DependencyObject).Target;
+            if (PanelFileDragSource.Session(e.Data) is { } session)
+            {
+                var effect = PanelTransferPolicy.Effect(session.Root, _root, e.KeyStates, e.AllowedEffects);
+                if (effect == DragDropEffects.None) return;
+                e.Effects = effect;
+                await ProcessPanelDropAsync(paths, target, effect == DragDropEffects.Move, session.RefreshSource);
+                return;
+            }
+            if ((e.AllowedEffects & DragDropEffects.Copy) == 0) return;
             e.Effects = DragDropEffects.Copy; // Never request a move from Explorer.
             await ProcessDropAsync(paths, target);
         }
         catch (Exception ex)
         {
             if (!_disposed) _dialogs.Inform($"드롭 처리에 실패했습니다.\n{ex.Message}");
+        }
+    }
+
+    public async Task ProcessPanelDropAsync(IEnumerable<string> paths, DropTarget? target, bool move, Action? refreshSource = null)
+    {
+        if (_busy || _disposed) return;
+        var destination = PanelTransferPolicy.Destination(_root, _currentFolder(), target);
+        if (destination is null || !Directory.Exists(destination) || !FileCopyService.IsWithin(destination, _root)) return;
+        var sources = PanelTransferPolicy.ActionableSources(paths, destination);
+        if (sources.Length == 0) return;
+        if (sources.Any(path => Directory.Exists(path) && FileCopyService.IsWithin(destination, path))) return;
+        _busy = true;
+        try
+        {
+            var owner = Window.GetWindow(_surface);
+            var handle = owner is null ? IntPtr.Zero : new WindowInteropHelper(owner).Handle;
+            await ShellFileOperations.PasteAsync(handle, new(sources, move), destination);
+        }
+        catch (Exception ex) { if (!_disposed) _dialogs.Inform($"{(move ? "이동" : "복사")}를 완료하지 못했습니다.\n{ex.Message}"); }
+        finally
+        {
+            _busy = false;
+            if (!_disposed) _refresh(destination);
+            refreshSource?.Invoke();
         }
     }
 
@@ -142,6 +188,7 @@ public sealed class DragDropService : IDisposable
         try
         {
             var external = new List<string>();
+            using (_favorites.BeginUpdate())
             foreach (var path in paths.Select(Path.GetFullPath).Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 if (FileCopyService.IsWithin(path, _root))
@@ -182,6 +229,7 @@ public sealed class DragDropService : IDisposable
 
     private void SetHighlight(FrameworkElement? item)
     {
+        if (ReferenceEquals(_highlight, item)) return;
         if (_highlight is not null) SetIsDropTarget(_highlight, false);
         _highlight = item;
         if (item is not null) SetIsDropTarget(item, true);

@@ -17,11 +17,14 @@ public sealed class ZipCompressionService
     {
         var key = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
         if (!_running.TryAdd(key, 0)) return null;
+        IDisposable operation;
+        try { operation = FileOperationRegistry.Begin([key]); }
+        catch { _running.TryRemove(key, out _); throw; }
         return Task.Run(() =>
         {
             try { return new ZipResult(_create(key, isDirectory), null); }
             catch (Exception ex) { return new ZipResult(null, ex.Message); }
-            finally { _running.TryRemove(key, out _); }
+            finally { _running.TryRemove(key, out _); operation.Dispose(); }
         });
     }
 

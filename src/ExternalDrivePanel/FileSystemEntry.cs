@@ -1,9 +1,17 @@
 using System.IO;
+using System.ComponentModel;
 
 namespace ExternalDrivePanel;
 
-public sealed class FileSystemEntry
+public sealed class FileSystemEntry : INotifyPropertyChanged
 {
+    private bool _isFavorite;
+    public bool IsFavorite
+    {
+        get => _isFavorite;
+        internal set { if (_isFavorite == value) return; _isFavorite = value; PropertyChanged?.Invoke(this, new(nameof(IsFavorite))); }
+    }
+    public event PropertyChangedEventHandler? PropertyChanged;
     private FileSystemEntry(string fullPath, string name, bool isDirectory, DateTime modifiedDate, long? size)
     {
         FullPath = fullPath;
@@ -14,6 +22,7 @@ public sealed class FileSystemEntry
     }
 
     public string FullPath { get; }
+    public string DirectoryPath => Path.GetDirectoryName(FullPath) ?? FullPath;
     public string Name { get; }
     public bool IsDirectory { get; }
     public DateTime ModifiedDate { get; }
@@ -34,6 +43,10 @@ public sealed class FileSystemEntry
         var file = new FileInfo(path);
         return new FileSystemEntry(path, file.Name, false, file.LastWriteTime, file.Length);
     }
+
+    public static FileSystemEntry FromInfo(FileSystemInfo info) => info is DirectoryInfo
+        ? new(info.FullName, info.Name, true, info.LastWriteTime, null)
+        : new(info.FullName, info.Name, false, info.LastWriteTime, ((FileInfo)info).Length);
 
     private static string GetFileType(string name)
     {

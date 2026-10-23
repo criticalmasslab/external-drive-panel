@@ -177,6 +177,9 @@ internal static class Program
 
     private static int AppTest(string path)
     {
+        var unexpectedSettings = 0;
+        EventManager.RegisterClassHandler(typeof(ZoneSettingsWindow), FrameworkElement.LoadedEvent,
+            new RoutedEventHandler((_, _) => unexpectedSettings++));
         var root = Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(path)!, "drive-a")).FullName + Path.DirectorySeparatorChar;
         var root2 = Directory.CreateDirectory(Path.Combine(Path.GetDirectoryName(path)!, "drive-b")).FullName + Path.DirectorySeparatorChar;
         var snapshot = new List<DriveSnapshot> { new(1, root, "First", DriveType.Removable), new(2, root2, "Second", DriveType.Removable) };
@@ -205,11 +208,13 @@ internal static class Program
             try
             {
                 Require(shown == 2, "two candidates shown once each");
+                Require(unexpectedSettings == 0 && !app.Windows.OfType<ZoneSettingsWindow>().Any(), "startup never creates or flashes zone settings");
                 var panels = Field<Dictionary<uint, DrivePanelWindow>>(app, "_panels");
                 var co = Field<DriveCoordinator>(app, "_coordinator");
                 var config = Field<AppConfig>(app, "_config");
                 Require(panels.Keys.SequenceEqual(new uint[] { 1 }) && !config.Drives.ContainsKey("2"), "only registered panel; skipped has no config entry");
                 var favorites = Field<FavoriteCollection>(panels[1], "_favorites");
+                Directory.CreateDirectory(Path.Combine(root, "missing-test"));
                 favorites.Add(Path.Combine(root, "missing-test"), true);
                 co.ToggleHidden("1"); Call(app, "RegistrationChanged");
                 Require(panels.Count == 0 && config.Drives["1"].Hidden && config.Drives["1"].Registered
@@ -230,6 +235,7 @@ internal static class Program
                 Require(panels.Count == 0 && config.Drives.Count == 2, "disconnect preserves registration");
                 co.ToggleHidden("2"); Call(app, "RegistrationChanged");
                 Call(app, "SaveConfig");
+                await Field<ConfigStore>(app, "_configStore").FlushAsync();
                 Require(new ConfigStore(path).Load().Drives["2"].Hidden, "offline hidden state persisted");
                 Console.WriteLine("PASS App: modal queue, nested polling, hidden lifecycle, unregister without resurrection, real tray order, offline persistence.");
             }

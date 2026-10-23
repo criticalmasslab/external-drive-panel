@@ -9,6 +9,8 @@ namespace ExternalDrivePanel;
 public sealed class ConfigStore
 {
     public string FilePath { get; }
+    private readonly object _saveLock = new();
+    private Task<bool> _pendingSave = Task.FromResult(true);
     private static readonly JsonSerializerOptions Options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -50,12 +52,27 @@ public sealed class ConfigStore
         return new();
     }
 
-    public bool Save(AppConfig config)
+    public bool Save(AppConfig config) => SaveAsync(config).GetAwaiter().GetResult();
+    public Task<bool> FlushAsync() { lock (_saveLock) return _pendingSave; }
+
+    public Task<bool> SaveAsync(AppConfig config)
     {
         try
         {
             Validate(config);
+            // Snapshot on the caller's thread; the mutable config never crosses threads.
             var bytes = JsonSerializer.SerializeToUtf8Bytes(config, Options);
+            lock (_saveLock)
+                return _pendingSave = _pendingSave.ContinueWith(_ => SaveBytes(bytes),
+                    CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+        }
+        catch (Exception ex) { Debug.WriteLine($"Config snapshot: {ex}"); return Task.FromResult(false); }
+    }
+
+    private bool SaveBytes(byte[] bytes)
+    {
+        try
+        {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(FilePath))!);
             var temporaryPath = FilePath + ".tmp";
             using (var stream = new FileStream(temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -100,6 +117,7 @@ public sealed class ConfigStore
             if (!uint.TryParse(serial, out _) || drive is null || drive.Favorites is null
                 || (drive.ViewMode is { } mode && !Enum.IsDefined(mode))
                 || drive.LastKnownLabel is null || !DriveConfig.IsValidSortKey(drive.SortKey)
+                || (drive.PreferredLabel is { } preferred && (preferred.Length > 32 || preferred.Any(char.IsControl)))
                 || drive.Favorites.Any(favorite => favorite is null || !IsSafeRelativePath(favorite.RelativePath)
                     || favorite.DisplayName is null))
                 throw new JsonException("올바르지 않은 드라이브 설정입니다.");

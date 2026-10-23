@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <Nullable>enable</Nullable>
@@ -10,10 +10,23 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>ExternalDrivePanel</AssemblyName>
     <RootNamespace>ExternalDrivePanel</RootNamespace>
+    <Version>1.0.0</Version>
+    <Product>External Drive Panel</Product>
+    <Authors>criticalmasslab</Authors>
+    <Description>외장하드 파일과 즐겨찾기를 관리하는 Windows 데스크톱 패널</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <ApplicationIcon>Assets/App.ico</ApplicationIcon>
+    <StartupObject>ExternalDrivePanel.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Include="App.xaml" />
     <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.1" />
+    <Content Include="../../LICENSE" Link="LICENSE.txt" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <Content Include="../../THIRD-PARTY-NOTICES.txt" Link="THIRD-PARTY-NOTICES.txt" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <Content Include="Portable-Readme.txt" Link="README.txt" TargetPath="README.txt" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>
 
 </Project>

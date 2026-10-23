@@ -10,12 +10,16 @@ public partial class DrivePanelWindow : Window
 {
     private readonly string _root;
     private readonly PhysicalWindowPlacement _placement;
-    private readonly DriveService _driveService = new();
     private readonly GlobalViewSettings _viewSettings;
     private readonly EjectService _ejectService;
     private readonly FavoriteCollection _favorites;
     private readonly DragDropService _dragDrop;
     private readonly ItemContextMenuBuilder _itemMenus;
+    private readonly MarqueeSelection[] _marquee;
+    private readonly FileCommandBar _fileCommands;
+    private readonly PanelFileDragSource _fileDrag;
+    private readonly FavoriteFileMonitor _favoriteMonitor;
+    private readonly QuickPreviewController _quickPreview;
     private readonly List<NavigationState> _history = [];
     private List<FileSystemEntry> _currentItems = [];
     private int _historyIndex = -1;
@@ -23,8 +27,10 @@ public partial class DrivePanelWindow : Window
     private PanelContentMode _contentMode;
     private bool _isDetailsView;
     private GlobalViewMode? _viewModeOverride;
+    private bool _isEjecting;
     private List<FavoriteDetailsRow> _favoriteRows = [];
     private bool _appliedShowHiddenItems;
+    private string? _preferredVolumeLabel;
     private string _sortProperty = nameof(FileSystemEntry.Name);
     private ListSortDirection _sortDirection = ListSortDirection.Ascending;
 
@@ -35,21 +41,50 @@ public partial class DrivePanelWindow : Window
         _viewModeOverride = savedSettings?.ViewMode;
         _ejectService = ejectService;
         InitializeComponent();
+        UpdateChromeHeight(new DpiScale(1, 1));
+        SourceInitialized += (_, _) => UpdateChromeHeight(System.Windows.Media.VisualTreeHelper.GetDpi(this));
+        Loaded += (_, _) => UpdateChromeHeight(System.Windows.Media.VisualTreeHelper.GetDpi(this));
         _placement = new PhysicalWindowPlacement(this);
         _root = EnsureTrailingSeparator(Path.GetFullPath(root));
+        CapacityBar.RootPath = _root;
+        Closed += (_, _) => CapacityBar.Dispose();
         _currentPath = _root;
 
-        var driveName = _root.TrimEnd(Path.DirectorySeparatorChar);
-        TitleText.Text = string.IsNullOrWhiteSpace(label) ? driveName : $"{driveName} {label}";
+        _preferredVolumeLabel = savedSettings?.PreferredLabel;
+        UpdateVolumeLabel(label);
+        var titleMenu = new ContextMenu();
+        var renameVolume = new MenuItem { Header = "볼륨 이름 변경…" };
+        renameVolume.Click += async (_, _) =>
+        {
+            string fileSystem;
+            try { fileSystem = new DriveInfo(_root).DriveFormat; }
+            catch (Exception ex) { DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, "볼륨 정보를 읽을 수 없습니다", MessageBoxButton.OK, MessageBoxImage.Warning)); return; }
+            var name = NamePromptWindow.Ask(this, "외장하드 볼륨 이름 변경", VolumeLabel, validate: value => VolumeLabelService.Validate(value, fileSystem));
+            if (name is null) return;
+            renameVolume.IsEnabled = false;
+            try
+            {
+                var result = await VolumeLabelService.RenameAsync(_root, name, new System.Windows.Interop.WindowInteropHelper(this).Handle);
+                if (result.Cancelled) return;
+                _preferredVolumeLabel = result.PreferredLabel;
+                UpdateVolumeLabel(result.ActualLabel);
+                VolumeLabelChanged?.Invoke(result.ActualLabel);
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex) { DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, "볼륨 이름 변경 실패", MessageBoxButton.OK, MessageBoxImage.Warning)); }
+            finally { renameVolume.IsEnabled = true; }
+        };
+        titleMenu.Items.Add(renameVolume); DriveTitleButton.ContextMenu = titleMenu;
         _favorites = new FavoriteCollection();
         _dragDrop = new DragDropService(ContentArea, _root, _favorites, destination =>
         {
+            _ = CapacityBar.RefreshAsync();
             if (_contentMode == PanelContentMode.Folder && FileCopyService.IsWithin(_currentPath, destination))
                 LoadDirectory(_currentPath);
             else if (_contentMode == PanelContentMode.Favorites) RefreshFavoriteRows();
+            else if (_contentMode == PanelContentMode.Search) _ = SearchDriveAsync(_searchQuery);
         }, new DropDialogs(this), () => _contentMode == PanelContentMode.Folder ? _currentPath : null);
         Closed += (_, _) => _dragDrop.Dispose();
-        DriveRootButton.Content = driveName;
         FavoriteItemsList.ItemsSource = _favorites.Items;
         if (savedSettings is not null)
         {
@@ -63,7 +98,7 @@ public partial class DrivePanelWindow : Window
                     _favorites.Add(path, favorite.IsDirectory ?? Directory.Exists(path), favorite.DisplayName);
             }
         }
-        _favorites.Items.CollectionChanged += (_, _) => { RefreshFavoriteRows(); UpdateEmptyFavoritesMessage(); };
+        _favorites.Changed += (_, _) => { RefreshFavoriteRows(); UpdateEmptyFavoritesMessage(); UpdateFavoriteBadges(); };
         _favorites.Changed += (_, _) => SettingsChanged?.Invoke(this, EventArgs.Empty);
         _itemMenus = new ItemContextMenuBuilder(this, _root, _favorites,
             () => _contentMode == PanelContentMode.Favorites,
@@ -71,27 +106,84 @@ public partial class DrivePanelWindow : Window
             ShowItemAddress,
             parent =>
             {
+                _ = CapacityBar.RefreshAsync();
                 if (_contentMode == PanelContentMode.Folder && PathsEqual(_currentPath, parent)) LoadDirectory(_currentPath);
                 else if (_contentMode == PanelContentMode.Favorites) RefreshFavoriteRows();
+                else if (_contentMode == PanelContentMode.Search) _ = SearchDriveAsync(_searchQuery);
             },
             (message, error) => NotificationRequested?.Invoke(message, error), FavoriteItemsList, IconItemsList, DetailsGrid);
         Closed += (_, _) => _itemMenus.Dispose();
+        _marquee = [new(FavoriteItemsList), new(IconItemsList), new(DetailsGrid)];
+        _fileDrag = new PanelFileDragSource(this, _root, RefreshAfterShell, FavoriteItemsList, IconItemsList, DetailsGrid);
+        Closed += (_, _) => _fileDrag.Dispose();
+        Closed += (_, _) => { foreach (var selection in _marquee) selection.Dispose(); };
         foreach (var column in DetailsGrid.Columns)
             column.SortDirection = column.SortMemberPath == _sortProperty ? _sortDirection : null;
         ShowFavorites();
         _appliedShowHiddenItems = !_viewSettings.ShowHiddenItems;
         ApplyGlobalViewSettings();
+        _fileCommands = new FileCommandBar(this, () => ItemContextMenuBuilder.SelectedTargets(ActiveItemsView),
+            () => _contentMode == PanelContentMode.Folder ? _currentPath : _contentMode == PanelContentMode.Favorites ? _root : "", RefreshAfterShell,
+            [FavoriteItemsList, IconItemsList, DetailsGrid]);
+        _itemMenus.FileCommandRequested = _fileCommands.ExecuteAsync;
+        _favoriteMonitor = new FavoriteFileMonitor(_root, _favorites, Dispatcher);
+        Loaded += (_, _) => _favoriteMonitor.ReconcileMissing();
+        _fileCommands.DeletedPaths = _favoriteMonitor.ConfirmDeleted;
+        Closed += (_, _) => _favoriteMonitor.Dispose();
+        _quickPreview = new QuickPreviewController(this, FavoriteItemsList, IconItemsList, DetailsGrid);
+        Closed += (_, _) => _quickPreview.Dispose();
+        Closed += (_, _) => _fileCommands.Dispose();
+        PreviewKeyDown += SearchWindow_OnKeyDown;
+        Closed += (_, _) => { _searchClosed = true; StopSearch(false); };
     }
 
     public event EventHandler? SettingsChanged;
+    public event Action<string>? VolumeLabelChanged;
+    public string VolumeLabel { get; private set; } = "";
+    public void UpdateVolumeLabel(string label)
+    {
+        var preference = _preferredVolumeLabel;
+        _preferredVolumeLabel = VolumeLabelService.MatchingPreference(label, preference);
+        label = _preferredVolumeLabel ?? label;
+        VolumeLabel = label;
+        var driveName = _root.TrimEnd(Path.DirectorySeparatorChar);
+        var title = string.IsNullOrWhiteSpace(label) ? driveName : $"{driveName} {label}";
+        if (TitleText.Text != title) TitleText.Text = title;
+        if (preference != _preferredVolumeLabel) SettingsChanged?.Invoke(this, EventArgs.Empty);
+    }
+    private void UpdateChromeHeight(DpiScale dpi)
+    {
+        Resources["PanelChromeHeight"] = LayoutCalculator.TopBarHeight / dpi.DpiScaleY;
+        Resources["CapacityBarHeight"] = 24 / dpi.DpiScaleY;
+        Resources["CapacityFontSize"] = 12 / dpi.DpiScaleY;
+        HeaderChromeMetrics.Apply(this, dpi);
+        UpdateSearchToolbarMetrics(dpi);
+    }
+    protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+    {
+        base.OnDpiChanged(oldDpi, newDpi);
+        UpdateChromeHeight(newDpi);
+    }
     public event Action<string, bool>? NotificationRequested;
     public string RootPath => _root;
     public GlobalViewMode EffectiveViewMode => PanelViewPolicy.EffectiveMode(_viewSettings.ViewMode, _viewModeOverride);
     public void ClearViewModeOverride() => _viewModeOverride = null;
 
+    private void RefreshAfterShell()
+    {
+        _ = CapacityBar.RefreshAsync();
+        if (_contentMode == PanelContentMode.Search) { _ = SearchDriveAsync(_searchQuery); return; }
+        var paths = ItemContextMenuBuilder.SelectedTargets(ActiveItemsView).Select(item => item.Path).ToArray();
+        if (_contentMode == PanelContentMode.Favorites) RefreshFavoriteRows();
+        else if (Directory.Exists(_currentPath)) LoadDirectory(_currentPath);
+        else ShowFavorites();
+        RestoreSelection(paths);
+    }
+
     public DriveConfig CaptureSettings(string label) => new()
     {
         LastKnownLabel = label,
+        PreferredLabel = _preferredVolumeLabel,
         SortKey = _sortProperty,
         SortReverse = _sortDirection == ListSortDirection.Descending,
         ViewMode = _viewModeOverride,
@@ -111,8 +203,15 @@ public partial class DrivePanelWindow : Window
 
     public void ApplyGlobalViewSettings()
     {
-        var favorite = GetSelectedFavorite();
+        var selectedPaths = ItemContextMenuBuilder.SelectedTargets(ActiveItemsView).Select(item => item.Path).ToArray();
         Resources["IconGlyphSize"] = _viewSettings.IconSize;
+        Resources["ShowFilePreviews"] = _viewSettings.ShowPreviews;
+        // The wrap slot, not just its glyph, must shrink/grow with the shared icon size.
+        // A fixed two-line caption keeps rows aligned without sacrificing readable names.
+        Resources["IconGlyphHeight"] = Math.Ceiling(_viewSettings.IconSize * 1.4);
+        Resources["IconTileWidth"] = (_viewSettings.IconSize * 2) + 28;
+        Resources["IconTileHeight"] = Math.Ceiling(_viewSettings.IconSize * 1.4) + 48;
+        Resources["FavoriteBadgeSize"] = Math.Clamp(_viewSettings.IconSize * .4, 8, 16);
         _isDetailsView = EffectiveViewMode == GlobalViewMode.Details;
         var hiddenSettingChanged = _appliedShowHiddenItems != _viewSettings.ShowHiddenItems;
         _appliedShowHiddenItems = _viewSettings.ShowHiddenItems;
@@ -124,13 +223,19 @@ public partial class DrivePanelWindow : Window
                 LoadDirectory(_currentPath);
             }
         }
+        else if (_contentMode == PanelContentMode.Search)
+        {
+            if (hiddenSettingChanged) _ = SearchDriveAsync(_searchQuery);
+        }
         else RefreshFavoriteRows();
         ApplyViewVisibility();
-        if (_contentMode == PanelContentMode.Favorites) SelectFavorite(favorite);
+        RestoreSelection(selectedPaths);
     }
 
     private bool ShowFavorites(bool addToHistory = true)
     {
+        StopSearch(true);
+        _favoriteMonitor?.ReconcileMissing();
         _contentMode = PanelContentMode.Favorites;
         RefreshFavoriteRows();
         ApplyViewVisibility();
@@ -154,6 +259,7 @@ public partial class DrivePanelWindow : Window
         }
 
         _contentMode = PanelContentMode.Folder;
+        StopSearch(true);
         _currentPath = fullPath;
         ApplyViewVisibility();
 
@@ -192,31 +298,38 @@ public partial class DrivePanelWindow : Window
     {
         try
         {
-            _currentItems = Directory.EnumerateFileSystemEntries(path)
-                .Where(path => _driveService.IsVisibleFileSystemEntry(path, _viewSettings.ShowHiddenItems))
+            _currentItems = new DirectoryInfo(path).EnumerateFileSystemInfos("*", new EnumerationOptions
+                { IgnoreInaccessible = false, AttributesToSkip = _viewSettings.ShowHiddenItems ? 0 : FileAttributes.Hidden | FileAttributes.System })
                 .Select(TryCreateEntry)
                 .OfType<FileSystemEntry>()
                 .ToList();
+            UpdateFavoriteBadges();
             ApplySort();
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            MessageBox.Show(this, ex.Message, "폴더를 열 수 없음", MessageBoxButton.OK, MessageBoxImage.Warning);
+            DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, "폴더를 열 수 없음", MessageBoxButton.OK, MessageBoxImage.Warning));
             return false;
         }
     }
 
-    private static FileSystemEntry? TryCreateEntry(string path)
+    private static FileSystemEntry? TryCreateEntry(FileSystemInfo info)
     {
         try
         {
-            return FileSystemEntry.FromPath(path);
+            return FileSystemEntry.FromInfo(info);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return null;
         }
+    }
+
+    private void UpdateFavoriteBadges()
+    {
+        var favorites = _favorites.Items.Select(item => Path.TrimEndingDirectorySeparator(Path.GetFullPath(item.Path))).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in _currentItems) item.IsFavorite = favorites.Contains(Path.TrimEndingDirectorySeparator(Path.GetFullPath(item.FullPath)));
     }
 
     private void ApplySort()
@@ -242,12 +355,17 @@ public partial class DrivePanelWindow : Window
 
         var visibleItems = _currentItems.ToList();
         IconItemsList.ItemsSource = visibleItems;
-        if (_contentMode == PanelContentMode.Folder) DetailsGrid.ItemsSource = visibleItems;
+        if (_contentMode != PanelContentMode.Favorites) DetailsGrid.ItemsSource = visibleItems;
     }
 
     private void ApplyViewVisibility()
     {
         var home = _contentMode == PanelContentMode.Favorites;
+        SearchLocationColumn.Visibility = _contentMode == PanelContentMode.Search ? Visibility.Visible : Visibility.Collapsed;
+        HomeButton.Background = home ? System.Windows.Media.Brushes.SlateGray : System.Windows.Media.Brushes.Transparent;
+        HomeIcon.Foreground = home ? System.Windows.Media.Brushes.Gold : System.Windows.Media.Brushes.White;
+        HomeIcon.Kind = home ? "HomeFill" : "Home";
+        HomeButton.ToolTip = home ? "즐겨찾기 홈 (현재 화면)" : "즐겨찾기 홈";
         FavoriteItemsList.Visibility = home && !_isDetailsView ? Visibility.Visible : Visibility.Collapsed;
         IconItemsList.Visibility = !home && !_isDetailsView ? Visibility.Visible : Visibility.Collapsed;
         DetailsGrid.Visibility = _isDetailsView ? Visibility.Visible : Visibility.Collapsed;
@@ -255,19 +373,20 @@ public partial class DrivePanelWindow : Window
         DetailsGrid.CanUserSortColumns = !home;
         foreach (var column in DetailsGrid.Columns)
             column.SortDirection = !home && column.SortMemberPath == _sortProperty ? _sortDirection : null;
-        IconViewButton.IsChecked = !_isDetailsView;
-        DetailsViewButton.IsChecked = _isDetailsView;
+        ViewModeIcon.Kind = _isDetailsView ? "List" : "Grid";
+        ViewModeButton.ToolTip = _isDetailsView ? "현재: 상세 보기 — 클릭하면 이 패널 아이콘 보기" : "현재: 아이콘 보기 — 클릭하면 이 패널 상세 보기";
         UpdateEmptyFavoritesMessage();
     }
 
     private void RefreshFavoriteRows()
     {
-        var selected = GetSelectedFavorite();
+        var selected = _contentMode == PanelContentMode.Favorites
+            ? ItemContextMenuBuilder.SelectedTargets(ActiveItemsView).Select(item => item.Path).ToArray() : [];
         _favoriteRows = _favorites.Items.Select(item => new FavoriteDetailsRow(item)).ToList();
         if (_contentMode == PanelContentMode.Favorites)
         {
             DetailsGrid.ItemsSource = _favoriteRows;
-            SelectFavorite(selected);
+            RestoreSelection(selected);
         }
     }
 
@@ -277,6 +396,8 @@ public partial class DrivePanelWindow : Window
 
     private void SelectFavorite(FavoriteItem? favorite)
     {
+        FavoriteItemsList.UnselectAll();
+        if (_contentMode == PanelContentMode.Favorites) DetailsGrid.UnselectAll();
         FavoriteItemsList.SelectedItem = favorite;
         DetailsGrid.SelectedItem = _contentMode == PanelContentMode.Favorites
             ? _favoriteRows.FirstOrDefault(row => ReferenceEquals(row.Favorite, favorite)) : null;
@@ -339,8 +460,9 @@ public partial class DrivePanelWindow : Window
 
     private void UpdateNavigationButtons()
     {
-        BackButton.IsEnabled = _historyIndex > 0;
-        ForwardButton.IsEnabled = _historyIndex >= 0 && _historyIndex < _history.Count - 1;
+        _fileCommands?.RefreshState();
+        BackButton.IsEnabled = _contentMode == PanelContentMode.Search || _historyIndex > 0;
+        ForwardButton.IsEnabled = _contentMode != PanelContentMode.Search && _historyIndex >= 0 && _historyIndex < _history.Count - 1;
         UpButton.IsEnabled = _contentMode == PanelContentMode.Folder && !PathsEqual(_currentPath, _root);
     }
 
@@ -425,7 +547,7 @@ public partial class DrivePanelWindow : Window
         }
         catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
         {
-            MessageBox.Show(this, ex.Message, "항목을 열 수 없음", MessageBoxButton.OK, MessageBoxImage.Warning);
+            DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, "항목을 열 수 없음", MessageBoxButton.OK, MessageBoxImage.Warning));
         }
     }
 
@@ -436,6 +558,7 @@ public partial class DrivePanelWindow : Window
         {
             var item = _isDetailsView ? DetailsGrid.SelectedItem : IconItemsList.SelectedItem;
             if (item is FileSystemEntry entry) ShowItemAddress(entry.FullPath);
+            else if (_contentMode == PanelContentMode.Search) ShowItemAddress($"검색: {_searchQuery} — {_root}");
             else BuildFolderBreadcrumb();
         }
     }
@@ -443,6 +566,8 @@ public partial class DrivePanelWindow : Window
     private void ContentArea_OnPreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ChangedButton is not (MouseButton.Left or MouseButton.Right)) return;
+        if (e.ChangedButton == MouseButton.Left && !ReferenceEquals(e.OriginalSource, ContentArea)) return;
+        if (e.ChangedButton == MouseButton.Left && Keyboard.Modifiers != ModifierKeys.None) return;
         if (_contentMode != PanelContentMode.Favorites || e.OriginalSource is not DependencyObject source) return;
         if (DragDropService.FindTarget(source).Container is not null) return;
         // Headers and scrollbars are controls, not empty list space.
@@ -455,6 +580,7 @@ public partial class DrivePanelWindow : Window
 
     private void BackButton_OnClick(object sender, RoutedEventArgs e)
     {
+        if (_contentMode == PanelContentMode.Search) { ExitSearch(); return; }
         if (_historyIndex <= 0)
         {
             return;
@@ -499,38 +625,74 @@ public partial class DrivePanelWindow : Window
 
     private void HomeButton_OnClick(object sender, RoutedEventArgs e) => ShowFavorites();
 
-    private void DriveRootButton_OnClick(object sender, RoutedEventArgs e) => NavigateTo(_root);
-    private void EjectButton_OnClick(object sender, RoutedEventArgs e)
+    private System.Windows.Controls.Primitives.Selector ActiveItemsView => _isDetailsView ? DetailsGrid
+        : _contentMode == PanelContentMode.Favorites ? FavoriteItemsList : IconItemsList;
+
+    private void RestoreSelection(IEnumerable<string> paths)
     {
+        var wanted = paths.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var selected = ItemContextMenuBuilder.SelectedItems(ActiveItemsView);
+        selected.Clear();
+        foreach (var item in ActiveItemsView.Items.Cast<object>())
+            if (ItemMenuTarget.FromItem(item) is { } target && wanted.Contains(target.Path)) selected.Add(item);
+    }
+
+    private void AddFavoritesButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        using var update = _favorites.BeginUpdate();
+        var selected = ItemContextMenuBuilder.SelectedTargets(ActiveItemsView);
+        if (selected.Count == 0 && _contentMode == PanelContentMode.Folder)
+            selected = [new ItemMenuTarget(_currentPath, true)];
+        foreach (var target in selected)
+            if (target.IsDirectory ? Directory.Exists(target.Path) : File.Exists(target.Path))
+                _favorites.Add(target.Path, target.IsDirectory);
+    }
+
+    private void DriveTitleButton_OnClick(object sender, RoutedEventArgs e) => NavigateTo(_root);
+    private async void EjectButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (_isEjecting) return;
         var driveName = _root.TrimEnd(Path.DirectorySeparatorChar);
-        var answer = MessageBox.Show(this, $"{driveName} 외장하드를 안전하게 꺼낼까요?", "안전하게 꺼내기",
-            MessageBoxButton.YesNo, MessageBoxImage.Question);
+        var answer = DialogActivation.Show(this, () => MessageBox.Show(this, $"{driveName} 외장하드를 안전하게 꺼낼까요?", "안전하게 꺼내기",
+            MessageBoxButton.YesNo, MessageBoxImage.Question));
         if (answer != MessageBoxResult.Yes)
         {
             return;
         }
 
-        var result = _ejectService.TryEject(_root);
-        if (result.Success)
+        using var pause = FileOperationRegistry.Pause(_root);
+        if (FileOperationRegistry.IsBusy(_root) && DialogActivation.Show(this, () => MessageBox.Show(this,
+            "이 드라이브를 사용하는 파일 작업이 있습니다. 작업 완료 후 꺼낼까요?", "작업 완료 후 꺼내기",
+            MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No)) != MessageBoxResult.Yes) return;
+        _isEjecting = true;
+        try
         {
-            MessageBox.Show("안전하게 제거되었습니다.", "안전하게 꺼내기", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        else
-        {
-            MessageBox.Show(this,
+            await FileOperationRegistry.WaitForIdleAsync(_root);
+            IsEnabled = false; _searchClosed = true;
+            await PrepareForShutdownAsync();
+            var result = await Task.Run(() => _ejectService.TryEject(_root));
+            var owner = Application.Current?.MainWindow is { IsVisible: true } main ? main : this;
+            if (result.Success)
+                DialogActivation.Show(owner, () => MessageBox.Show(owner, "안전하게 제거되었습니다.", "안전하게 꺼내기", MessageBoxButton.OK, MessageBoxImage.Information));
+            else
+                DialogActivation.Show(owner, () => MessageBox.Show(owner,
                 $"안전하게 제거하지 못했습니다.\n\n{result.FailureReason}\n\n작업표시줄의 하드웨어 안전 제거 아이콘을 이용해주세요.",
-                "꺼내기 실패", MessageBoxButton.OK, MessageBoxImage.Warning);
+                "꺼내기 실패", MessageBoxButton.OK, MessageBoxImage.Warning));
         }
+        catch (Exception ex) { if (IsVisible) DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, "꺼내기 실패")); }
+        finally { _isEjecting = false; if (IsVisible) { IsEnabled = true; _searchClosed = false; } }
     }
 
-    private void IconViewButton_OnClick(object sender, RoutedEventArgs e)
+    public async Task PrepareForShutdownAsync()
     {
-        SetPanelViewMode(GlobalViewMode.Icon);
+        _searchRequest?.Cancel();
+        await Task.WhenAll(_searchTasks.ToArray());
+        await _quickPreview.CloseAsync();
     }
 
-    private void DetailsViewButton_OnClick(object sender, RoutedEventArgs e)
+    private void ViewModeButton_OnClick(object sender, RoutedEventArgs e)
     {
-        SetPanelViewMode(GlobalViewMode.Details);
+        SetPanelViewMode(_isDetailsView ? GlobalViewMode.Icon : GlobalViewMode.Details);
     }
 
     private void SetPanelViewMode(GlobalViewMode mode)
@@ -587,7 +749,8 @@ public partial class DrivePanelWindow : Window
     private enum PanelContentMode
     {
         Favorites,
-        Folder
+        Folder,
+        Search
     }
 
     private sealed record NavigationState(PanelContentMode Mode, string? Path);

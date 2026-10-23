@@ -41,6 +41,21 @@ public static class ItemMenuModel
         return menu;
     }
 
+    public static IReadOnlyList<ItemMenuEntry> BuildSelection(IReadOnlyList<ItemMenuContext> items)
+    {
+        if (items.Count == 0) return [];
+        if (items.Count == 1) return Build(items[0]);
+        // Only show operations shared by every selected item. Never partially toggle favorites.
+        var remove = items.All(item => item.IsHome || item.IsFavorite);
+        var menus = items.Select(Build).ToArray();
+        return menus[0].Where(entry => menus.All(menu => menu.Any(other => other.Command == entry.Command)))
+            .Select(entry => entry.Command == ItemMenuCommand.ToggleFavorite
+                ? entry with { Label = remove ? "즐겨찾기에서 제거" : "즐겨찾기에 추가", Enabled = remove || items.All(item => item.Exists) }
+                : entry with { Enabled = menus.All(menu => menu.Single(other => other.Command == entry.Command).Enabled),
+                    Children = entry.Children?.Select(child => child with { Enabled = items.All(item => item.Exists) }).ToArray() })
+            .ToArray();
+    }
+
     public static string? RelativeKey(string root, string path)
     {
         var relative = Path.GetRelativePath(Path.GetFullPath(root), Path.TrimEndingDirectorySeparator(Path.GetFullPath(path)))

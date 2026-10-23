@@ -7,6 +7,7 @@ public sealed class FavoriteDetailsRow
     public FavoriteItem Favorite { get; }
     public string FullPath => Favorite.Path;
     public string Name => Favorite.Name;
+    public bool IsFavorite => false; // Badges belong to folder browsing, never the favorites home.
     public bool IsDirectory => Favorite.IsDirectory;
     public string Icon => Favorite.Icon;
     public string DisplayName => $"{Icon} {Name}";

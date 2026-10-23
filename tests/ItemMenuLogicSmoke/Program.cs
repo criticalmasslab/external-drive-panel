@@ -28,6 +28,15 @@ Require(ItemMenuModel.SameFavorite(@"D:\", @"D:\Projects\ClientA\", @"d:\PROJECT
     && !ItemMenuModel.SameFavorite(@"D:\", @"D:\Projects\A", @"D:\Projects\AB")
     && !ItemMenuModel.SameFavorite(@"D:\", @"E:\A", @"E:\A"), "relative, case insensitive, trailing-slash favorite comparison");
 Require(ShellActions.QuotedPath(@"D:\한글 폴더\file.txt") == "\"D:\\한글 폴더\\file.txt\"", "quoted clipboard format");
+var batch = ItemMenuModel.BuildSelection([new(true, false, true, true, false), new(false, false, false, true, true)]);
+Require(batch.Select(entry => entry.Command).SequenceEqual(new[] { ItemMenuCommand.Open, ItemMenuCommand.Separator,
+    ItemMenuCommand.ToggleFavorite, ItemMenuCommand.Compress, ItemMenuCommand.CopyPath, ItemMenuCommand.Properties }), "mixed file/folder common menu");
+Require(batch.Single(entry => entry.Command == ItemMenuCommand.ToggleFavorite).Label == "즐겨찾기에 추가", "mixed favorites offer add-all");
+var missingBatch = ItemMenuModel.BuildSelection([new(false, true, true, true, true), new(false, true, true, false, true)]);
+Require(missingBatch.Where(entry => entry.Enabled && entry.Command != ItemMenuCommand.Separator).Select(entry => entry.Command)
+    .SequenceEqual(new[] { ItemMenuCommand.ToggleFavorite, ItemMenuCommand.CopyPath })
+    && !missingBatch.Single(entry => entry.Command == ItemMenuCommand.Compress).Children!.Single().Enabled, "missing batch only removes/copies, including ZIP child guard");
+Require(ItemMenuModel.BuildSelection([]).Count == 0, "empty selection has no menu");
 
 var directory = Path.Combine(Path.GetTempPath(), "ExternalDeskPanel-Zip-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(directory);

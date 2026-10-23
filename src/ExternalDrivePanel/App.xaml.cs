@@ -10,16 +10,27 @@ public partial class App : Application
     private readonly DriveService _driveService = new();
     private readonly MonitorService _monitorService = new();
     private readonly LayoutCalculator _layoutCalculator = new();
+    private readonly PanelLayoutState _panelLayout = new();
+    private LayoutResizeController _resizeController = null!;
     private readonly EjectService _ejectService = new();
     private ZoneSettings _zoneSettings = new();
     private readonly GlobalViewSettings _viewSettings = new();
     private readonly Dictionary<uint, DrivePanelWindow> _panels = new();
     private readonly DispatcherTimer _pollTimer = new() { Interval = TimeSpan.FromSeconds(2) };
     private TaskbarIcon? _trayIcon;
+    private System.Drawing.Icon? _trayImage;
     private TopBarWindow? _topBar;
     private bool _isExiting;
+    private bool _isHelperProcess;
+    private bool _exitRequested;
+    private SingleInstanceGuard? _instance;
+    private readonly AutoUpdateService _updates = new();
+    public bool IsSoftwareRendering { get; private set; }
     private readonly ConfigStore _configStore;
     private readonly Func<IReadOnlyList<DriveSnapshot>> _snapshotProvider;
+    private readonly bool _customSnapshotProvider;
+    private bool _polling;
+    private long _snapshotRevision;
     private AppConfig _config = new();
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
     private DriveCoordinator _coordinator = null!;
@@ -35,12 +46,39 @@ public partial class App : Application
     {
         _configStore = configStore;
         _snapshotProvider = snapshotProvider ?? _driveService.SnapshotDrives;
+        _customSnapshotProvider = snapshotProvider is not null;
     }
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        if (PdfPreviewWorker.IsRequest(e.Args))
+        {
+            _isHelperProcess = true;
+            Shutdown(PdfPreviewWorker.Run(e.Args));
+            return;
+        }
+        if (VolumeLabelService.TryRunHelper(e.Args, out var helperExitCode))
+        {
+            _isHelperProcess = true;
+            Shutdown(helperExitCode);
+            return;
+        }
+        try { _instance = SingleInstanceGuard.TryAcquire(_configStore.FilePath); }
+        catch (Exception ex)
+        {
+            _isHelperProcess = true;
+            MessageBox.Show("설정 저장 위치에 접근할 수 없습니다.\n" + ex.Message, "External Drive Panel");
+            Shutdown(1); return;
+        }
+        if (_instance is null) { _isHelperProcess = true; Shutdown(); return; }
+        // One-run diagnostic switch: isolate GPU rendering without changing the
+        // user's saved settings, window geometry or normal-launch defaults.
+        IsSoftwareRendering = e.Args.Contains("--software-rendering", StringComparer.OrdinalIgnoreCase);
+        if (IsSoftwareRendering)
+            System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
         base.OnStartup(e);
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        SessionEnding += App_OnSessionEnding;
 
         _config = _configStore.Load();
         _coordinator = new DriveCoordinator(_config);
@@ -52,12 +90,18 @@ public partial class App : Application
         _viewSettings.ViewModeApplied += ViewSettings_OnViewModeApplied;
         _trayIcon = CreateTrayIcon();
         _topBar = new TopBarWindow(_viewSettings);
+        PanelActivation.Attach(_topBar, PanelWindows);
+        _resizeController = new LayoutResizeController(_panelLayout, RepositionWindows);
+        _resizeController.Attach(_topBar);
         _topBar.SettingsRequested += TopBar_OnSettingsRequested;
+        MainWindow = _topBar;
+        RepositionWindows(); // Save physical bounds before the first HWND becomes visible.
         _topBar.Show();
 
         _pollTimer.Tick += PollTimer_OnTick;
         _pollTimer.Start();
         RefreshPanels();
+        if (!_customSnapshotProvider) _updates.Start(ShowNotification);
     }
 
     private TaskbarIcon CreateTrayIcon()
@@ -73,25 +117,46 @@ public partial class App : Application
         };
         contextMenu.Closed += (_, _) => ScheduleNoticePump();
 
+        _trayImage = PanelTrayIcon.Create();
         return new TaskbarIcon
         {
-            ToolTipText = "External Drive Panel",
-            Icon = System.Drawing.SystemIcons.Application,
+            ToolTipText = IsSoftwareRendering ? "External Drive Panel — 소프트웨어 렌더링 (진단)" : "External Drive Panel",
+            Icon = _trayImage,
             ContextMenu = contextMenu
         };
     }
 
-    private void PollTimer_OnTick(object? sender, EventArgs e) => RefreshPanels();
+    private async void PollTimer_OnTick(object? sender, EventArgs e)
+    {
+        if (_customSnapshotProvider) { RefreshPanels(); return; }
+        if (_polling || _isExiting) return;
+        _polling = true; var revision = _snapshotRevision;
+        try
+        {
+            var snapshot = await Task.Run(_snapshotProvider);
+            if (!_isExiting && revision == _snapshotRevision) RefreshPanelsFromSnapshot(snapshot);
+        }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Drive polling: {ex}"); }
+        finally { _polling = false; }
+    }
 
     private void RefreshPanels()
     {
         if (_isExiting) return;
-        var plan = _coordinator.Evaluate(_snapshotProvider());
+        _snapshotRevision++;
+        RefreshPanelsFromSnapshot(_snapshotProvider());
+    }
+
+    private void RefreshPanelsFromSnapshot(IReadOnlyList<DriveSnapshot> snapshot)
+    {
+        if (_isExiting) return;
+        var plan = _coordinator.Evaluate(snapshot);
         if (plan.ConfigChanged) ScheduleSave();
         foreach (var notice in plan.Notices) _notices.Enqueue(notice);
         if (_activeNotice is not null && !_coordinator.CanPrompt(_activeNotice) && _newDriveWindow?.IsVisible == true)
             _newDriveWindow.Close();
         var visible = plan.VisibleDrives.ToDictionary(drive => drive.Serial);
+        var newPanels = new List<DrivePanelWindow>();
         foreach (var serial in _panels.Keys.ToList())
             if (!visible.TryGetValue(serial, out var drive)
                 || !string.Equals(_panels[serial].RootPath, drive.Root, StringComparison.OrdinalIgnoreCase))
@@ -100,10 +165,13 @@ public partial class App : Application
         foreach (var volume in plan.VisibleDrives)
         {
             var serial = volume.Serial;
-            if (_panels.ContainsKey(serial)) continue;
+            if (_panels.TryGetValue(serial, out var existingPanel)) { existingPanel.UpdateVolumeLabel(volume.Label); continue; }
             var serialKey = DriveCoordinator.Key(serial);
             var panel = new DrivePanelWindow(volume.Root, volume.Label, _viewSettings, _ejectService, _config.Drives[serialKey]);
+            PanelActivation.Attach(panel, PanelWindows);
+            _resizeController.Attach(panel);
             panel.NotificationRequested += ShowNotification;
+            panel.VolumeLabelChanged += label => { if (_config.Drives.TryGetValue(serialKey, out var saved)) { saved.LastKnownLabel = label; ScheduleSave(); } };
             void CapturePanel()
             {
                 // Do not resurrect a config entry deleted by Unregister. Keep registration
@@ -114,6 +182,7 @@ public partial class App : Application
                 saved.SortKey = state.SortKey;
                 saved.SortReverse = state.SortReverse;
                 saved.ViewMode = state.ViewMode;
+                saved.PreferredLabel = state.PreferredLabel;
                 ScheduleSave();
             }
             panel.SettingsChanged += (_, _) => CapturePanel();
@@ -127,12 +196,16 @@ public partial class App : Application
                 }
             };
             _panels.Add(serial, panel);
-            panel.Show();
+            newPanels.Add(panel);
         }
 
         RepositionWindows();
+        foreach (var panel in newPanels) panel.Show();
         ScheduleNoticePump();
     }
+
+    private IEnumerable<Window> PanelWindows() => _topBar is null
+        ? _panels.Values.Cast<Window>() : _panels.Values.Cast<Window>().Append(_topBar);
 
     private void RegistrationChanged()
     {
@@ -221,11 +294,12 @@ public partial class App : Application
         // A temporarily disconnected monitor must not overwrite the saved selection.
         var monitor = monitors[Math.Clamp(_zoneSettings.MonitorIndex, 0, monitors.Count - 1)];
         var cell = _layoutCalculator.CalculateCell(monitor, _zoneSettings);
-        _topBar.SetPlacement(_layoutCalculator.CalculateTopBar(cell));
-
         var panels = _coordinator.RegisteredOrder.Select(key => uint.Parse(key, System.Globalization.CultureInfo.InvariantCulture))
             .Where(serial => _panels.ContainsKey(serial)).Select(serial => _panels[serial]).ToList();
-        var rectangles = _layoutCalculator.CalculatePanels(cell, panels.Count, _zoneSettings.SplitDirection);
+        _panelLayout.Configure(cell, panels.Count, _zoneSettings.SplitDirection);
+        using var placementBatch = PhysicalWindowPlacement.BeginBatch();
+        _topBar.SetPlacement(_layoutCalculator.CalculateTopBar(_panelLayout.Cell));
+        var rectangles = _panelLayout.Panels();
         for (var index = 0; index < panels.Count; index++)
         {
             panels[index].SetPlacement(rectangles[index]);
@@ -243,9 +317,16 @@ public partial class App : Application
         }
 
         var settingsWindow = new ZoneSettingsWindow(_zoneSettings, monitors) { Owner = _topBar };
-        settingsWindow.SettingsSaved += (_, _) => { RepositionWindows(); ScheduleSave(); };
+        settingsWindow.SettingsSaved += (_, _) => { ResetManualLayout(); ScheduleSave(); };
         if (_topBar is not null) DialogActivation.Show(_topBar, () => settingsWindow.ShowDialog());
         ScheduleNoticePump();
+    }
+
+    private void ResetManualLayout()
+    {
+        _resizeController.Cancel();
+        _panelLayout.Reset();
+        RepositionWindows();
     }
 
     private void ViewSettings_OnChanged(object? sender, EventArgs e)
@@ -274,16 +355,33 @@ public partial class App : Application
     {
         _saveTimer.Stop();
         _config.GlobalView = _viewSettings.Capture();
-        _configStore.Save(_config);
+        _ = _configStore.SaveAsync(_config);
     }
 
-    private void ExitApplication()
+    private void App_OnSessionEnding(object? sender, SessionEndingCancelEventArgs e)
     {
+        // Windows can still force an exit explicitly; never claim to protect power loss.
+        if (FileOperationRegistry.IsBusy()) e.Cancel = true;
+    }
+
+    private async void ExitApplication()
+    {
+        if (_exitRequested) return;
+        _exitRequested = true;
+        using var pause = FileOperationRegistry.Pause();
+        if (FileOperationRegistry.IsBusy() && _topBar is { } owner
+            && DialogActivation.Show(owner, () => MessageBox.Show(owner,
+                "진행 중인 복사·이동·압축 작업이 있습니다. 작업이 끝난 뒤 종료할까요?",
+                "작업 완료 후 종료", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No)) != MessageBoxResult.Yes)
+        { _exitRequested = false; return; }
         _isExiting = true;
+        _resizeController.Cancel();
         _pollTimer.Stop();
         _saveTimer.Stop();
         _notices.Clear();
         _newDriveWindow?.Close();
+        await FileOperationRegistry.WaitForIdleAsync();
+        await Task.WhenAll(_panels.Values.Select(panel => panel.PrepareForShutdownAsync()));
         foreach (var panel in _panels.Values.ToList())
         {
             panel.Close();
@@ -304,11 +402,20 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        if (_isHelperProcess) { base.OnExit(e); return; }
         _pollTimer.Stop();
-        SaveConfig();
+        _saveTimer.Stop();
+        _config.GlobalView = _viewSettings.Capture();
+        _configStore.Save(_config); // Wait behind queued snapshots, then persist the final state.
+        if (!FileOperationRegistry.IsBusy()) _updates.StopAndApplyAfterExit();
+        _updates.Dispose();
         _viewSettings.Changed -= ViewSettings_OnChanged;
         _viewSettings.ViewModeApplied -= ViewSettings_OnViewModeApplied;
+        SessionEnding -= App_OnSessionEnding;
         _trayIcon?.Dispose();
         base.OnExit(e);
+        _trayImage?.Dispose();
+        _trayImage = null;
+        _instance?.Dispose(); _instance = null;
     }
 }

@@ -1,27 +1,29 @@
 <Window x:Class="ExternalDrivePanel.TopBarWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ExternalDrivePanel"
         Title="External Drive Panel Controls"
-        WindowStyle="None" ShowInTaskbar="False" ResizeMode="NoResize"
+        WindowStyle="None" ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
         Background="#FF1D2A38">
     <Window.Resources>
-        <ResourceDictionary Source="ViewModeButtonStyle.xaml" />
+        <ResourceDictionary Source="HeaderChrome.xaml" />
     </Window.Resources>
-    <Border BorderBrush="#FF415266" BorderThickness="1">
+    <Border BorderThickness="0" Padding="{DynamicResource ChromeHeaderPadding}">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock Text="External Drive Panel" Foreground="White" FontWeight="SemiBold"
-                       VerticalAlignment="Center" Margin="10,0" TextTrimming="CharacterEllipsis" />
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Button Content="⚙" Width="32" ToolTip="화면 영역 설정" Click="SettingsButton_OnClick" />
-                <Button x:Name="HiddenButton" Content="👁" Width="32" ToolTip="숨김 항목 표시" Click="HiddenButton_OnClick" />
-                <Button Content="−" Width="32" ToolTip="아이콘 작게" Click="SmallerButton_OnClick" />
-                <Button Content="＋" Width="32" ToolTip="아이콘 크게" Click="LargerButton_OnClick" />
-                <ToggleButton x:Name="IconViewButton" Content="⊞" Style="{StaticResource ViewModeButtonStyle}" ToolTip="전체 아이콘 보기" Click="IconViewButton_OnClick" />
-                <ToggleButton x:Name="DetailsViewButton" Content="☰" Style="{StaticResource ViewModeButtonStyle}" ToolTip="전체 상세 보기" Click="DetailsViewButton_OnClick" />
+            <TextBlock x:Name="AppNameText" Text="EXTERNAL DRIVE PANEL" Foreground="White" FontWeight="SemiBold"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Style="{StaticResource ChromeButton}" ToolTip="화면 영역 설정" Click="SettingsButton_OnClick"><local:SymbolIcon Kind="Settings" /></Button>
+                <Button x:Name="PreviewButton" Style="{StaticResource ChromeButton}" AutomationProperties.Name="파일 미리보기 전환" Click="PreviewButton_OnClick"><local:SymbolIcon Kind="Preview" /></Button>
+                <Button x:Name="HiddenButton" Style="{StaticResource ChromeButton}" ToolTip="숨김 항목 표시" Click="HiddenButton_OnClick"><local:SymbolIcon Kind="Eye" /></Button>
+                <Button x:Name="SmallerButton" Style="{StaticResource ChromeButton}" ToolTip="아이콘 작게" Click="SmallerButton_OnClick"><local:SymbolIcon Kind="Minus" /></Button>
+                <Button x:Name="LargerButton" Style="{StaticResource ChromeButton}" ToolTip="아이콘 크게" Click="LargerButton_OnClick"><local:SymbolIcon Kind="Plus" /></Button>
+                <Button x:Name="ViewModeButton" Style="{StaticResource ChromeButton}" AutomationProperties.Name="전체 패널 보기 전환" Click="ViewModeButton_OnClick"><local:SymbolIcon x:Name="ViewModeIcon" Kind="Grid" /></Button>
             </StackPanel>
         </Grid>
     </Border>

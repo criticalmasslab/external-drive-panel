@@ -29,29 +29,6 @@ public sealed class DriveService
         return (serialNumber, volumeName.ToString());
     }
 
-    public string? FindRootBySerial(uint serial)
-    {
-        foreach (var root in ListDriveRoots())
-        {
-            try
-            {
-                if (GetVolumeInfo(root).VolumeSerialNumber == serial)
-                {
-                    return root;
-                }
-            }
-            catch (Win32Exception)
-            {
-                // 준비되지 않은 광학/네트워크 드라이브 등은 건너뛴다.
-            }
-        }
-
-        return null;
-    }
-
-    public Dictionary<uint, (string Root, string Label)> SnapshotAllVolumes()
-        => SnapshotDrives().ToDictionary(drive => drive.Serial, drive => (drive.Root, drive.Label));
-
     public IReadOnlyList<DriveSnapshot> SnapshotDrives()
     {
         var snapshot = new Dictionary<uint, DriveSnapshot>();
