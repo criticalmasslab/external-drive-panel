@@ -23,6 +23,7 @@ internal sealed class FileCommandBar : IDisposable
     private FileSystemWatcher? _watcher;
     private string? _watched;
     private bool _busy, _disposed;
+    private volatile bool _suspended;
     private bool _validSelection, _shareSelection, _mutableSelection;
     private int _refreshScheduled;
     public Action<IReadOnlyList<string>>? DeletedPaths { get; set; }
@@ -52,7 +53,7 @@ internal sealed class FileCommandBar : IDisposable
         create.Click += (_, _) => { menu.IsOpen = true; };
         _owner.PreviewKeyDown += KeyDown;
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
-        _refreshTimer.Tick += (_, _) => { _refreshTimer.Stop(); Interlocked.Exchange(ref _refreshScheduled, 0); if (!_disposed) { _refresh(); Update(); } };
+        _refreshTimer.Tick += (_, _) => { _refreshTimer.Stop(); Interlocked.Exchange(ref _refreshScheduled, 0); if (!_disposed && !_suspended) { _refresh(); Update(); } };
         _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(500), DispatcherPriority.Background, (_, _) => Update(false), owner.Dispatcher);
         Update();
     }
@@ -66,7 +67,7 @@ internal sealed class FileCommandBar : IDisposable
     }
     private void Update(bool refreshSelection = true)
     {
-        if (_disposed) return;
+        if (_disposed || _suspended) return;
         if (refreshSelection)
         {
             var selected = _selection();
@@ -98,12 +99,12 @@ internal sealed class FileCommandBar : IDisposable
     private void Changed(object sender, FileSystemEventArgs e) => RequestRefresh();
     private void RequestRefresh()
     {
-        if (_disposed || _owner.Dispatcher.HasShutdownStarted || Interlocked.Exchange(ref _refreshScheduled, 1) != 0) return;
+        if (_disposed || _suspended || _owner.Dispatcher.HasShutdownStarted || Interlocked.Exchange(ref _refreshScheduled, 1) != 0) return;
         try
         {
             _owner.Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (_disposed) return;
+                if (_disposed || _suspended) return;
                 if (!_refreshTimer.IsEnabled) _refreshTimer.Start();
             }));
         }
@@ -221,6 +222,16 @@ internal sealed class FileCommandBar : IDisposable
         }
     }
 
+    public void Suspend()
+    {
+        _suspended = true; _timer.Stop(); _refreshTimer.Stop();
+        _watcher?.Dispose(); _watcher = null; _watched = null; Interlocked.Exchange(ref _refreshScheduled, 0);
+    }
+    public void Resume()
+    {
+        if (_disposed || !_suspended) return;
+        _suspended = false; Update(); _timer.Start();
+    }
     public void Dispose()
     {
         _disposed = true;

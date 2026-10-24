@@ -6,7 +6,7 @@ using System.Windows.Input;
 
 namespace ExternalDrivePanel;
 
-public partial class DrivePanelWindow : Window
+public partial class DrivePanelWindow : Window, IEjectParticipant
 {
     private readonly string _root;
     private readonly PhysicalWindowPlacement _placement;
@@ -663,25 +663,15 @@ public partial class DrivePanelWindow : Window
     private async void EjectButton_OnClick(object sender, RoutedEventArgs e)
     {
         if (_isEjecting) return;
-        var driveName = _root.TrimEnd(Path.DirectorySeparatorChar);
-        var answer = DialogActivation.Show(this, () => MessageBox.Show(this, $"{driveName} 외장하드를 안전하게 꺼낼까요?", "안전하게 꺼내기",
-            MessageBoxButton.YesNo, MessageBoxImage.Question));
-        if (answer != MessageBoxResult.Yes)
-        {
-            return;
-        }
-
-        using var pause = FileOperationRegistry.Pause(_root);
-        if (FileOperationRegistry.IsBusy(_root) && DialogActivation.Show(this, () => MessageBox.Show(this,
-            "이 드라이브를 사용하는 파일 작업이 있습니다. 작업 완료 후 꺼낼까요?", "작업 완료 후 꺼내기",
-            MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No)) != MessageBoxResult.Yes) return;
         _isEjecting = true;
         try
         {
-            await FileOperationRegistry.WaitForIdleAsync(_root);
-            IsEnabled = false; _searchClosed = true;
-            await PrepareForShutdownAsync();
-            var result = await Task.Run(() => _ejectService.TryEject(_root));
+            var driveName = _root.TrimEnd(Path.DirectorySeparatorChar);
+            if (DialogActivation.Show(this, () => MessageBox.Show(this,
+                $"{driveName} 외장하드를 안전하게 꺼낼까요?\n같은 물리 장치의 다른 파티션도 함께 제거됩니다.\n진행 중인 패널 파일 작업이 있으면 완료 후 제거합니다.",
+                "안전하게 꺼내기", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No)) != MessageBoxResult.Yes) return;
+            var result = EjectRequested is { } eject ? await eject(_root)
+                : await EjectWorkflow.RunAsync(_root, _ejectService, [this]);
             var owner = Application.Current?.MainWindow is { IsVisible: true } main ? main : this;
             if (result.Success)
                 DialogActivation.Show(owner, () => MessageBox.Show(owner, "안전하게 제거되었습니다.", "안전하게 꺼내기", MessageBoxButton.OK, MessageBoxImage.Information));
@@ -691,7 +681,7 @@ public partial class DrivePanelWindow : Window
                 "꺼내기 실패", MessageBoxButton.OK, MessageBoxImage.Warning));
         }
         catch (Exception ex) { if (IsVisible) DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, "꺼내기 실패")); }
-        finally { _isEjecting = false; if (IsVisible) { IsEnabled = true; _searchClosed = false; } }
+        finally { _isEjecting = false; }
     }
 
     public async Task PrepareForShutdownAsync()

@@ -84,6 +84,17 @@ internal static class Program
             Require(cell.BorderThickness == new Thickness(0), "realized cells do not draw focus or selection borders");
         }
         SavePreview(first);
+        foreach (var (columnIndex, alignment) in new[] { (1, TextAlignment.Center), (2, TextAlignment.Center), (3, TextAlignment.Right) })
+        {
+            var text = (TextBlock)grid.Columns[columnIndex].GetCellContent(grid.Items[1]);
+            Require(text.TextAlignment == alignment && text.VerticalAlignment == VerticalAlignment.Center,
+                "realized date/size/type text follows column alignment");
+            var header = Descendants(grid).OfType<DataGridColumnHeader>().Single(candidate => candidate.Column == grid.Columns[columnIndex]);
+            Require(header.HorizontalContentAlignment == (alignment == TextAlignment.Center ? HorizontalAlignment.Center : HorizontalAlignment.Right),
+                "column header follows the same alignment as its values");
+        }
+        Require(Descendants(grid.Columns[0].GetCellContent(grid.Items[1])).OfType<TextBlock>().Single(text => text.Text == "Alpha").TextAlignment == TextAlignment.Left,
+            "name stays left aligned beside its icon");
         var menus = Field<ItemContextMenuBuilder>(first, "_itemMenus");
         menus.Populate(grid.ContextMenu, ItemMenuTarget.FromItem(grid.Items[0])!);
         Require((string)MenuCommand(grid, ItemMenuCommand.ToggleFavorite).Header == "즐겨찾기에서 제거", "home context menu removes");

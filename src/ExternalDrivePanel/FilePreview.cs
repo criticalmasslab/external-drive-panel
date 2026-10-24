@@ -21,6 +21,9 @@ public sealed class FilePreview : Grid
     private readonly TextBlock _fallback = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false };
     private CancellationTokenSource? _request;
     private string? _requestKey;
+    private bool _suspended;
+    public void Suspend() { _suspended = true; Cancel(); _requestKey = null; }
+    public void Resume() { if (!_suspended) return; _suspended = false; Refresh(); }
 
     public FilePreview()
     {
@@ -38,7 +41,7 @@ public sealed class FilePreview : Grid
     private async void Refresh()
     {
         _fallback.Text = FallbackGlyph; _fallback.FontSize = GlyphSize;
-        if (!PreviewEnabled || !IsLoaded || !IsVisible || ActualWidth <= 0 || ActualHeight <= 0)
+        if (_suspended || !PreviewEnabled || !IsLoaded || !IsVisible || ActualWidth <= 0 || ActualHeight <= 0)
         {
             Cancel(); _requestKey = null; _image.Source = null; _fallback.Visibility = Visibility.Visible; return;
         }

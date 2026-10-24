@@ -204,6 +204,24 @@
                           MouseDoubleClick="Items_OnMouseDoubleClick" Sorting="DetailsGrid_OnSorting"
                           SelectionChanged="Items_OnSelectionChanged">
                     <DataGrid.Resources>
+                        <Style x:Key="CenteredDetailsText" TargetType="TextBlock">
+                            <Setter Property="TextAlignment" Value="Center" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="4,0" />
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                        </Style>
+                        <Style x:Key="RightDetailsText" TargetType="TextBlock" BasedOn="{StaticResource CenteredDetailsText}">
+                            <Setter Property="TextAlignment" Value="Right" />
+                        </Style>
+                        <Style x:Key="DetailsHeader" TargetType="DataGridColumnHeader">
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                        </Style>
+                        <Style x:Key="CenteredDetailsHeader" TargetType="DataGridColumnHeader" BasedOn="{StaticResource DetailsHeader}">
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                        </Style>
+                        <Style x:Key="RightDetailsHeader" TargetType="DataGridColumnHeader" BasedOn="{StaticResource DetailsHeader}">
+                            <Setter Property="HorizontalContentAlignment" Value="Right" />
+                        </Style>
                         <Style TargetType="DataGridRow">
                             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                             <Setter Property="BorderThickness" Value="0" />
@@ -214,19 +232,22 @@
                         </Style>
                     </DataGrid.Resources>
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="이름" SortMemberPath="Name" Width="2*">
+                        <DataGridTemplateColumn Header="이름" SortMemberPath="Name" Width="2*" HeaderStyle="{StaticResource DetailsHeader}">
                             <DataGridTemplateColumn.CellTemplate><DataTemplate>
                                 <Grid ToolTip="{Binding FullPath}"><Grid.ColumnDefinitions><ColumnDefinition Width="26" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                                     <Grid Width="24" Height="24"><local:FilePreview FilePath="{Binding FullPath}" FallbackGlyph="{Binding Icon}" PreviewEnabled="{DynamicResource ShowFilePreviews}" GlyphSize="16" />
                                         <local:SymbolIcon Style="{StaticResource FavoriteBadge}" Width="9" Height="9" />
                                     </Grid>
-                                    <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" TextAlignment="Left" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                                 </Grid>
                             </DataTemplate></DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="수정한 날짜" Binding="{Binding ModifiedDate, StringFormat=yyyy-MM-dd HH:mm}" SortMemberPath="ModifiedDate" Width="*" />
-                        <DataGridTextColumn Header="크기" Binding="{Binding SizeDisplay}" SortMemberPath="Size" Width="Auto" />
-                        <DataGridTextColumn Header="유형" Binding="{Binding Type}" SortMemberPath="Type" Width="*" />
+                        <DataGridTextColumn Header="수정한 날짜" Binding="{Binding ModifiedDate, StringFormat=yyyy-MM-dd HH:mm}" SortMemberPath="ModifiedDate" Width="*"
+                                            ElementStyle="{StaticResource CenteredDetailsText}" HeaderStyle="{StaticResource CenteredDetailsHeader}" />
+                        <DataGridTextColumn Header="크기" Binding="{Binding SizeDisplay}" SortMemberPath="Size" Width="Auto"
+                                            ElementStyle="{StaticResource CenteredDetailsText}" HeaderStyle="{StaticResource CenteredDetailsHeader}" />
+                        <DataGridTextColumn Header="유형" Binding="{Binding Type}" SortMemberPath="Type" Width="*"
+                                            ElementStyle="{StaticResource RightDetailsText}" HeaderStyle="{StaticResource RightDetailsHeader}" />
                         <DataGridTextColumn x:Name="SearchLocationColumn" Header="위치" Binding="{Binding DirectoryPath}" Width="2*" CanUserSort="False" Visibility="Collapsed" />
                     </DataGrid.Columns>
                 </DataGrid>

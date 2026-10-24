@@ -25,6 +25,14 @@ public static class ShellPreviewService
     // Accessed only on Worker. Bounded to avoid retaining thousands of large bitmaps.
     private static readonly Dictionary<string, BitmapSource> Cache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Queue<string> Order = new();
+    public static async Task WaitForIdleAsync()
+    {
+        if (!Worker.IsValueCreated) return;
+        var worker = await Worker.Value;
+        // All panel requests are canceled before the barrier. Any active native
+        // extraction completes and releases its COM/file handles before removal.
+        await worker.InvokeAsync(() => { }, DispatcherPriority.SystemIdle);
+    }
 
     public static Task<BitmapSource?> LoadAsync(string path, int pixels, CancellationToken cancellation = default) => LoadCoreAsync(path, pixels, false, cancellation);
     public static Task<BitmapSource?> LoadThumbnailAsync(string path, int pixels, CancellationToken cancellation = default) => LoadCoreAsync(path, pixels, true, cancellation);

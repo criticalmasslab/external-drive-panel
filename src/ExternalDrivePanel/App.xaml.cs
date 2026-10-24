@@ -12,7 +12,7 @@ public partial class App : Application
     private readonly LayoutCalculator _layoutCalculator = new();
     private readonly PanelLayoutState _panelLayout = new();
     private LayoutResizeController _resizeController = null!;
-    private readonly EjectService _ejectService = new();
+    private readonly EjectService _ejectService;
     private ZoneSettings _zoneSettings = new();
     private readonly GlobalViewSettings _viewSettings = new();
     private readonly Dictionary<uint, DrivePanelWindow> _panels = new();
@@ -36,6 +36,8 @@ public partial class App : Application
     private readonly Func<IReadOnlyList<DriveSnapshot>> _snapshotProvider;
     private readonly bool _customSnapshotProvider;
     private bool _polling;
+    private Task<IReadOnlyList<DriveSnapshot>>? _pollWork;
+    private bool _ejectInProgress;
     private long _snapshotRevision;
     private AppConfig _config = new();
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
@@ -48,9 +50,10 @@ public partial class App : Application
 
     public App() : this(new ConfigStore()) { }
 
-    public App(ConfigStore configStore, Func<IReadOnlyList<DriveSnapshot>>? snapshotProvider = null, AutoUpdateService? updates = null, IUpdateDialogs? updateDialogs = null)
+    public App(ConfigStore configStore, Func<IReadOnlyList<DriveSnapshot>>? snapshotProvider = null, AutoUpdateService? updates = null, IUpdateDialogs? updateDialogs = null, EjectService? ejectService = null)
     {
         _configStore = configStore;
+        _ejectService = ejectService ?? new EjectService();
         _snapshotProvider = snapshotProvider ?? _driveService.SnapshotDrives;
         _customSnapshotProvider = snapshotProvider is not null;
         _updates = updates ?? new AutoUpdateService();
@@ -133,7 +136,7 @@ public partial class App : Application
             RefreshPanels();
             TrayMenuBuilder.Populate(contextMenu, _coordinator, _config,
                 () => TopBar_OnSettingsRequested(this, EventArgs.Empty), RegisterDrive,
-                key => { if (_coordinator.ToggleHidden(key)) RegistrationChanged(); },
+                key => { if (!_exitRequested && _coordinator.ToggleHidden(key)) RegistrationChanged(); },
                 UnregisterDrive, ExitApplication);
             AddMaintenanceMenu(contextMenu);
         };
@@ -151,27 +154,28 @@ public partial class App : Application
     private async void PollTimer_OnTick(object? sender, EventArgs e)
     {
         if (_customSnapshotProvider) { RefreshPanels(); return; }
-        if (_polling || _isExiting) return;
+        if (_polling || _isExiting || _ejectInProgress) return;
         _polling = true; var revision = _snapshotRevision;
         try
         {
-            var snapshot = await Task.Run(_snapshotProvider);
+            _pollWork = Task.Run(_snapshotProvider);
+            var snapshot = await _pollWork;
             if (!_isExiting && revision == _snapshotRevision) RefreshPanelsFromSnapshot(snapshot);
         }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Drive polling: {ex}"); DiagnosticLog.Record("drives.poll.failed", ex); }
-        finally { _polling = false; }
+        finally { _polling = false; _pollWork = null; }
     }
 
     private void RefreshPanels()
     {
-        if (_isExiting) return;
+        if (_isExiting || _ejectInProgress) return;
         _snapshotRevision++;
         RefreshPanelsFromSnapshot(_snapshotProvider());
     }
 
     private void RefreshPanelsFromSnapshot(IReadOnlyList<DriveSnapshot> snapshot)
     {
-        if (_isExiting) return;
+        if (_isExiting || _ejectInProgress) return;
         var plan = _coordinator.Evaluate(snapshot);
         if (plan.ConfigChanged) ScheduleSave();
         foreach (var notice in plan.Notices) _notices.Enqueue(notice);
@@ -190,6 +194,7 @@ public partial class App : Application
             if (_panels.TryGetValue(serial, out var existingPanel)) { existingPanel.UpdateVolumeLabel(volume.Label); continue; }
             var serialKey = DriveCoordinator.Key(serial);
             var panel = new DrivePanelWindow(volume.Root, volume.Label, _viewSettings, _ejectService, _config.Drives[serialKey]);
+            panel.EjectRequested = EjectDriveAsync;
             PanelActivation.Attach(panel, PanelWindows);
             _resizeController.Attach(panel);
             panel.NotificationRequested += ShowNotification;
@@ -241,7 +246,7 @@ public partial class App : Application
 
     private void Updates_OnReady(object? sender, EventArgs e)
     {
-        if (_isExiting || _updateBar is not null) return;
+        if (_isExiting || _ejectInProgress || _updateBar is not null) return;
         _resizeController.Cancel();
         _updateBar = new UpdateNotificationWindow();
         _updateBar.RestartRequested += async (_, _) => await ShutdownApplicationAsync(update: true);
@@ -271,12 +276,14 @@ public partial class App : Application
 
     private void RegisterDrive(uint serial)
     {
+        if (_exitRequested) return;
         RefreshPanels(); // Validate that the menu candidate is still connected.
         if (_coordinator.Register(serial)) RegistrationChanged();
     }
 
     private void UnregisterDrive(string key)
     {
+        if (_exitRequested) return;
         if (_topBar is null || !_config.Drives.TryGetValue(key, out var drive) || !drive.Registered) return;
         var name = _coordinator.DisplayName(key);
         var answer = DialogActivation.Show(_topBar, () => MessageBox.Show(_topBar,
@@ -354,6 +361,7 @@ public partial class App : Application
 
     private void TopBar_OnSettingsRequested(object? sender, EventArgs e)
     {
+        if (_exitRequested) return;
         var monitors = _monitorService.GetMonitors();
         if (monitors.Count == 0)
         {

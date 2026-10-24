@@ -1,107 +1,35 @@
-using Microsoft.Win32.SafeHandles;
-using System.ComponentModel;
-using System.Runtime.InteropServices;
-
 namespace ExternalDrivePanel;
 
-public sealed class EjectService
+public sealed record EjectTarget(string Root, uint DiskNumber, uint DevInst, string DeviceId, uint VolumeSerial);
+public interface IEjectBackend
 {
-    private const uint GenericRead = 0x80000000;
-    private const uint GenericWrite = 0x40000000;
-    private const uint FileShareRead = 0x00000001;
-    private const uint FileShareWrite = 0x00000002;
-    private const uint OpenExisting = 3;
-    private const uint FsctlLockVolume = 0x00090018;
-    private const uint FsctlDismountVolume = 0x00090020;
-    private const uint IoctlStorageMediaRemoval = 0x002D4804;
-    private const uint IoctlStorageEjectMedia = 0x002D4808;
+    EjectTarget Resolve(string root);
+    EjectResult Request(EjectTarget target);
+}
 
+/// <summary>Ask Windows PnP to prepare removal; never force-lock/dismount a volume.</summary>
+public sealed class EjectService(IEjectBackend? backend = null)
+{
+    private readonly IEjectBackend _backend = backend ?? new WindowsEjectBackend();
     public EjectResult TryEject(string root)
     {
-        if (string.IsNullOrWhiteSpace(root) || root.Length < 2 || root[1] != ':')
+        try
         {
-            return EjectResult.Failed("올바른 드라이브 경로가 아닙니다.");
+            if (!IsDriveRoot(root)) return EjectResult.Failed("올바른 드라이브 루트가 아닙니다.");
+            var first = _backend.Resolve(root);
+            var current = _backend.Resolve(root);
+            if (first != current) return EjectResult.Failed("준비 중 연결된 장치가 바뀌었습니다. 드라이브를 다시 확인해주세요.");
+            var result = _backend.Request(current);
+            DiagnosticLog.Record(result.Success ? "eject.success" : "eject.rejected");
+            return result;
         }
-
-        var volumePath = $@"\\.\{char.ToUpperInvariant(root[0])}:";
-        using var handle = CreateFileW(volumePath, GenericRead | GenericWrite, FileShareRead | FileShareWrite,
-            IntPtr.Zero, OpenExisting, 0, IntPtr.Zero);
-        if (handle.IsInvalid)
+        catch (Exception ex)
         {
-            return Failure("볼륨 핸들을 열 수 없습니다");
+            DiagnosticLog.Record("eject.failed", ex);
+            return EjectResult.Failed(ex.Message);
         }
-
-        if (!DeviceIoControl(handle, FsctlLockVolume, IntPtr.Zero, 0, IntPtr.Zero, 0, out _, IntPtr.Zero))
-        {
-            return Failure("볼륨을 잠글 수 없습니다. 사용 중인 파일이나 프로그램을 닫아주세요");
-        }
-
-        if (!DeviceIoControl(handle, FsctlDismountVolume, IntPtr.Zero, 0, IntPtr.Zero, 0, out _, IntPtr.Zero))
-        {
-            return Failure("볼륨을 분리할 수 없습니다");
-        }
-
-        var removal = new PreventMediaRemovalData { PreventMediaRemoval = false };
-        if (!DeviceIoControlMedia(handle, IoctlStorageMediaRemoval, ref removal,
-                Marshal.SizeOf<PreventMediaRemovalData>(), IntPtr.Zero, 0, out _, IntPtr.Zero))
-        {
-            return Failure("미디어 제거 잠금을 해제할 수 없습니다");
-        }
-
-        if (!DeviceIoControl(handle, IoctlStorageEjectMedia, IntPtr.Zero, 0, IntPtr.Zero, 0, out _, IntPtr.Zero))
-        {
-            return Failure("장치가 소프트웨어 꺼내기를 지원하지 않거나 꺼내기에 실패했습니다");
-        }
-
-        return EjectResult.Succeeded();
     }
-
-    private static EjectResult Failure(string step)
-    {
-        var error = Marshal.GetLastWin32Error();
-        return EjectResult.Failed($"{step}. {new Win32Exception(error).Message} (오류 {error})");
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct PreventMediaRemovalData
-    {
-        [MarshalAs(UnmanagedType.U1)]
-        public bool PreventMediaRemoval;
-    }
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern SafeFileHandle CreateFileW(
-        string fileName,
-        uint desiredAccess,
-        uint shareMode,
-        IntPtr securityAttributes,
-        uint creationDisposition,
-        uint flagsAndAttributes,
-        IntPtr templateFile);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool DeviceIoControl(
-        SafeFileHandle device,
-        uint controlCode,
-        IntPtr inputBuffer,
-        int inputBufferSize,
-        IntPtr outputBuffer,
-        int outputBufferSize,
-        out int bytesReturned,
-        IntPtr overlapped);
-
-    [DllImport("kernel32.dll", EntryPoint = "DeviceIoControl", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool DeviceIoControlMedia(
-        SafeFileHandle device,
-        uint controlCode,
-        ref PreventMediaRemovalData inputBuffer,
-        int inputBufferSize,
-        IntPtr outputBuffer,
-        int outputBufferSize,
-        out int bytesReturned,
-        IntPtr overlapped);
+    public static bool IsDriveRoot(string? root) => root is { Length: 3 } && char.IsAsciiLetter(root[0]) && root[1] == ':' && root[2] is '\\' or '/';
 }
 
 public sealed record EjectResult(bool Success, string? FailureReason)

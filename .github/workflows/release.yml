@@ -40,6 +40,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Panel access geometry tests failed.' }
           dotnet run --project tests/MaintenanceSmoke -c Release -- --logic-only
           if ($LASTEXITCODE -ne 0) { throw 'Backup and diagnostic log tests failed.' }
+          dotnet run --project tests/EjectSmoke -c Release -- --logic-only
+          if ($LASTEXITCODE -ne 0) { throw 'Safe ejection policy and lifecycle tests failed.' }
       - name: Build installer and feed
         shell: pwsh
         run: ./scripts/Publish-Installer.ps1 -Version $env:RELEASE_VERSION

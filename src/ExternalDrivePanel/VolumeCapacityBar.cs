@@ -51,6 +51,7 @@ public sealed class VolumeCapacityBar : Grid, IDisposable
         Foreground = new SolidColorBrush(Color.FromRgb(0x20, 0x32, 0x46)) };
     private readonly DispatcherTimer _timer;
     private bool _busy, _disposed;
+    private bool _suspended;
     private int _version;
     public string RootPath { get; set; } = "";
     public VolumeCapacitySnapshot? Snapshot { get; private set; }
@@ -63,13 +64,13 @@ public sealed class VolumeCapacityBar : Grid, IDisposable
         _caption.SetResourceReference(TextBlock.FontSizeProperty, "CapacityFontSize");
         _timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(10) };
         _timer.Tick += async (_, _) => await RefreshAsync();
-        Loaded += async (_, _) => { if (!_disposed) { _timer.Start(); await RefreshAsync(); } };
+        Loaded += async (_, _) => { if (!_disposed && !_suspended) { _timer.Start(); await RefreshAsync(); } };
         Unloaded += (_, _) => { _timer.Stop(); _version++; };
     }
 
     public async Task RefreshAsync()
     {
-        if (_disposed || _busy || string.IsNullOrEmpty(RootPath)) return;
+        if (_disposed || _suspended || _busy || string.IsNullOrEmpty(RootPath)) return;
         _busy = true; var version = _version; var root = RootPath;
         try
         {
@@ -97,5 +98,16 @@ public sealed class VolumeCapacityBar : Grid, IDisposable
         System.Windows.Automation.AutomationProperties.SetName(this, _caption.Text);
     }
 
+    public async Task SuspendAsync()
+    {
+        _suspended = true; _version++; _timer.Stop();
+        while (_busy) await Task.Delay(10);
+    }
+    public void Resume()
+    {
+        if (_disposed || !_suspended) return;
+        _suspended = false;
+        if (IsLoaded) _timer.Start();
+    }
     public void Dispose() { _disposed = true; _version++; _timer.Stop(); }
 }
