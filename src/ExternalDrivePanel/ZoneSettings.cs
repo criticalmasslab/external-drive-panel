@@ -8,6 +8,7 @@ public sealed class ZoneSettings
     public int CellCol { get; set; } = 3;
     public int CellRow { get; set; }
     public SplitDirection SplitDirection { get; set; } = SplitDirection.Vertical;
+    public bool ResponsivePanels { get; set; } = true;
     public bool MarginUniform { get; set; } = true;
     public double MarginAll { get; set; }
     public double MarginTop { get; set; }
@@ -25,6 +26,7 @@ public sealed class ZoneSettings
         CellCol = source.CellCol;
         CellRow = source.CellRow;
         SplitDirection = source.SplitDirection;
+        ResponsivePanels = source.ResponsivePanels;
         MarginUniform = source.MarginUniform;
         MarginAll = source.MarginAll;
         MarginTop = source.MarginTop;

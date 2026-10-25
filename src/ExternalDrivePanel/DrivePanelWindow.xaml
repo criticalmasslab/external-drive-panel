@@ -14,6 +14,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="HeaderChrome.xaml" />
+                <ResourceDictionary Source="PanelScrollBars.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <Style x:Key="FavoriteBadge" TargetType="local:SymbolIcon">
                 <Setter Property="Kind" Value="StarFill" /><Setter Property="Foreground" Value="#FFE3A51B" />
@@ -107,7 +108,7 @@
             <Border x:Name="FileToolbar" Grid.Row="2" Height="{DynamicResource PanelChromeHeight}" Padding="3,0" Background="#FFF4F5F7">
             <Grid VerticalAlignment="Center"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="NewItemButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="새로 만들기" ToolTip="새로 만들기 — 현재 폴더 (홈에서는 드라이브 루트)"><local:SymbolIcon Kind="Plus" /></Button>
+                <Button x:Name="NewItemButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="새로 만들기" ToolTip="새로 만들기 — 현재 폴더 (홈에서는 드라이브 루트)"><local:SymbolIcon Kind="NewFolder" /></Button>
                 <Border Width="1" Margin="3,4" Background="#FFD0D5DC" />
                 <Button x:Name="CutButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="잘라내기" ToolTip="잘라내기 (Ctrl+X)"><local:SymbolIcon Kind="Cut" /></Button>
                 <Button x:Name="CopyButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="복사" ToolTip="복사 (Ctrl+C)"><local:SymbolIcon Kind="Copy" /></Button>
@@ -143,7 +144,7 @@
             <AdornerDecorator Grid.Row="4">
             <Grid x:Name="ContentArea" Background="Transparent" PreviewMouseDown="ContentArea_OnPreviewMouseDown">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-                <Border x:Name="SearchStatus" Background="#FFE8EDF3" Padding="6,3" Visibility="Collapsed">
+                <Border x:Name="SearchStatus" Background="#FFE8EDF3" Padding="6,3" Visibility="Collapsed" SizeChanged="SearchStatus_OnSizeChanged">
                     <DockPanel><Button x:Name="SearchStopButton" DockPanel.Dock="Right" Content="중지" Click="SearchStop_OnClick" Padding="4,0" Margin="4,0,0,0" />
                         <TextBlock x:Name="SearchStatusText" FontSize="11" Foreground="#FF526174" TextWrapping="Wrap" VerticalAlignment="Center" />
                     </DockPanel>
@@ -196,6 +197,7 @@
                 </ListBox>
 
                 <DataGrid x:Name="DetailsGrid" Grid.Row="1" Visibility="Collapsed" AutoGenerateColumns="False"
+                          RowHeight="{x:Static local:PanelListMetrics.RowHeight}" ColumnHeaderHeight="{x:Static local:PanelListMetrics.HeaderHeight}"
                           FocusVisualStyle="{x:Null}"
                           SelectionMode="Extended" SelectionUnit="FullRow" VirtualizingPanel.ScrollUnit="Pixel"
                           IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"

@@ -13,6 +13,21 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
     private readonly GlobalViewSettings _viewSettings;
     private readonly EjectService _ejectService;
     private readonly FavoriteCollection _favorites;
+    public int FavoriteCount => _favorites.Items.Count;
+    public int LayoutItemCount => _contentMode == PanelContentMode.Favorites ? FavoriteCount : _currentItems.Count;
+    public FavoriteLayoutProfile FavoriteLayoutProfile
+    {
+        get
+        {
+            var dpi = System.Windows.Media.VisualTreeHelper.GetDpi(this);
+            var list = _contentMode == PanelContentMode.Favorites ? FavoriteItemsList : IconItemsList;
+            return new(LayoutItemCount, EffectiveViewMode == GlobalViewMode.Details,
+                (double)Resources["IconTileWidth"], (double)Resources["IconTileHeight"], dpi.DpiScaleX, dpi.DpiScaleY,
+                list.Padding.Left + list.Padding.Right,
+                _contentMode == PanelContentMode.Search ? SearchStatus.DesiredSize.Height : 0);
+        }
+    }
+    public event EventHandler? LayoutMetricsChanged;
     private readonly DragDropService _dragDrop;
     private readonly ItemContextMenuBuilder _itemMenus;
     private readonly MarqueeSelection[] _marquee;
@@ -163,6 +178,7 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
     {
         base.OnDpiChanged(oldDpi, newDpi);
         UpdateChromeHeight(newDpi);
+        LayoutMetricsChanged?.Invoke(this, EventArgs.Empty);
     }
     public event Action<string, bool>? NotificationRequested;
     public string RootPath => _root;
@@ -305,6 +321,7 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
                 .ToList();
             UpdateFavoriteBadges();
             ApplySort();
+            LayoutMetricsChanged?.Invoke(this, EventArgs.Empty);
             return true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -376,6 +393,7 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
         ViewModeIcon.Kind = _isDetailsView ? "List" : "Grid";
         ViewModeButton.ToolTip = _isDetailsView ? "현재: 상세 보기 — 클릭하면 이 패널 아이콘 보기" : "현재: 아이콘 보기 — 클릭하면 이 패널 상세 보기";
         UpdateEmptyFavoritesMessage();
+        LayoutMetricsChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void RefreshFavoriteRows()

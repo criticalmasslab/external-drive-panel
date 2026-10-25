@@ -168,6 +168,8 @@ internal static class Program
                 try
                 {
                     ((TextBox)cancelDialog.FindName("GridColsText")).Text = "5";
+                    ((RadioButton)cancelDialog.FindName("EqualPanelsRadio")).IsChecked = true;
+                    Require(!settings.ResponsivePanels, "fixed sizing applies immediately");
                     Require(settings.GridCols == 5, "live edit before cancellation");
                     ((TextBox)cancelDialog.FindName("GridColsText")).Text = "";
                     Require(settings.GridCols == 5 && !string.IsNullOrEmpty(((TextBlock)cancelDialog.FindName("ValidationMessage")).Text), "invalid intermediate input keeps last valid layout with inline feedback");
@@ -175,7 +177,7 @@ internal static class Program
                 }
                 catch (Exception ex) { cancelFailure = ex; cancelDialog.Close(); }
             };
-            Require(cancelDialog.ShowDialog() == false && settings.GridCols == 4, "Cancel restores opening settings");
+            Require(cancelDialog.ShowDialog() == false && settings.GridCols == 4 && settings.ResponsivePanels, "Cancel restores opening settings including sizing mode");
             if (cancelFailure is not null) throw cancelFailure;
             Exception? chromeFailure = null;
             var chromeDialog = new ZoneSettingsWindow(settings, monitors) { Owner = owner };
@@ -191,6 +193,11 @@ internal static class Program
                     ((Button)((System.Windows.Controls.Primitives.UniformGrid)chromeDialog.FindName("GridPreview")).Children[1]).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                     Require(settings.MarginLeft == 9 && !settings.MarginUniform && settings.SplitDirection == SplitDirection.Horizontal
                         && settings.CellCol == 1, "restyled input/choice/grid controls still apply immediately");
+                    ((RadioButton)chromeDialog.FindName("EqualPanelsRadio")).IsChecked = true;
+                    Require(!settings.ResponsivePanels, "fixed sizing radio updates live model");
+                    ((RadioButton)chromeDialog.FindName("ResponsivePanelsRadio")).IsChecked = true;
+                    Require(settings.ResponsivePanels, "responsive sizing radio updates live model");
+                    ((RadioButton)chromeDialog.FindName("EqualPanelsRadio")).IsChecked = true;
                     chromeDialog.UpdateLayout(); SavePreview(chromeDialog, $"settings-individual-{index}.png");
                     chromeDialog.Height = 300; chromeDialog.UpdateLayout();
                     var fit = (Viewbox)chromeDialog.FindName("SettingsBodyFit");
@@ -202,7 +209,7 @@ internal static class Program
                 }
                 catch (Exception ex) { chromeFailure = ex; chromeDialog.Close(); }
             };
-            Require(chromeDialog.ShowDialog() == true && settings.MarginLeft == 9, "header close preserves current settings");
+            Require(chromeDialog.ShowDialog() == true && settings.MarginLeft == 9 && !settings.ResponsivePanels, "header close preserves current settings including sizing mode");
             if (chromeFailure is not null) throw chromeFailure;
         }
         panel.Close();

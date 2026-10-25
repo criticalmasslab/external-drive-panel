@@ -53,6 +53,7 @@ internal sealed class LayoutResizeController(PanelLayoutState layout, Action app
     {
         var window = (Window)sender;
         if (e.ChangedButton != MouseButton.Left) return;
+        if (IsScrollBarSource(e.OriginalSource as DependencyObject)) return;
         // Use the event's point, not the live cursor: queued input may be processed
         // after a fast drag has already moved the cursor away from the edge.
         var point = window.PointToScreen(e.GetPosition(window));
@@ -86,8 +87,18 @@ internal sealed class LayoutResizeController(PanelLayoutState layout, Action app
         else if (e.LeftButton != MouseButtonState.Pressed)
         {
             var point = window.PointToScreen(e.GetPosition(window));
-            window.Cursor = CursorFor(layout.HitTest(point.X, point.Y));
+            window.Cursor = IsScrollBarSource(e.OriginalSource as DependencyObject) ? null : CursorFor(layout.HitTest(point.X, point.Y));
         }
+    }
+
+    // Thin scrollbars overlap the resize grip at the client edge. Give their
+    // thumb and page areas priority so scrolling never starts a panel resize.
+    private static bool IsScrollBarSource(DependencyObject? source)
+    {
+        for (var current = source; current is not null; current = current is System.Windows.Media.Visual
+            ? System.Windows.Media.VisualTreeHelper.GetParent(current) : (current as FrameworkContentElement)?.Parent)
+            if (current is System.Windows.Controls.Primitives.ScrollBar) return true;
+        return false;
     }
 
     private void Tick(object? sender, EventArgs e) => ApplyCursorPosition();

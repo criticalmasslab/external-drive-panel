@@ -76,7 +76,10 @@ public partial class DrivePanelWindow
         finally
         {
             if (version == _searchVersion)
-            { _searchRunning = false; _searchRequest = null; SearchStopButton.Visibility = Visibility.Collapsed; }
+            {
+                _searchRunning = false; _searchRequest = null; SearchStopButton.Visibility = Visibility.Collapsed;
+                LayoutMetricsChanged?.Invoke(this, EventArgs.Empty);
+            }
             request.Dispose();
         }
     }
@@ -91,6 +94,15 @@ public partial class DrivePanelWindow
         SearchStatusText.Text = $"{(running ? "검색 중 · " : "검색 완료 · ")}{_currentItems.Count:N0}개 결과"
             + (snapshot.Limited ? " · 5,000개까지만 표시합니다. 검색어를 좁혀주세요." : $" · {snapshot.Examined:N0}개 확인")
             + (snapshot.Skipped > 0 ? " · 일부 경로 건너뜀" : "");
+        LayoutMetricsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void SearchStatus_OnSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // Include the measured status row, including wrapping after width/DPI changes.
+        // App coalesces these notifications; no extra scan or polling is needed.
+        if (e.HeightChanged && _contentMode == PanelContentMode.Search)
+            LayoutMetricsChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void StopSearch(bool clearText)

@@ -38,6 +38,8 @@ public partial class ZoneSettingsWindow : Window
         GridRowsText.Text = _draft.GridRows.ToString(CultureInfo.InvariantCulture);
         VerticalSplitRadio.IsChecked = _draft.SplitDirection == SplitDirection.Vertical;
         HorizontalSplitRadio.IsChecked = _draft.SplitDirection == SplitDirection.Horizontal;
+        EqualPanelsRadio.IsChecked = !_draft.ResponsivePanels;
+        ResponsivePanelsRadio.IsChecked = _draft.ResponsivePanels;
         UniformMarginCheck.IsChecked = _draft.MarginUniform;
         MarginAllText.Text = Format(_draft.MarginAll); MarginTopText.Text = Format(_draft.MarginTop);
         MarginBottomText.Text = Format(_draft.MarginBottom); MarginLeftText.Text = Format(_draft.MarginLeft); MarginRightText.Text = Format(_draft.MarginRight);
@@ -52,6 +54,11 @@ public partial class ZoneSettingsWindow : Window
     }
 
     public event EventHandler? SettingsSaved;
+    public void DisableStartupForDevelopment()
+    {
+        StartupCheck.IsEnabled = false;
+        StartupMessage.Text = "개발용 실행에서는 정식 버전의 자동실행 설정을 변경하지 않습니다.";
+    }
     private void UpdateChrome(DpiScale dpi)
     {
         HeaderChromeMetrics.Apply(this, dpi);
@@ -111,6 +118,7 @@ public partial class ZoneSettingsWindow : Window
         _draft.GridCols = columns; _draft.GridRows = rows;
         _draft.CellCol = Math.Clamp(_draft.CellCol, 0, columns - 1); _draft.CellRow = Math.Clamp(_draft.CellRow, 0, rows - 1);
         _draft.SplitDirection = HorizontalSplitRadio.IsChecked == true ? SplitDirection.Horizontal : SplitDirection.Vertical;
+        _draft.ResponsivePanels = ResponsivePanelsRadio.IsChecked == true;
         _draft.MarginUniform = UniformMarginCheck.IsChecked == true;
         _draft.MarginAll = all; _draft.MarginTop = top; _draft.MarginBottom = bottom; _draft.MarginLeft = left; _draft.MarginRight = right;
         _draft.MonitorIndex = Math.Clamp(_draft.MonitorIndex, 0, _monitors.Count - 1);

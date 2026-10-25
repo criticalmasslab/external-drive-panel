@@ -91,7 +91,8 @@ internal static class Program
                 && ((SymbolIcon)panel.FindName("HomeIcon")).Kind == "HomeFill", "home uses solid gold house");
             var previewButton = (Button)top.FindName("PreviewButton");
             var buttons = ((StackPanel)previewButton.Parent).Children.OfType<Button>().ToList();
-            Require(buttons.IndexOf(previewButton) == 1 && buttons[2].Name == "HiddenButton", "preview sits between settings and hidden");
+            Require(buttons.Take(4).Select(button => button.Name).SequenceEqual(new[] { "SettingsButton", "RefreshButton", "PreviewButton", "HiddenButton" }),
+                "header order is settings, refresh, preview, hidden");
             Click(previewButton);
             await Wait(() => Previews(panel).Count(p => p.IsVisible && p.PreviewSource is not null) == 3, "favorites thumbnails rendered");
             Require(panel.EffectiveViewMode == GlobalViewMode.Icon, "preview toggle preserves panel override");

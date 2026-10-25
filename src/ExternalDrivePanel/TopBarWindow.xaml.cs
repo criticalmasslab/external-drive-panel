@@ -20,6 +20,7 @@ public partial class TopBarWindow : Window
     }
 
     public event EventHandler? SettingsRequested;
+    public event EventHandler? RefreshRequested;
 
     protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
     {
@@ -34,6 +35,7 @@ public partial class TopBarWindow : Window
 
     private void SettingsButton_OnClick(object sender, RoutedEventArgs e) =>
         SettingsRequested?.Invoke(this, EventArgs.Empty);
+    private void RefreshButton_OnClick(object sender, RoutedEventArgs e) => RefreshRequested?.Invoke(this, EventArgs.Empty);
 
     private void HiddenButton_OnClick(object sender, RoutedEventArgs e) => _viewSettings.ToggleHiddenItems();
     private void PreviewButton_OnClick(object sender, RoutedEventArgs e) => _viewSettings.TogglePreviews();

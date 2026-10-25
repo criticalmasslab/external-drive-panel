@@ -44,6 +44,7 @@ public sealed class SymbolIcon : Control
     {
         ["Back"] = "M19,12 H5 M11,6 L5,12 11,18",
         ["Forward"] = "M5,12 H19 M13,6 L19,12 13,18",
+        ["Refresh"] = "M20,9 A8,8 0 1 0 20,15 M20,4 V9 H15",
         ["Up"] = "M12,20 V4 M6,10 L12,4 18,10",
         ["Home"] = "M3,11 L12,3 21,11 M6,9 V21 H10 V14 H14 V21 H18 V9",
         ["HomeFill"] = "M2,11 L12,2 22,11 H19 V22 H14 V15 H10 V22 H5 V11 Z",
@@ -53,6 +54,7 @@ public sealed class SymbolIcon : Control
         ["Grid"] = "M4,4 H10 V10 H4 Z M14,4 H20 V10 H14 Z M4,14 H10 V20 H4 Z M14,14 H20 V20 H14 Z",
         ["List"] = "M4,5 H6 M10,5 H20 M4,12 H6 M10,12 H20 M4,19 H6 M10,19 H20",
         ["Plus"] = "M12,4 V20 M4,12 H20",
+        ["NewFolder"] = "M12,20 H5 Q3,20 3,18 V6 Q3,4 5,4 H10 L13,7 H19 Q21,7 21,9 V12 M3,9 H21 M18,14 V22 M14,18 H22",
         ["Minus"] = "M4,12 H20",
         ["Close"] = "M6,6 L18,18 M18,6 L6,18",
         ["Search"] = "M16,10 A6,6 0 1 1 4,10 A6,6 0 1 1 16,10 M15,15 L21,21",

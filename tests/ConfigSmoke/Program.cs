@@ -49,7 +49,7 @@ internal static class Program
         var config = new AppConfig
         {
             Zone = new ZoneSettings { MonitorIndex = 1, GridCols = 3, GridRows = 2, CellCol = 2, CellRow = 1,
-                SplitDirection = SplitDirection.Horizontal, MarginUniform = false, MarginAll = 3,
+                SplitDirection = SplitDirection.Horizontal, ResponsivePanels = false, MarginUniform = false, MarginAll = 3,
                 MarginTop = 5, MarginBottom = 7, MarginLeft = 9, MarginRight = 11 },
             GlobalView = new GlobalViewConfig { ViewMode = GlobalViewMode.Details, IconSize = 36, ShowHidden = true },
             Drives = { ["123456789"] = new DriveConfig { LastKnownLabel = "테스트 외장하드", SortKey = "Size", SortReverse = true,
@@ -60,6 +60,14 @@ internal static class Program
         var firstJson = File.ReadAllText(path);
         Require(firstJson.Contains("\n  \"zone\"") && firstJson.Contains("\"version\": 1"), "indented versioned JSON");
         Require(store.Save(store.Load()) && File.ReadAllText(path) == firstJson, "exact serialized roundtrip and atomic replacement");
+        Require(!store.Load().Zone.ResponsivePanels, "fixed panel sizing survives JSON roundtrip");
+        var legacy = System.Text.Json.Nodes.JsonNode.Parse(firstJson)!;
+        legacy["zone"]!.AsObject().Remove("responsivePanels");
+        var legacyPath = Path.Combine(directory, "legacy-sizing.json");
+        File.WriteAllText(legacyPath, legacy.ToJsonString());
+        var legacyConfig = ConfigStore.ReadValidated(legacyPath);
+        Require(legacyConfig.Zone.ResponsivePanels && legacyConfig.Drives["123456789"].Favorites.Count == 2,
+            "existing configs without sizing field retain responsive behavior and favorites");
         Console.WriteLine("CONFIG EXAMPLE:\n" + firstJson);
         using (var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
             Require(!store.Save(config), "locked config save fails quietly");

@@ -57,7 +57,7 @@ internal static class Program
                         }
                         await globalBar.Dispatcher.InvokeAsync(() => globalBar.UpdateLayout(), DispatcherPriority.ApplicationIdle);
                         var globalDpi = VisualTreeHelper.GetDpi(globalBar);
-                        foreach (var name in new[] { "HiddenButton", "ViewModeButton" })
+                        foreach (var name in new[] { "SettingsButton", "RefreshButton", "PreviewButton", "HiddenButton", "ViewModeButton" })
                         {
                             var bounds = Bounds(globalBar, name);
                             Require(Math.Abs(bounds.Width * globalDpi.DpiScaleX - 34) < .1 && Math.Abs(bounds.Height * globalDpi.DpiScaleY - 34) < .1,

@@ -11,8 +11,11 @@ public partial class App : Application
     private readonly MonitorService _monitorService = new();
     private readonly LayoutCalculator _layoutCalculator = new();
     private readonly PanelLayoutState _panelLayout = new();
+    private DrivePanelWindow[] _layoutPanels = [];
+    private bool _layoutRefreshScheduled;
     private LayoutResizeController _resizeController = null!;
     private readonly EjectService _ejectService;
+    private readonly DeviceReconnectService _reconnectService;
     private ZoneSettings _zoneSettings = new();
     private readonly GlobalViewSettings _viewSettings = new();
     private readonly Dictionary<uint, DrivePanelWindow> _panels = new();
@@ -26,11 +29,14 @@ public partial class App : Application
     private SingleInstanceGuard? _instance;
     private readonly AutoUpdateService _updates;
     private readonly bool _enableUpdates;
+    private readonly bool _development;
+    private DevelopmentSession? _developmentSession;
     private UpdateNotificationWindow? _updateBar;
     private readonly IUpdateDialogs _updateDialogs;
     private bool _updateArmed;
     private PanelRevealService? _panelReveal;
     private DiagnosticLog? _diagnostics;
+    private string LogDirectory => _development ? System.IO.Path.Combine(System.IO.Path.GetDirectoryName(_configStore.FilePath)!, "Logs") : DiagnosticLog.DefaultDirectory;
     public bool IsSoftwareRendering { get; private set; }
     private readonly ConfigStore _configStore;
     private readonly Func<IReadOnlyList<DriveSnapshot>> _snapshotProvider;
@@ -38,6 +44,8 @@ public partial class App : Application
     private bool _polling;
     private Task<IReadOnlyList<DriveSnapshot>>? _pollWork;
     private bool _ejectInProgress;
+    private bool _driveRefreshInProgress;
+    private bool DeviceTransitionInProgress => _ejectInProgress || _driveRefreshInProgress;
     private long _snapshotRevision;
     private AppConfig _config = new();
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
@@ -50,14 +58,16 @@ public partial class App : Application
 
     public App() : this(new ConfigStore()) { }
 
-    public App(ConfigStore configStore, Func<IReadOnlyList<DriveSnapshot>>? snapshotProvider = null, AutoUpdateService? updates = null, IUpdateDialogs? updateDialogs = null, EjectService? ejectService = null)
+    public App(ConfigStore configStore, Func<IReadOnlyList<DriveSnapshot>>? snapshotProvider = null, AutoUpdateService? updates = null, IUpdateDialogs? updateDialogs = null, EjectService? ejectService = null, bool development = false, DeviceReconnectService? reconnectService = null)
     {
         _configStore = configStore;
         _ejectService = ejectService ?? new EjectService();
+        _reconnectService = reconnectService ?? new DeviceReconnectService();
         _snapshotProvider = snapshotProvider ?? _driveService.SnapshotDrives;
         _customSnapshotProvider = snapshotProvider is not null;
         _updates = updates ?? new AutoUpdateService();
-        _enableUpdates = updates is not null || !_customSnapshotProvider;
+        _development = development;
+        _enableUpdates = !development && (updates is not null || !_customSnapshotProvider);
         _updateDialogs = updateDialogs ?? new UpdateDialogs();
     }
 
@@ -75,6 +85,12 @@ public partial class App : Application
             Shutdown(helperExitCode);
             return;
         }
+        if (DeviceReconnectService.TryRunHelper(e.Args, out var reconnectExitCode))
+        {
+            _isHelperProcess = true;
+            Shutdown(reconnectExitCode);
+            return;
+        }
         try { _instance = SingleInstanceGuard.TryAcquire(_configStore.FilePath); }
         catch (Exception ex)
         {
@@ -85,7 +101,7 @@ public partial class App : Application
         if (_instance is null) { _isHelperProcess = true; Shutdown(); return; }
         if (!_customSnapshotProvider)
         {
-            _diagnostics = new DiagnosticLog(DiagnosticLog.DefaultDirectory);
+            _diagnostics = new DiagnosticLog(LogDirectory);
             DiagnosticLog.Current = _diagnostics;
             DiagnosticLog.Record("app.start.v" + typeof(App).Assembly.GetName().Version?.ToString(3));
             DispatcherUnhandledException += App_OnUnhandledException;
@@ -110,10 +126,23 @@ public partial class App : Application
         _viewSettings.ViewModeApplied += ViewSettings_OnViewModeApplied;
         _trayIcon = CreateTrayIcon();
         _topBar = new TopBarWindow(_viewSettings);
+        if (_development)
+        {
+            _topBar.Title = "External Drive Panel — 개발용";
+            _topBar.ShowInTaskbar = true;
+            ((TextBlock)_topBar.FindName("AppNameText")).Text = "개발용 · EXTERNAL DRIVE PANEL";
+            _developmentSession = new DevelopmentSession(() =>
+            {
+                if (Dispatcher.HasShutdownStarted) return;
+                try { Dispatcher.BeginInvoke(new Action(ExitApplication)); }
+                catch (InvalidOperationException) when (Dispatcher.HasShutdownStarted) { }
+            });
+        }
         PanelActivation.Attach(_topBar, PanelWindows);
         _resizeController = new LayoutResizeController(_panelLayout, RepositionWindows);
         _resizeController.Attach(_topBar);
         _topBar.SettingsRequested += TopBar_OnSettingsRequested;
+        _topBar.RefreshRequested += async (_, _) => await RefreshDrivesAsync();
         MainWindow = _topBar;
         RepositionWindows(); // Save physical bounds before the first HWND becomes visible.
         _topBar.Show();
@@ -145,7 +174,7 @@ public partial class App : Application
         _trayImage = PanelTrayIcon.Create();
         return new TaskbarIcon
         {
-            ToolTipText = IsSoftwareRendering ? "External Drive Panel — 소프트웨어 렌더링 (진단)" : "External Drive Panel",
+            ToolTipText = _development ? "External Drive Panel — 개발용" : IsSoftwareRendering ? "External Drive Panel — 소프트웨어 렌더링 (진단)" : "External Drive Panel",
             Icon = _trayImage,
             ContextMenu = contextMenu
         };
@@ -154,7 +183,7 @@ public partial class App : Application
     private async void PollTimer_OnTick(object? sender, EventArgs e)
     {
         if (_customSnapshotProvider) { RefreshPanels(); return; }
-        if (_polling || _isExiting || _ejectInProgress) return;
+        if (_polling || _isExiting || DeviceTransitionInProgress) return;
         _polling = true; var revision = _snapshotRevision;
         try
         {
@@ -168,14 +197,14 @@ public partial class App : Application
 
     private void RefreshPanels()
     {
-        if (_isExiting || _ejectInProgress) return;
+        if (_isExiting || DeviceTransitionInProgress) return;
         _snapshotRevision++;
         RefreshPanelsFromSnapshot(_snapshotProvider());
     }
 
     private void RefreshPanelsFromSnapshot(IReadOnlyList<DriveSnapshot> snapshot)
     {
-        if (_isExiting || _ejectInProgress) return;
+        if (_isExiting || DeviceTransitionInProgress) return;
         var plan = _coordinator.Evaluate(snapshot);
         if (plan.ConfigChanged) ScheduleSave();
         foreach (var notice in plan.Notices) _notices.Enqueue(notice);
@@ -197,6 +226,7 @@ public partial class App : Application
             panel.EjectRequested = EjectDriveAsync;
             PanelActivation.Attach(panel, PanelWindows);
             _resizeController.Attach(panel);
+            panel.LayoutMetricsChanged += (_, _) => ScheduleLayoutRefresh();
             panel.NotificationRequested += ShowNotification;
             panel.VolumeLabelChanged += label => { if (_config.Drives.TryGetValue(serialKey, out var saved)) { saved.LastKnownLabel = label; ScheduleSave(); } };
             void CapturePanel()
@@ -205,12 +235,14 @@ public partial class App : Application
                 // and hidden flags when capturing the panel's favorites/sort state.
                 if (!_config.Drives.TryGetValue(serialKey, out var saved) || !saved.Registered) return;
                 var state = panel.CaptureSettings(saved.LastKnownLabel);
+                var layoutChanged = saved.Favorites.Count != state.Favorites.Count || saved.ViewMode != state.ViewMode;
                 saved.Favorites = state.Favorites;
                 saved.SortKey = state.SortKey;
                 saved.SortReverse = state.SortReverse;
                 saved.ViewMode = state.ViewMode;
                 saved.PreferredLabel = state.PreferredLabel;
                 ScheduleSave();
+                if (layoutChanged && !_isExiting && !_exitRequested) RepositionWindows();
             }
             panel.SettingsChanged += (_, _) => CapturePanel();
             panel.Closed += (_, _) =>
@@ -228,6 +260,7 @@ public partial class App : Application
 
         RepositionWindows();
         foreach (var panel in newPanels) panel.Show();
+        if (newPanels.Count > 0) RepositionWindows(); // HWNDs now report their target monitor DPI.
         ScheduleNoticePump();
     }
 
@@ -246,7 +279,7 @@ public partial class App : Application
 
     private void Updates_OnReady(object? sender, EventArgs e)
     {
-        if (_isExiting || _ejectInProgress || _updateBar is not null) return;
+        if (_isExiting || DeviceTransitionInProgress || _updateBar is not null) return;
         _resizeController.Cancel();
         _updateBar = new UpdateNotificationWindow();
         _updateBar.RestartRequested += async (_, _) => await ShutdownApplicationAsync(update: true);
@@ -335,6 +368,17 @@ public partial class App : Application
         }
     }
 
+    private void ScheduleLayoutRefresh()
+    {
+        if (_isExiting || _exitRequested || _layoutRefreshScheduled) return;
+        _layoutRefreshScheduled = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
+        {
+            _layoutRefreshScheduled = false;
+            if (!_isExiting && !_exitRequested) RepositionWindows();
+        }));
+    }
+
     private void RepositionWindows()
     {
         var monitors = _monitorService.GetMonitors();
@@ -348,7 +392,13 @@ public partial class App : Application
         var cell = _layoutCalculator.CalculateCell(monitor, _zoneSettings);
         var panels = _coordinator.RegisteredOrder.Select(key => uint.Parse(key, System.Globalization.CultureInfo.InvariantCulture))
             .Where(serial => _panels.ContainsKey(serial)).Select(serial => _panels[serial]).ToList();
-        _panelLayout.Configure(cell, panels.Count, _zoneSettings.SplitDirection);
+        if (!_layoutPanels.SequenceEqual(panels))
+        {
+            _resizeController.Cancel();
+            _panelLayout.ResetDistribution();
+            _layoutPanels = panels.ToArray();
+        }
+        _panelLayout.Configure(cell, panels.Select(panel => panel.FavoriteLayoutProfile).ToArray(), _zoneSettings.SplitDirection, _zoneSettings.ResponsivePanels);
         using var placementBatch = PhysicalWindowPlacement.BeginBatch();
         _topBar.SetPlacement(_layoutCalculator.CalculateTopBar(_panelLayout.Cell));
         var rectangles = _panelLayout.Panels();
@@ -371,6 +421,7 @@ public partial class App : Application
         }
 
         var settingsWindow = new ZoneSettingsWindow(_zoneSettings, monitors) { Owner = _topBar };
+        if (_development) settingsWindow.DisableStartupForDevelopment();
         settingsWindow.SettingsSaved += (_, _) => { ResetManualLayout(); ScheduleSave(); };
         if (_topBar is not null) DialogActivation.Show(_topBar, () => settingsWindow.ShowDialog());
         ScheduleNoticePump();
@@ -389,6 +440,7 @@ public partial class App : Application
         {
             panel.ApplyGlobalViewSettings();
         }
+        RepositionWindows();
         ScheduleSave();
     }
 
@@ -501,6 +553,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _developmentSession?.Dispose();
         if (_isHelperProcess) { base.OnExit(e); return; }
         _pollTimer.Stop();
         _saveTimer.Stop();

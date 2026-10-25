@@ -13,6 +13,8 @@ public sealed class PanelLayoutState
     private LayoutRect? _defaultCell;
     private SplitDirection _direction;
     private double[] _weights = [];
+    private FavoriteLayoutProfile[]? _favoriteProfiles;
+    private bool _responsive = true;
     private int _revision;
     public LayoutRect Cell { get; private set; } = new(0, 0, 480, 800);
     public SplitDirection Direction => _direction;
@@ -26,7 +28,27 @@ public sealed class PanelLayoutState
     public LayoutRect Footer => new(Cell.X, Math.Max(Cell.Y + Math.Min(Cell.Height, LayoutCalculator.TopBarHeight), Cell.Y + Cell.Height - FooterHeight), Cell.Width,
         Math.Min(FooterHeight, Math.Max(0, Cell.Height - LayoutCalculator.TopBarHeight)));
 
-    public void Reset() { _defaultCell = null; _revision++; }
+    public void Reset() { _defaultCell = null; _favoriteProfiles = null; _revision++; }
+
+    public void ResetDistribution() { _favoriteProfiles = null; _weights = []; _revision++; }
+
+    public void Configure(LayoutRect cell, IReadOnlyList<FavoriteLayoutProfile> profiles, SplitDirection direction, bool responsive = true)
+    {
+        var changed = _defaultCell != cell || _direction != direction || _responsive != responsive || _weights.Length != profiles.Count
+            || (responsive && (_favoriteProfiles is null || !_favoriteProfiles.SequenceEqual(profiles)));
+        Configure(cell, profiles.Count, direction);
+        if (!changed) return;
+        _favoriteProfiles = profiles.ToArray();
+        _responsive = responsive;
+        if (!responsive)
+            _weights = Enumerable.Repeat(1.0 / Math.Max(1, profiles.Count), profiles.Count).ToArray();
+        else if (direction == SplitDirection.Vertical && profiles.Count > 0)
+        {
+            var extent = Math.Max(1, Cell.Height - ContentHeader);
+            _weights = FavoritePanelLayout.Weights(Cell.Width, extent, profiles);
+        }
+        _revision++;
+    }
 
     public void Configure(LayoutRect cell, int count, SplitDirection direction)
     {
@@ -73,6 +95,7 @@ public sealed class PanelLayoutState
         if (Math.Abs(y - Cell.Y) <= grip) edges |= ResizeEdges.Top;
         else if (Math.Abs(y - Cell.Y - Cell.Height) <= grip) edges |= ResizeEdges.Bottom;
         if (edges != ResizeEdges.None) return new(edges);
+        if (!_responsive) return null; // Equal/fixed mode only permits resizing the whole group.
         var panels = Panels();
         for (var i = 0; i + 1 < panels.Count; i++)
         {
@@ -95,6 +118,7 @@ public sealed class PanelLayoutState
         _weights = (double[])gesture.Weights.Clone();
         if (gesture.Hit.Boundary >= 0)
         {
+            if (!_responsive) return;
             var i = gesture.Hit.Boundary;
             if (i + 1 >= _weights.Length) return;
             var extent = _direction == SplitDirection.Horizontal ? original.Width : Math.Max(1, original.Height - ContentHeader);

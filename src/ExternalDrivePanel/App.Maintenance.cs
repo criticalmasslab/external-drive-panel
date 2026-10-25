@@ -40,7 +40,8 @@ public partial class App
     private void UpdateMaintenanceMenu()
     {
         if (_updateStatusItem is not null) _updateStatusItem.Header = _updates.StatusText;
-        if (_checkUpdateItem is not null) _checkUpdateItem.IsEnabled = !_exitRequested && _updates.State != UpdateCheckState.Checking;
+        if (_development && _updateStatusItem is not null) _updateStatusItem.Header = "개발용 — 로컬에서 갱신합니다";
+        if (_checkUpdateItem is not null) _checkUpdateItem.IsEnabled = !_development && !_exitRequested && _updates.State != UpdateCheckState.Checking;
     }
     private async void CheckUpdatesNow()
     {
@@ -136,9 +137,9 @@ public partial class App
     {
         try
         {
-            Directory.CreateDirectory(DiagnosticLog.DefaultDirectory);
+            Directory.CreateDirectory(LogDirectory);
             var start = new ProcessStartInfo("explorer.exe") { UseShellExecute = false };
-            start.ArgumentList.Add(DiagnosticLog.DefaultDirectory); Process.Start(start);
+            start.ArgumentList.Add(LogDirectory); Process.Start(start);
         }
         catch (Exception ex) { DiagnosticLog.Record("logs.open.failed", ex); ShowNotification("로그 폴더를 열지 못했습니다.", true); }
     }
