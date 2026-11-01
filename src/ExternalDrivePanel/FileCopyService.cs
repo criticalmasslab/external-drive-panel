@@ -25,9 +25,9 @@ public sealed class FileCopyService
                 cancellationToken.ThrowIfCancellationRequested();
                 var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(source));
                 var name = Path.GetFileName(normalized);
-                if (string.IsNullOrEmpty(name)) throw new IOException("드라이브 전체는 복사할 수 없습니다.");
+                if (string.IsNullOrEmpty(name)) throw new IOException(Localization.T("드라이브 전체는 복사할 수 없습니다."));
                 var target = Path.Combine(destination, name);
-                if (IsWithin(target, normalized)) throw new IOException("자기 자신이나 하위 폴더로 복사할 수 없습니다.");
+                if (IsWithin(target, normalized)) throw new IOException(Localization.T("자기 자신이나 하위 폴더로 복사할 수 없습니다."));
                 CopyEntry(normalized, target);
             }
         }
@@ -40,7 +40,7 @@ public sealed class FileCopyService
             RejectLinks(source);
             RejectLinks(target);
             var isDirectory = Directory.Exists(source);
-            if (!isDirectory && !File.Exists(source)) throw new FileNotFoundException("원본 항목을 찾을 수 없습니다.", source);
+            if (!isDirectory && !File.Exists(source)) throw new FileNotFoundException(Localization.T("원본 항목을 찾을 수 없습니다."), source);
             var exists = File.Exists(target) || Directory.Exists(target);
             if (exists)
             {
@@ -49,7 +49,7 @@ public sealed class FileCopyService
                 if (choice == CopyConflictChoice.Cancel) throw new OperationCanceledException();
                 if (choice == CopyConflictChoice.Skip) { skipped++; return; }
                 if (isDirectory != Directory.Exists(target))
-                    throw new IOException($"파일과 폴더의 종류가 달라 덮어쓸 수 없습니다: {target}");
+                    throw new IOException(Localization.Format("파일과 폴더의 종류가 달라 덮어쓸 수 없습니다: {0}", target));
             }
             if (isDirectory)
             {
@@ -80,7 +80,7 @@ public sealed class FileCopyService
         {
             if ((File.Exists(current) || Directory.Exists(current))
                 && (File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
-                throw new IOException($"링크 또는 연결 지점은 복사하지 않습니다: {current}");
+                throw new IOException(Localization.Format("링크 또는 연결 지점은 복사하지 않습니다: {0}", current));
         }
     }
 }

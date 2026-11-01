@@ -95,7 +95,7 @@ public partial class App : Application
         catch (Exception ex)
         {
             _isHelperProcess = true;
-            MessageBox.Show("설정 저장 위치에 접근할 수 없습니다.\n" + ex.Message, "External Drive Panel");
+            MessageBox.Show(Localization.T("설정 저장 위치에 접근할 수 없습니다.\n") + ex.Message, "External Drive Panel");
             Shutdown(1); return;
         }
         if (_instance is null) { _isHelperProcess = true; Shutdown(); return; }
@@ -117,6 +117,8 @@ public partial class App : Application
         SessionEnding += App_OnSessionEnding;
 
         _config = _configStore.Load();
+        Localization.SetLanguage(_config.Language);
+        Localization.LanguageChanged += Language_OnChanged;
         _coordinator = new DriveCoordinator(_config);
         _zoneSettings = _config.Zone;
         _viewSettings.Restore(_config.GlobalView);
@@ -128,9 +130,9 @@ public partial class App : Application
         _topBar = new TopBarWindow(_viewSettings);
         if (_development)
         {
-            _topBar.Title = "External Drive Panel — 개발용";
+            _topBar.Title = Localization.T("External Drive Panel — 개발용");
             _topBar.ShowInTaskbar = true;
-            ((TextBlock)_topBar.FindName("AppNameText")).Text = "개발용 · EXTERNAL DRIVE PANEL";
+            ((TextBlock)_topBar.FindName("AppNameText")).Text = Localization.T("개발용 · EXTERNAL DRIVE PANEL");
             _developmentSession = new DevelopmentSession(() =>
             {
                 if (Dispatcher.HasShutdownStarted) return;
@@ -174,7 +176,7 @@ public partial class App : Application
         _trayImage = PanelTrayIcon.Create();
         return new TaskbarIcon
         {
-            ToolTipText = _development ? "External Drive Panel — 개발용" : IsSoftwareRendering ? "External Drive Panel — 소프트웨어 렌더링 (진단)" : "External Drive Panel",
+            ToolTipText = _development ? Localization.T("External Drive Panel — 개발용") : IsSoftwareRendering ? Localization.T("External Drive Panel — 소프트웨어 렌더링 (진단)") : "External Drive Panel",
             Icon = _trayImage,
             ContextMenu = contextMenu
         };
@@ -320,8 +322,8 @@ public partial class App : Application
         if (_topBar is null || !_config.Drives.TryGetValue(key, out var drive) || !drive.Registered) return;
         var name = _coordinator.DisplayName(key);
         var answer = DialogActivation.Show(_topBar, () => MessageBox.Show(_topBar,
-            $"'{name}' 등록을 해제할까요?\n이 외장하드의 즐겨찾기도 함께 삭제됩니다. 파일은 삭제되지 않아요.",
-            "외장하드 등록 해제", MessageBoxButton.YesNo, MessageBoxImage.Question));
+            Localization.Format("'{0}' 등록을 해제할까요?\n이 외장하드의 즐겨찾기도 함께 삭제됩니다. 파일은 삭제되지 않아요.", name),
+            Localization.T("외장하드 등록 해제"), MessageBoxButton.YesNo, MessageBoxImage.Question));
         if (answer == MessageBoxResult.Yes && _coordinator.Unregister(key)) RegistrationChanged();
     }
 
@@ -416,7 +418,7 @@ public partial class App : Application
         if (monitors.Count == 0)
         {
             if (_topBar is not null) DialogActivation.Show(_topBar,
-                () => MessageBox.Show(_topBar, "연결된 모니터 정보를 가져올 수 없습니다.", "화면 영역 설정", MessageBoxButton.OK, MessageBoxImage.Warning));
+                () => MessageBox.Show(_topBar, Localization.T("연결된 모니터 정보를 가져올 수 없습니다."), Localization.T("화면 영역 설정"), MessageBoxButton.OK, MessageBoxImage.Warning));
             return;
         }
 
@@ -482,8 +484,8 @@ public partial class App : Application
         { _exitRequested = false; return; }
         if (!update && FileOperationRegistry.IsBusy() && _topBar is { } owner
             && DialogActivation.Show(owner, () => MessageBox.Show(owner,
-                "진행 중인 복사·이동·압축 작업이 있습니다. 작업이 끝난 뒤 종료할까요?",
-                "작업 완료 후 종료", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No)) != MessageBoxResult.Yes)
+                Localization.T("진행 중인 복사·이동·압축 작업이 있습니다. 작업이 끝난 뒤 종료할까요?"),
+                Localization.T("작업 완료 후 종료"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No)) != MessageBoxResult.Yes)
         { _exitRequested = false; return; }
         _isExiting = true;
         _resizeController.Cancel();
@@ -510,8 +512,8 @@ public partial class App : Application
                     _isExiting = false; _exitRequested = false; _pollTimer.Start();
                     _updateBar?.SetWaiting(false);
                     if (_topBar is { } errorOwner) _updateDialogs.ShowError(errorOwner,
-                        !saved ? "설정을 저장하지 못해 업데이트를 중단했습니다. 저장 공간과 권한을 확인한 뒤 다시 시도해주세요."
-                        : "업데이트를 시작하지 못했습니다. 다시 시도해주세요.\n" + _updates.LastApplyError);
+                        !saved ? Localization.T("설정을 저장하지 못해 업데이트를 중단했습니다. 저장 공간과 권한을 확인한 뒤 다시 시도해주세요.")
+                        : Localization.T("업데이트를 시작하지 못했습니다. 다시 시도해주세요.\n") + _updates.LastApplyError);
                     return;
                 }
                 _updateArmed = true;
@@ -546,13 +548,14 @@ public partial class App : Application
             _isExiting = false; _exitRequested = false; _pollTimer.Start();
             _updateBar?.SetWaiting(false);
             if (_topBar is { } recoveryOwner) DialogActivation.Show(recoveryOwner, () => MessageBox.Show(recoveryOwner,
-                "종료/업데이트 준비 중 문제가 발생했습니다. 다시 시도해주세요.\n" + ex.Message,
+                Localization.T("종료/업데이트 준비 중 문제가 발생했습니다. 다시 시도해주세요.\n") + ex.Message,
                 "External Drive Panel", MessageBoxButton.OK, MessageBoxImage.Warning));
         }
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        Localization.LanguageChanged -= Language_OnChanged;
         _developmentSession?.Dispose();
         if (_isHelperProcess) { base.OnExit(e); return; }
         _pollTimer.Stop();

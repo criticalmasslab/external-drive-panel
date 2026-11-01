@@ -15,7 +15,7 @@ public sealed class NewDriveWindow : Window
     public NewDriveWindow(Window owner, DriveSnapshot drive)
     {
         Owner = owner;
-        Title = "새 외장하드 연결";
+        Title = Localization.T("새 외장하드 연결");
         Width = 580;
         Height = 240;
         WindowStartupLocation = WindowStartupLocation.Manual;
@@ -24,7 +24,7 @@ public sealed class NewDriveWindow : Window
         Loaded += (_, _) => placement.CenterOnOwner(580, 240);
         var content = new StackPanel { Margin = new Thickness(18) };
         var name = drive.Root.TrimEnd('\\', '/') + (string.IsNullOrWhiteSpace(drive.Label) ? "" : " " + drive.Label);
-        content.Children.Add(new TextBlock { Text = $"'{name}' 외장하드가 연결되었습니다.\n등록해서 패널로 관리할까요?", TextWrapping = TextWrapping.Wrap });
+        content.Children.Add(new TextBlock { Text = Localization.Format("'{0}' 외장하드가 연결되었습니다.\n등록해서 패널로 관리할까요?", name), TextWrapping = TextWrapping.Wrap });
         var buttons = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 22, 0, 0) };
         Button Add(string text, NewDriveChoice choice)
         {
@@ -33,11 +33,11 @@ public sealed class NewDriveWindow : Window
             buttons.Children.Add(button);
             return button;
         }
-        RegisterButton = Add("등록", NewDriveChoice.Register);
+        RegisterButton = Add(Localization.T("등록"), NewDriveChoice.Register);
         RegisterButton.IsDefault = true;
-        SkipButton = Add("이번만 건너뛰기", NewDriveChoice.Skip);
+        SkipButton = Add(Localization.T("이번만 건너뛰기"), NewDriveChoice.Skip);
         SkipButton.IsCancel = true;
-        IgnoreButton = Add("이 드라이브는 다시 묻지 않기", NewDriveChoice.Ignore);
+        IgnoreButton = Add(Localization.T("이 드라이브는 다시 묻지 않기"), NewDriveChoice.Ignore);
         content.Children.Add(buttons);
         Content = new ScrollViewer { Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
     }

@@ -25,7 +25,7 @@ public sealed class WindowsUsbReconnectPlatform : IDeviceReconnectPlatform
                 if (!targets.Any(item => item.HubDeviceId.Equals(target.HubDeviceId, StringComparison.OrdinalIgnoreCase) && item.Port == target.Port)) targets.Add(target);
             }
             catch (IOException) { DiagnosticLog.Record("refresh.usb.unsupported"); }
-            if (targets.Count > DeviceReconnectService.MaximumTargets) throw new IOException("재연결 대상이 너무 많습니다.");
+            if (targets.Count > DeviceReconnectService.MaximumTargets) throw new IOException(Localization.T("재연결 대상이 너무 많습니다."));
         }
         return targets;
     }
@@ -38,7 +38,7 @@ public sealed class WindowsUsbReconnectPlatform : IDeviceReconnectPlatform
         {
             var currentId = DeviceId(node);
             if (currentId.StartsWith("HTREE\\ROOT", StringComparison.OrdinalIgnoreCase) || currentId.StartsWith("PCI\\", StringComparison.OrdinalIgnoreCase)) break;
-            if (CM_Get_DevNode_Status(out var status, out var problem, node, 0) != 0) throw new IOException("장치 상태를 확인하지 못했습니다.");
+            if (CM_Get_DevNode_Status(out var status, out var problem, node, 0) != 0) throw new IOException(Localization.T("장치 상태를 확인하지 못했습니다."));
             var service = StringProperty(node, 5);
             var isUsbStorage = currentId.StartsWith("USB\\VID_", StringComparison.OrdinalIgnoreCase)
                 && (service.Equals("USBSTOR", StringComparison.OrdinalIgnoreCase) || service.Equals("UASPStor", StringComparison.OrdinalIgnoreCase));
@@ -65,10 +65,10 @@ public sealed class WindowsUsbReconnectPlatform : IDeviceReconnectPlatform
             }
             var result = CM_Get_Sibling(out var sibling, child, 0);
             if (result == 0x0D) return found; // CR_NO_SUCH_DEVNODE: end of sibling chain.
-            if (result != 0) throw new IOException("USB 포트 연결 상태를 확인하지 못했습니다.");
+            if (result != 0) throw new IOException(Localization.T("USB 포트 연결 상태를 확인하지 못했습니다."));
             child = sibling;
         }
-        throw new IOException("USB 장치 트리 조회 범위를 초과했습니다.");
+        throw new IOException(Localization.T("USB 장치 트리 조회 범위를 초과했습니다."));
     }
     private static bool HasStartedDescendants(uint parent)
     {
@@ -78,8 +78,8 @@ public sealed class WindowsUsbReconnectPlatform : IDeviceReconnectPlatform
         AddChildren(parent);
         while (pending.TryPop(out var node))
         {
-            if (!visited.Add(node) || visited.Count > 1024) throw new IOException("장치 트리 조회 범위를 초과했습니다.");
-            if (CM_Get_DevNode_Status(out var status, out _, node, 0) != 0) throw new IOException("장치 상태를 확인하지 못했습니다.");
+            if (!visited.Add(node) || visited.Count > 1024) throw new IOException(Localization.T("장치 트리 조회 범위를 초과했습니다."));
+            if (CM_Get_DevNode_Status(out var status, out _, node, 0) != 0) throw new IOException(Localization.T("장치 상태를 확인하지 못했습니다."));
             if ((status & 8) != 0) return true;
             AddChildren(node);
         }
@@ -89,17 +89,17 @@ public sealed class WindowsUsbReconnectPlatform : IDeviceReconnectPlatform
         {
             var result = CM_Get_Child(out var child, node, 0);
             if (result == 0x0D) return;
-            if (result != 0) throw new IOException("장치 트리를 확인하지 못했습니다.");
+            if (result != 0) throw new IOException(Localization.T("장치 트리를 확인하지 못했습니다."));
             for (var index = 0; index < 1024; index++)
             {
                 pending.Push(child);
                 if (pending.Count > 1024) break;
                 result = CM_Get_Sibling(out var next, child, 0);
                 if (result == 0x0D) return;
-                if (result != 0) throw new IOException("장치 트리를 확인하지 못했습니다.");
+                if (result != 0) throw new IOException(Localization.T("장치 트리를 확인하지 못했습니다."));
                 child = next;
             }
-            throw new IOException("장치 트리 조회 범위를 초과했습니다.");
+            throw new IOException(Localization.T("장치 트리 조회 범위를 초과했습니다."));
         }
     }
     public int Cycle(UsbReconnectTarget expected)
@@ -130,14 +130,14 @@ public sealed class WindowsUsbReconnectPlatform : IDeviceReconnectPlatform
     {
         var guid = HubInterface;
         if (CM_Get_Device_Interface_List_SizeW(out var size, ref guid, hubId, 0) != 0 || size is < 2 or > 65536)
-            throw new IOException("USB 허브 인터페이스를 확인하지 못했습니다.");
+            throw new IOException(Localization.T("USB 허브 인터페이스를 확인하지 못했습니다."));
         var buffer = new char[size];
         if (CM_Get_Device_Interface_ListW(ref guid, hubId, buffer, size, 0) != 0)
-            throw new IOException("USB 허브 인터페이스를 확인하지 못했습니다.");
+            throw new IOException(Localization.T("USB 허브 인터페이스를 확인하지 못했습니다."));
         var paths = new string(buffer).Split('\0', StringSplitOptions.RemoveEmptyEntries);
         if (paths.Length != 1 || !paths[0].StartsWith(@"\\?\", StringComparison.Ordinal)
             || !paths[0].Contains(HubInterface.ToString("B"), StringComparison.OrdinalIgnoreCase))
-            throw new IOException("USB 허브 인터페이스를 식별하지 못했습니다.");
+            throw new IOException(Localization.T("USB 허브 인터페이스를 식별하지 못했습니다."));
         return paths[0];
     }
     private static IEnumerable<uint> Enumerate(DeviceSet set, uint limit)
@@ -153,29 +153,29 @@ public sealed class WindowsUsbReconnectPlatform : IDeviceReconnectPlatform
             }
             yield return data.Node;
         }
-        throw new IOException("장치 조회 범위를 초과했습니다.");
+        throw new IOException(Localization.T("장치 조회 범위를 초과했습니다."));
     }
     private static uint Locate(string id)
     {
-        if (CM_Locate_DevNodeW(out var node, id, 1) != 0) throw new IOException("장치가 더 이상 연결되어 있지 않습니다.");
+        if (CM_Locate_DevNodeW(out var node, id, 1) != 0) throw new IOException(Localization.T("장치가 더 이상 연결되어 있지 않습니다."));
         return node;
     }
     private static string DeviceId(uint node)
     {
         var value = new StringBuilder(200);
-        if (CM_Get_Device_IDW(node, value, value.Capacity, 0) != 0) throw new IOException("장치 식별 정보를 확인하지 못했습니다.");
+        if (CM_Get_Device_IDW(node, value, value.Capacity, 0) != 0) throw new IOException(Localization.T("장치 식별 정보를 확인하지 못했습니다."));
         return value.ToString();
     }
     private static string StringProperty(uint node, uint property)
     {
         var value = new StringBuilder(256); var size = 512u;
-        if (CM_Get_PropertyText(node, property, out var type, value, ref size, 0) != 0 || type != 1) throw new IOException("장치 드라이버를 확인하지 못했습니다.");
+        if (CM_Get_PropertyText(node, property, out var type, value, ref size, 0) != 0 || type != 1) throw new IOException(Localization.T("장치 드라이버를 확인하지 못했습니다."));
         return value.ToString();
     }
     private static uint DwordProperty(uint node, uint property)
     {
         var size = 4u;
-        if (CM_Get_PropertyDword(node, property, out var type, out var value, ref size, 0) != 0 || type != 4 || size != 4) throw new IOException("USB 포트를 확인하지 못했습니다.");
+        if (CM_Get_PropertyDword(node, property, out var type, out var value, ref size, 0) != 0 || type != 4 || size != 4) throw new IOException(Localization.T("USB 포트를 확인하지 못했습니다."));
         return value;
     }
     [StructLayout(LayoutKind.Sequential)] private struct DeviceInfo { public int Size; public Guid ClassGuid; public uint Node; public nuint Reserved; }

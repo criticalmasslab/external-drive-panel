@@ -42,14 +42,19 @@ internal sealed class FileCommandBar : IDisposable
         }
         var create = (Button)owner.FindName("NewItemButton");
         var menu = new ContextMenu { PlacementTarget = create, Placement = PlacementMode.Bottom };
-        foreach (var (command, label) in new[] { (PanelFileCommand.NewFolder, "폴더…"), (PanelFileCommand.NewText, "텍스트 문서…"),
-            (PanelFileCommand.WindowsNewMenu, "Windows 새로 만들기 메뉴…") })
+        foreach (var (command, label) in new[] { (PanelFileCommand.NewFolder, Localization.T("폴더…")), (PanelFileCommand.NewText, Localization.T("텍스트 문서…")),
+            (PanelFileCommand.WindowsNewMenu, Localization.T("Windows 새로 만들기 메뉴…")) })
         {
             var item = new MenuItem { Header = label };
             item.Click += async (_, _) => await ExecuteAsync(command, []);
             menu.Items.Add(item);
         }
         create.ContextMenu = menu;
+        menu.Opened += (_, _) =>
+        {
+            var labels = new[] { Localization.T("폴더…"), Localization.T("텍스트 문서…"), Localization.T("Windows 새로 만들기 메뉴…") };
+            for (var i = 0; i < labels.Length; i++) ((MenuItem)menu.Items[i]).Header = labels[i];
+        };
         create.Click += (_, _) => { menu.IsOpen = true; };
         _owner.PreviewKeyDown += KeyDown;
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
@@ -163,8 +168,8 @@ internal sealed class FileCommandBar : IDisposable
                 case PanelFileCommand.Delete:
                     if (paths.Length == 0) break;
                     var confirmed = DialogActivation.Show(_owner, () => MessageBox.Show(_owner,
-                        $"선택한 {paths.Length}개 항목을 삭제할까요?\n드라이브에 따라 휴지통을 사용할 수 없으면 Windows에서 추가로 확인합니다.\n즐겨찾기 등록만 제거하려면 ‘패널 즐겨찾기에서 제거’를 사용하세요.",
-                        "파일/폴더 삭제", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No));
+                        Localization.Format("선택한 {0}개 항목을 삭제할까요?\n드라이브에 따라 휴지통을 사용할 수 없으면 Windows에서 추가로 확인합니다.\n즐겨찾기 등록만 제거하려면 ‘패널 즐겨찾기에서 제거’를 사용하세요.", paths.Length),
+                        Localization.T("파일/폴더 삭제"), MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No));
                     if (confirmed == MessageBoxResult.Yes)
                     {
                         try { await ShellFileOperations.DeleteAsync(hwnd, paths); }
@@ -173,12 +178,12 @@ internal sealed class FileCommandBar : IDisposable
                     break;
                 case PanelFileCommand.Rename:
                     if (paths.Length == 0) break;
-                    var name = NamePromptWindow.Ask(_owner, paths.Length == 1 ? "이름 바꾸기" : "일괄 이름 바꾸기 (번호 자동 추가)",
-                        paths.Length == 1 ? Path.GetFileName(paths[0]) : "새 이름", paths.Length == 1 && !targets[0].IsDirectory);
+                    var name = NamePromptWindow.Ask(_owner, paths.Length == 1 ? Localization.T("이름 바꾸기") : Localization.T("일괄 이름 바꾸기 (번호 자동 추가)"),
+                        paths.Length == 1 ? Path.GetFileName(paths[0]) : Localization.T("새 이름"), paths.Length == 1 && !targets[0].IsDirectory);
                     if (name is not null)
                     {
                         if (paths.Length == 1 && !targets[0].IsDirectory && !string.Equals(Path.GetExtension(name), Path.GetExtension(paths[0]), StringComparison.OrdinalIgnoreCase)
-                            && DialogActivation.Show(_owner, () => MessageBox.Show(_owner, "확장자를 바꾸면 파일을 열지 못할 수 있습니다. 변경할까요?", "확장자 변경",
+                            && DialogActivation.Show(_owner, () => MessageBox.Show(_owner, Localization.T("확장자를 바꾸면 파일을 열지 못할 수 있습니다. 변경할까요?"), Localization.T("확장자 변경"),
                                 MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No)) != MessageBoxResult.Yes) break;
                         await ShellFileOperations.RenameAsync(hwnd, paths, name);
                     }
@@ -186,8 +191,8 @@ internal sealed class FileCommandBar : IDisposable
                 case PanelFileCommand.NewFolder:
                 case PanelFileCommand.NewText:
                     var directory = command == PanelFileCommand.NewFolder;
-                    var newName = NamePromptWindow.Ask(_owner, $"{(directory ? "새 폴더" : "새 텍스트 문서")} — {destination}",
-                        ShellFileOperations.UniqueName(destination, directory ? "새 폴더" : "새 텍스트 문서.txt"));
+                    var newName = NamePromptWindow.Ask(_owner, $"{(directory ? Localization.T("새 폴더") : Localization.T("새 텍스트 문서"))} — {destination}",
+                        ShellFileOperations.UniqueName(destination, directory ? Localization.T("새 폴더") : Localization.T("새 텍스트 문서.txt")));
                     if (newName is not null) await ShellFileOperations.NewAsync(hwnd, destination, newName, directory);
                     break;
                 case PanelFileCommand.WindowsNewMenu:
@@ -200,12 +205,12 @@ internal sealed class FileCommandBar : IDisposable
                 case PanelFileCommand.Share:
                     if (paths.Length == 0) break;
                     if (!WindowsShellMenu.CanCombine(paths))
-                        throw new IOException("서로 다른 폴더의 파일은 각 항목의 Windows 메뉴에서 공유해주세요.");
+                        throw new IOException(Localization.T("서로 다른 폴더의 파일은 각 항목의 Windows 메뉴에서 공유해주세요."));
                     using (var share = new WindowsShellMenu(hwnd, paths, connectSite: true))
                     {
                         var choice = share.Commands().FirstOrDefault(item => item.Enabled && (item.Verb.Contains("modernshare", StringComparison.OrdinalIgnoreCase)
                             || item.Verb.Equals("share", StringComparison.OrdinalIgnoreCase)));
-                        if (choice is null) throw new IOException("이 항목에는 Windows 공유 기능이 제공되지 않습니다. 우클릭 Windows 메뉴에서 이용 가능한 공유 기능을 확인해주세요.");
+                        if (choice is null) throw new IOException(Localization.T("이 항목에는 Windows 공유 기능이 제공되지 않습니다. 우클릭 Windows 메뉴에서 이용 가능한 공유 기능을 확인해주세요."));
                         share.Invoke(hwnd, choice.Id); // Windows sharing validates the owner HWND's thread.
                     }
                     break;
@@ -213,7 +218,7 @@ internal sealed class FileCommandBar : IDisposable
         }
         catch (Exception ex)
         {
-            if (!_disposed) DialogActivation.Show(_owner, () => MessageBox.Show(_owner, ex.Message, "파일 작업", MessageBoxButton.OK, MessageBoxImage.Warning));
+            if (!_disposed) DialogActivation.Show(_owner, () => MessageBox.Show(_owner, ex.Message, Localization.T("파일 작업"), MessageBoxButton.OK, MessageBoxImage.Warning));
         }
         finally
         {

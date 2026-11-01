@@ -6,7 +6,11 @@ using System.Windows.Media.Imaging;
 namespace ExternalDrivePanel;
 
 public sealed record PreviewText(string Content, bool Truncated, string EncodingName);
-public sealed record PreviewFileInfo(string Path, string Name, string Type, string Size, string Modified);
+public sealed record PreviewFileInfo(string Path, string Name, string Type, string Size, string Modified, bool IsDirectory = false)
+{
+    public string LocalizedType => IsDirectory ? Localization.T("폴더") : System.IO.Path.GetExtension(Path).ToUpperInvariant() + Localization.T(" 파일");
+    public string LocalizedSize => IsDirectory ? Localization.T("폴더") : Size;
+}
 
 /// <summary>Bounded, read-only loaders. Never execute scripts, macros, HTML or embedded document content.</summary>
 public static class QuickPreviewFiles
@@ -16,9 +20,9 @@ public static class QuickPreviewFiles
     {
         FileSystemInfo info = target.IsDirectory ? new DirectoryInfo(target.Path) : new FileInfo(target.Path);
         info.Refresh();
-        if (!info.Exists) throw new FileNotFoundException("경로를 찾을 수 없습니다.", target.Path);
-        return new(target.Path, info.Name, target.IsDirectory ? "폴더" : Path.GetExtension(target.Path).ToUpperInvariant() + " 파일",
-            info is FileInfo file ? Size(file.Length) : "폴더", info.LastWriteTime.ToString("yyyy-MM-dd HH:mm"));
+        if (!info.Exists) throw new FileNotFoundException(Localization.T("경로를 찾을 수 없습니다."), target.Path);
+        return new(target.Path, info.Name, target.IsDirectory ? Localization.T("폴더") : Path.GetExtension(target.Path).ToUpperInvariant() + Localization.T(" 파일"),
+            info is FileInfo file ? Size(file.Length) : Localization.T("폴더"), info.LastWriteTime.ToString("yyyy-MM-dd HH:mm"), target.IsDirectory);
     }
     public static string Size(long bytes) => bytes < 1024 ? $"{bytes:N0} B" : bytes < 1024 * 1024 ? $"{bytes / 1024d:N1} KB"
         : bytes < 1024L * 1024 * 1024 ? $"{bytes / (1024d * 1024):N1} MB" : $"{bytes / (1024d * 1024 * 1024):N2} GB";
@@ -53,7 +57,7 @@ public static class QuickPreviewFiles
             encoding = Encoding.GetEncoding(949, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
             content = Decode(encoding);
         }
-        if (content.Contains('\0')) throw new IOException("텍스트로 표시할 수 없는 파일입니다.");
+        if (content.Contains('\0')) throw new IOException(Localization.T("텍스트로 표시할 수 없는 파일입니다."));
         token.ThrowIfCancellationRequested();
         return new(content, truncated, encoding.WebName);
     }
@@ -62,11 +66,11 @@ public static class QuickPreviewFiles
     {
         token.ThrowIfCancellationRequested();
         using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        if (input.Length > 256L * 1024 * 1024) throw new IOException("큰 이미지입니다. 기본 앱으로 열어 확인해 주세요.");
+        if (input.Length > 256L * 1024 * 1024) throw new IOException(Localization.T("큰 이미지입니다. 기본 앱으로 열어 확인해 주세요."));
         var decoder = BitmapDecoder.Create(input, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
         var frame = decoder.Frames[0];
         var width = frame.PixelWidth; var height = frame.PixelHeight;
-        if (width <= 0 || height <= 0 || (long)width * height > 100_000_000) throw new IOException("이미지 해상도가 미리보기 범위를 벗어났습니다.");
+        if (width <= 0 || height <= 0 || (long)width * height > 100_000_000) throw new IOException(Localization.T("이미지 해상도가 미리보기 범위를 벗어났습니다."));
         input.Position = 0;
         var image = new BitmapImage(); image.BeginInit(); image.CacheOption = BitmapCacheOption.OnLoad;
         image.StreamSource = input;

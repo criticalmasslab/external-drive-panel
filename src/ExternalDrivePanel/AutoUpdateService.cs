@@ -26,12 +26,12 @@ public sealed class AutoUpdateService : IDisposable
     public UpdateCheckState State { get; private set; }
     public string StatusText => State switch
     {
-        UpdateCheckState.Checking => "업데이트 확인·다운로드 중…",
-        UpdateCheckState.Ready => "업데이트 준비 완료 — 패널 하단에서 다시 시작",
-        UpdateCheckState.UpToDate => "최신 버전입니다",
-        UpdateCheckState.Failed => "업데이트 확인 실패 — 연결을 확인하고 다시 시도하세요",
-        UpdateCheckState.Unavailable => "설치본에서만 자동 업데이트를 사용할 수 있습니다",
-        _ => "아직 업데이트를 확인하지 않았습니다"
+        UpdateCheckState.Checking => Localization.T("업데이트 확인·다운로드 중…"),
+        UpdateCheckState.Ready => Localization.T("업데이트 준비 완료 — 패널 하단에서 다시 시작"),
+        UpdateCheckState.UpToDate => Localization.T("최신 버전입니다"),
+        UpdateCheckState.Failed => Localization.T("업데이트 확인 실패 — 연결을 확인하고 다시 시도하세요"),
+        UpdateCheckState.Unavailable => Localization.T("설치본에서만 자동 업데이트를 사용할 수 있습니다"),
+        _ => Localization.T("아직 업데이트를 확인하지 않았습니다")
     };
     public string? LastApplyError { get; private set; }
     public AutoUpdateService(Func<IAppUpdateBackend>? createBackend = null, TimeSpan? initialDelay = null, TimeSpan? interval = null)
@@ -72,7 +72,7 @@ public sealed class AutoUpdateService : IDisposable
                 _ready = true; SetState(UpdateCheckState.Ready);
                 DiagnosticLog.Record("update.ready");
                 UpdateReady?.Invoke(this, EventArgs.Empty);
-                _notify?.Invoke("새 버전을 준비했습니다. 패널 하단의 ‘업데이트 후 다시 시작’을 눌러주세요.", false);
+                _notify?.Invoke(Localization.T("새 버전을 준비했습니다. 패널 하단의 ‘업데이트 후 다시 시작’을 눌러주세요."), false);
             }
             else SetState(UpdateCheckState.UpToDate);
         }
@@ -146,7 +146,7 @@ internal sealed class VelopackUpdateBackend : IAppUpdateBackend
     }
     public void ApplyAfterExit(bool restart)
     {
-        if (_ready is null) throw new InvalidOperationException("설치할 업데이트가 준비되지 않았습니다.");
+        if (_ready is null) throw new InvalidOperationException(Localization.T("설치할 업데이트가 준비되지 않았습니다."));
         _manager.WaitExitThenApplyUpdates(_ready, silent: true, restart: restart);
     }
 }

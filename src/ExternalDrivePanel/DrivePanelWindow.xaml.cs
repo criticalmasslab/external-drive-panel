@@ -59,7 +59,7 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
         UpdateChromeHeight(new DpiScale(1, 1));
         SourceInitialized += (_, _) => UpdateChromeHeight(System.Windows.Media.VisualTreeHelper.GetDpi(this));
         Loaded += (_, _) => UpdateChromeHeight(System.Windows.Media.VisualTreeHelper.GetDpi(this));
-        _placement = new PhysicalWindowPlacement(this);
+        _placement = new PhysicalWindowPlacement(this, maintainPhysicalBounds: true);
         _root = EnsureTrailingSeparator(Path.GetFullPath(root));
         CapacityBar.RootPath = _root;
         Closed += (_, _) => CapacityBar.Dispose();
@@ -68,13 +68,13 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
         _preferredVolumeLabel = savedSettings?.PreferredLabel;
         UpdateVolumeLabel(label);
         var titleMenu = new ContextMenu();
-        var renameVolume = new MenuItem { Header = "볼륨 이름 변경…" };
+        var renameVolume = new MenuItem { Header = Localization.T("볼륨 이름 변경…") };
         renameVolume.Click += async (_, _) =>
         {
             string fileSystem;
             try { fileSystem = new DriveInfo(_root).DriveFormat; }
-            catch (Exception ex) { DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, "볼륨 정보를 읽을 수 없습니다", MessageBoxButton.OK, MessageBoxImage.Warning)); return; }
-            var name = NamePromptWindow.Ask(this, "외장하드 볼륨 이름 변경", VolumeLabel, validate: value => VolumeLabelService.Validate(value, fileSystem));
+            catch (Exception ex) { DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, Localization.T("볼륨 정보를 읽을 수 없습니다"), MessageBoxButton.OK, MessageBoxImage.Warning)); return; }
+            var name = NamePromptWindow.Ask(this, Localization.T("외장하드 볼륨 이름 변경"), VolumeLabel, validate: value => VolumeLabelService.Validate(value, fileSystem));
             if (name is null) return;
             renameVolume.IsEnabled = false;
             try
@@ -86,10 +86,11 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
                 VolumeLabelChanged?.Invoke(result.ActualLabel);
                 SettingsChanged?.Invoke(this, EventArgs.Empty);
             }
-            catch (Exception ex) { DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, "볼륨 이름 변경 실패", MessageBoxButton.OK, MessageBoxImage.Warning)); }
+            catch (Exception ex) { DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, Localization.T("볼륨 이름 변경 실패"), MessageBoxButton.OK, MessageBoxImage.Warning)); }
             finally { renameVolume.IsEnabled = true; }
         };
         titleMenu.Items.Add(renameVolume); DriveTitleButton.ContextMenu = titleMenu;
+        titleMenu.Opened += (_, _) => renameVolume.Header = Localization.T("볼륨 이름 변경…");
         _favorites = new FavoriteCollection();
         _dragDrop = new DragDropService(ContentArea, _root, _favorites, destination =>
         {
@@ -150,6 +151,24 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
         Closed += (_, _) => _fileCommands.Dispose();
         PreviewKeyDown += SearchWindow_OnKeyDown;
         Closed += (_, _) => { _searchClosed = true; StopSearch(false); };
+        Localization.Attach(this, RefreshLanguage);
+    }
+
+    private void RefreshLanguage()
+    {
+        var selected = ItemContextMenuBuilder.SelectedTargets(ActiveItemsView).Select(item => item.Path).ToArray();
+        RefreshFavoriteRows();
+        if (_contentMode != PanelContentMode.Favorites) DetailsGrid.Items.Refresh();
+        RestoreSelection(selected);
+        ApplyViewVisibility();
+        if (_contentMode == PanelContentMode.Favorites) ShowFavoriteAddress(GetSelectedFavorite());
+        else if (_contentMode == PanelContentMode.Search)
+        {
+            ShowItemAddress(Localization.Format("검색: {0} — {1}", _searchQuery, _root));
+            if (_lastSearchSnapshot is { } snapshot) ShowSearchSnapshot(snapshot, _searchRunning);
+            else SearchStatusText.Text = Localization.T("검색 중… 해당 드라이브 전체를 확인합니다.");
+        }
+        CapacityBar.RefreshLanguage();
     }
 
     public event EventHandler? SettingsChanged;
@@ -326,7 +345,7 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, "폴더를 열 수 없음", MessageBoxButton.OK, MessageBoxImage.Warning));
+            DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, Localization.T("폴더를 열 수 없음"), MessageBoxButton.OK, MessageBoxImage.Warning));
             return false;
         }
     }
@@ -382,7 +401,7 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
         HomeButton.Background = home ? System.Windows.Media.Brushes.SlateGray : System.Windows.Media.Brushes.Transparent;
         HomeIcon.Foreground = home ? System.Windows.Media.Brushes.Gold : System.Windows.Media.Brushes.White;
         HomeIcon.Kind = home ? "HomeFill" : "Home";
-        HomeButton.ToolTip = home ? "즐겨찾기 홈 (현재 화면)" : "즐겨찾기 홈";
+        HomeButton.ToolTip = home ? Localization.T("즐겨찾기 홈 (현재 화면)") : Localization.T("즐겨찾기 홈");
         FavoriteItemsList.Visibility = home && !_isDetailsView ? Visibility.Visible : Visibility.Collapsed;
         IconItemsList.Visibility = !home && !_isDetailsView ? Visibility.Visible : Visibility.Collapsed;
         DetailsGrid.Visibility = _isDetailsView ? Visibility.Visible : Visibility.Collapsed;
@@ -391,7 +410,7 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
         foreach (var column in DetailsGrid.Columns)
             column.SortDirection = !home && column.SortMemberPath == _sortProperty ? _sortDirection : null;
         ViewModeIcon.Kind = _isDetailsView ? "List" : "Grid";
-        ViewModeButton.ToolTip = _isDetailsView ? "현재: 상세 보기 — 클릭하면 이 패널 아이콘 보기" : "현재: 아이콘 보기 — 클릭하면 이 패널 상세 보기";
+        ViewModeButton.ToolTip = _isDetailsView ? Localization.T("현재: 상세 보기 — 클릭하면 이 패널 아이콘 보기") : Localization.T("현재: 아이콘 보기 — 클릭하면 이 패널 상세 보기");
         UpdateEmptyFavoritesMessage();
         LayoutMetricsChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -442,7 +461,7 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
         }
     }
 
-    private void ShowFavoriteAddress(FavoriteItem? favorite) => ShowItemAddress(favorite?.Path ?? "즐겨찾기");
+    private void ShowFavoriteAddress(FavoriteItem? favorite) => ShowItemAddress(favorite?.Path ?? Localization.T("즐겨찾기"));
 
     private void AddressScroll_OnMouseWheel(object sender, MouseWheelEventArgs e)
     {
@@ -532,7 +551,7 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
     }
 
     private void ShowMissingFavorite(string path) => DialogActivation.Show(this,
-        () => MessageBox.Show(this, $"경로를 찾을 수 없습니다.\n{path}", "즐겨찾기",
+        () => MessageBox.Show(this, Localization.Format("경로를 찾을 수 없습니다.\n{0}", path), Localization.T("즐겨찾기"),
             MessageBoxButton.OK, MessageBoxImage.Information));
 
     private void Items_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -576,7 +595,7 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
         }
         catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
         {
-            DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, "항목을 열 수 없음", MessageBoxButton.OK, MessageBoxImage.Warning));
+            DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, Localization.T("항목을 열 수 없음"), MessageBoxButton.OK, MessageBoxImage.Warning));
         }
     }
 
@@ -587,7 +606,7 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
         {
             var item = _isDetailsView ? DetailsGrid.SelectedItem : IconItemsList.SelectedItem;
             if (item is FileSystemEntry entry) ShowItemAddress(entry.FullPath);
-            else if (_contentMode == PanelContentMode.Search) ShowItemAddress($"검색: {_searchQuery} — {_root}");
+            else if (_contentMode == PanelContentMode.Search) ShowItemAddress(Localization.Format("검색: {0} — {1}", _searchQuery, _root));
             else BuildFolderBreadcrumb();
         }
     }
@@ -686,19 +705,19 @@ public partial class DrivePanelWindow : Window, IEjectParticipant
         {
             var driveName = _root.TrimEnd(Path.DirectorySeparatorChar);
             if (DialogActivation.Show(this, () => MessageBox.Show(this,
-                $"{driveName} 외장하드를 안전하게 꺼낼까요?\n같은 물리 장치의 다른 파티션도 함께 제거됩니다.\n진행 중인 패널 파일 작업이 있으면 완료 후 제거합니다.",
-                "안전하게 꺼내기", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No)) != MessageBoxResult.Yes) return;
+                Localization.Format("{0} 외장하드를 안전하게 꺼낼까요?\n같은 물리 장치의 다른 파티션도 함께 제거됩니다.\n진행 중인 패널 파일 작업이 있으면 완료 후 제거합니다.", driveName),
+                Localization.T("안전하게 꺼내기"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No)) != MessageBoxResult.Yes) return;
             var result = EjectRequested is { } eject ? await eject(_root)
                 : await EjectWorkflow.RunAsync(_root, _ejectService, [this]);
             var owner = Application.Current?.MainWindow is { IsVisible: true } main ? main : this;
             if (result.Success)
-                DialogActivation.Show(owner, () => MessageBox.Show(owner, "안전하게 제거되었습니다.", "안전하게 꺼내기", MessageBoxButton.OK, MessageBoxImage.Information));
+                DialogActivation.Show(owner, () => MessageBox.Show(owner, Localization.T("안전하게 제거되었습니다."), Localization.T("안전하게 꺼내기"), MessageBoxButton.OK, MessageBoxImage.Information));
             else
                 DialogActivation.Show(owner, () => MessageBox.Show(owner,
-                $"안전하게 제거하지 못했습니다.\n\n{result.FailureReason}\n\n작업표시줄의 하드웨어 안전 제거 아이콘을 이용해주세요.",
-                "꺼내기 실패", MessageBoxButton.OK, MessageBoxImage.Warning));
+                Localization.Format("안전하게 제거하지 못했습니다.\n\n{0}\n\n작업표시줄의 하드웨어 안전 제거 아이콘을 이용해주세요.", result.FailureReason),
+                Localization.T("꺼내기 실패"), MessageBoxButton.OK, MessageBoxImage.Warning));
         }
-        catch (Exception ex) { if (IsVisible) DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, "꺼내기 실패")); }
+        catch (Exception ex) { if (IsVisible) DialogActivation.Show(this, () => MessageBox.Show(this, ex.Message, Localization.T("꺼내기 실패"))); }
         finally { _isEjecting = false; }
     }
 

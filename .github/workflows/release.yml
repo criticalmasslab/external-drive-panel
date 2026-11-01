@@ -44,6 +44,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Safe ejection policy and lifecycle tests failed.' }
           dotnet run --project tests/DriveRefreshSmoke -c Release -- --logic-only
           if ($LASTEXITCODE -ne 0) { throw 'USB reconnect policy and helper validation tests failed.' }
+          dotnet run --project tests/LocalizationSmoke -c Release -- --logic-only
+          if ($LASTEXITCODE -ne 0) { throw 'Language catalog and config compatibility tests failed.' }
       - name: Build installer and feed
         shell: pwsh
         run: ./scripts/Publish-Installer.ps1 -Version $env:RELEASE_VERSION

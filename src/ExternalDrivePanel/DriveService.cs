@@ -23,7 +23,7 @@ public sealed class DriveService
         if (!GetVolumeInformationW(root, volumeName, volumeName.Capacity, out uint serialNumber,
                 out _, out _, fileSystemName, fileSystemName.Capacity))
         {
-            throw new Win32Exception(Marshal.GetLastWin32Error(), $"볼륨 정보를 읽을 수 없습니다: {root}");
+            throw new Win32Exception(Marshal.GetLastWin32Error(), Localization.Format("볼륨 정보를 읽을 수 없습니다: {0}", root));
         }
 
         return (serialNumber, volumeName.ToString());

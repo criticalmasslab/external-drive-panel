@@ -10,6 +10,7 @@ public partial class DrivePanelWindow
     private readonly HashSet<Task> _searchTasks = [];
     private NavigationState? _searchReturn;
     private string _searchQuery = "";
+    private DriveSearchSnapshot? _lastSearchSnapshot;
     private int _searchVersion;
     private bool _searchRunning, _searchEditing, _searchClosed;
 
@@ -34,13 +35,13 @@ public partial class DrivePanelWindow
         if (query.Length == 0) { ExitSearch(); return Task.CompletedTask; }
         var previous = _contentMode == PanelContentMode.Search ? _searchReturn : new NavigationState(_contentMode, _currentPath);
         StopSearch(false);
-        _searchReturn = previous; _searchQuery = query;
+        _searchReturn = previous; _searchQuery = query; _lastSearchSnapshot = null;
         SearchTextBox.Text = query;
         _contentMode = PanelContentMode.Search;
         _currentItems = []; ApplySort(); ApplyViewVisibility(); UpdateNavigationButtons();
         SearchStatus.Visibility = Visibility.Visible; SearchStopButton.Visibility = Visibility.Visible;
-        SearchStatusText.Text = "검색 중… 해당 드라이브 전체를 확인합니다.";
-        ShowItemAddress($"검색: {query} — {_root}");
+        SearchStatusText.Text = Localization.T("검색 중… 해당 드라이브 전체를 확인합니다.");
+        ShowItemAddress(Localization.Format("검색: {0} — {1}", query, _root));
         var request = new CancellationTokenSource(); _searchRequest = request;
         _searchRunning = true;
         var task = RunSearchAsync(query, _searchVersion, request);
@@ -66,11 +67,11 @@ public partial class DrivePanelWindow
         }
         catch (OperationCanceledException)
         {
-            if (version == _searchVersion) SearchStatusText.Text = $"검색 중지 · {_currentItems.Count:N0}개 결과";
+            if (version == _searchVersion) SearchStatusText.Text = Localization.Format("검색 중지 · {0:N0}개 결과", _currentItems.Count);
         }
         catch (Exception ex)
         {
-            if (version == _searchVersion) SearchStatusText.Text = "검색할 수 없습니다: " + ex.Message;
+            if (version == _searchVersion) SearchStatusText.Text = Localization.T("검색할 수 없습니다: ") + ex.Message;
             System.Diagnostics.Debug.WriteLine(ex);
         }
         finally
@@ -86,14 +87,15 @@ public partial class DrivePanelWindow
 
     private void ShowSearchSnapshot(DriveSearchSnapshot snapshot, bool running)
     {
+        _lastSearchSnapshot = snapshot;
         if (snapshot.Items.Count != _currentItems.Count)
         {
             var selected = ItemContextMenuBuilder.SelectedTargets(ActiveItemsView).Select(item => item.Path).ToArray();
             _currentItems = snapshot.Items.ToList(); UpdateFavoriteBadges(); ApplySort(); RestoreSelection(selected);
         }
-        SearchStatusText.Text = $"{(running ? "검색 중 · " : "검색 완료 · ")}{_currentItems.Count:N0}개 결과"
-            + (snapshot.Limited ? " · 5,000개까지만 표시합니다. 검색어를 좁혀주세요." : $" · {snapshot.Examined:N0}개 확인")
-            + (snapshot.Skipped > 0 ? " · 일부 경로 건너뜀" : "");
+        SearchStatusText.Text = Localization.Format("{0}{1:N0}개 결과", (running ? Localization.T("검색 중 · ") : Localization.T("검색 완료 · ")), _currentItems.Count)
+            + (snapshot.Limited ? Localization.T(" · 5,000개까지만 표시합니다. 검색어를 좁혀주세요.") : Localization.Format(" · {0:N0}개 확인", snapshot.Examined))
+            + (snapshot.Skipped > 0 ? Localization.T(" · 일부 경로 건너뜀") : "");
         LayoutMetricsChanged?.Invoke(this, EventArgs.Empty);
     }
 

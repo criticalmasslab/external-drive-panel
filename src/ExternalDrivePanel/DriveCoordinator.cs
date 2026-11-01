@@ -120,6 +120,6 @@ public sealed class DriveCoordinator
             return drive.Root.TrimEnd('\\', '/') + (string.IsNullOrWhiteSpace(displayed) ? "" : " " + displayed);
         }
         var label = saved?.PreferredLabel ?? saved?.LastKnownLabel ?? "";
-        return "(연결 안 됨) " + (string.IsNullOrWhiteSpace(label) ? "외장하드" : label);
+        return Localization.T("(연결 안 됨) ") + (string.IsNullOrWhiteSpace(label) ? Localization.T("외장하드") : label);
     }
 }

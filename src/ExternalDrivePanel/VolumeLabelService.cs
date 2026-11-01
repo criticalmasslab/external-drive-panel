@@ -27,10 +27,10 @@ public static class VolumeLabelService
         var shortLabel = fileSystem.Equals("FAT", StringComparison.OrdinalIgnoreCase)
             || fileSystem.Equals("FAT32", StringComparison.OrdinalIgnoreCase)
             || fileSystem.Equals("exFAT", StringComparison.OrdinalIgnoreCase);
-        if (label.Length > (shortLabel ? 11 : 32)) throw new ArgumentException($"볼륨 이름은 최대 {(shortLabel ? 11 : 32)}자입니다.");
+        if (label.Length > (shortLabel ? 11 : 32)) throw new ArgumentException(Localization.Format("볼륨 이름은 최대 {0}자입니다.", (shortLabel ? 11 : 32)));
         var fat = fileSystem.Equals("FAT", StringComparison.OrdinalIgnoreCase) || fileSystem.Equals("FAT32", StringComparison.OrdinalIgnoreCase);
         var invalid = fat ? "\\/:*?\"<>|+=;[]," : "\\/:*?\"<>|";
-        if (label.Any(ch => char.IsControl(ch) || invalid.Contains(ch))) throw new ArgumentException("볼륨 이름에 사용할 수 없는 문자가 있습니다.");
+        if (label.Any(ch => char.IsControl(ch) || invalid.Contains(ch))) throw new ArgumentException(Localization.T("볼륨 이름에 사용할 수 없는 문자가 있습니다."));
         return label;
     }
 
@@ -86,11 +86,11 @@ public static class VolumeLabelService
         var driveRoot = Path.GetPathRoot(full);
         if (driveRoot is null || !string.Equals(Path.TrimEndingDirectorySeparator(full), Path.TrimEndingDirectorySeparator(driveRoot), StringComparison.OrdinalIgnoreCase)
             || driveRoot.Length != 3 || driveRoot[1] != ':')
-            throw new ArgumentException("볼륨의 드라이브 루트 경로가 아닙니다.");
+            throw new ArgumentException(Localization.T("볼륨의 드라이브 루트 경로가 아닙니다."));
         return driveRoot;
     }
     private static Win32Exception Failure(int error) => new(error,
-        $"볼륨 이름을 변경하지 못했습니다. {new Win32Exception(error).Message} (오류 {error})");
+        Localization.Format("볼륨 이름을 변경하지 못했습니다. {0} (오류 {1})", new Win32Exception(error).Message, error));
 
     private sealed class WindowsPlatform : IVolumeLabelPlatform
     {
@@ -102,7 +102,7 @@ public static class VolumeLabelService
         public int SetLabel(string root, string label) => SetVolumeLabelW(root, label) ? 0 : Marshal.GetLastWin32Error();
         public async Task<int?> ElevateAsync(string root, string label, uint expectedSerial, IntPtr owner)
         {
-            var host = Environment.ProcessPath ?? throw new IOException("프로그램 실행 경로를 찾을 수 없습니다.");
+            var host = Environment.ProcessPath ?? throw new IOException(Localization.T("프로그램 실행 경로를 찾을 수 없습니다."));
             var start = new ProcessStartInfo(host)
             {
                 UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden,
@@ -111,11 +111,11 @@ public static class VolumeLabelService
             if (Path.GetFileNameWithoutExtension(host).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
             {
                 var appAssembly = Path.Combine(AppContext.BaseDirectory, "ExternalDrivePanel.dll");
-                if (!File.Exists(appAssembly)) throw new IOException("프로그램 어셈블리를 찾을 수 없습니다.");
+                if (!File.Exists(appAssembly)) throw new IOException(Localization.T("프로그램 어셈블리를 찾을 수 없습니다."));
                 start.ArgumentList.Add(appAssembly);
             }
             else if (!Path.GetFileNameWithoutExtension(host).Equals("ExternalDrivePanel", StringComparison.OrdinalIgnoreCase))
-                throw new IOException("배포된 ExternalDrivePanel 실행 파일에서 관리자 권한 요청을 사용할 수 있습니다.");
+                throw new IOException(Localization.T("배포된 ExternalDrivePanel 실행 파일에서 관리자 권한 요청을 사용할 수 있습니다."));
             // No shell scripts/commands, result files, or arbitrary file-write helpers.
             start.ArgumentList.Add(HelperSwitch);
             start.ArgumentList.Add(Convert.ToBase64String(Encoding.UTF8.GetBytes(root)));
@@ -123,7 +123,7 @@ public static class VolumeLabelService
             start.ArgumentList.Add(expectedSerial.ToString(CultureInfo.InvariantCulture));
             try
             {
-                using var helper = Process.Start(start) ?? throw new IOException("관리자 권한 이름 변경을 시작하지 못했습니다.");
+                using var helper = Process.Start(start) ?? throw new IOException(Localization.T("관리자 권한 이름 변경을 시작하지 못했습니다."));
                 await helper.WaitForExitAsync(); return helper.ExitCode;
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) { return null; }

@@ -152,7 +152,7 @@ public sealed class DragDropService : IDisposable
         }
         catch (Exception ex)
         {
-            if (!_disposed) _dialogs.Inform($"드롭 처리에 실패했습니다.\n{ex.Message}");
+            if (!_disposed) _dialogs.Inform(Localization.Format("드롭 처리에 실패했습니다.\n{0}", ex.Message));
         }
     }
 
@@ -171,7 +171,7 @@ public sealed class DragDropService : IDisposable
             var handle = owner is null ? IntPtr.Zero : new WindowInteropHelper(owner).Handle;
             await ShellFileOperations.PasteAsync(handle, new(sources, move), destination);
         }
-        catch (Exception ex) { if (!_disposed) _dialogs.Inform($"{(move ? "이동" : "복사")}를 완료하지 못했습니다.\n{ex.Message}"); }
+        catch (Exception ex) { if (!_disposed) _dialogs.Inform(Localization.Format("{0}를 완료하지 못했습니다.\n{1}", (move ? Localization.T("이동") : Localization.T("복사")), ex.Message)); }
         finally
         {
             _busy = false;
@@ -203,22 +203,22 @@ public sealed class DragDropService : IDisposable
                 target = new DropTarget(currentFolder, true);
             if (target is null)
             {
-                _dialogs.Inform("이 외장하드로 복사하려면 폴더 위에 정확히 놓아주세요.");
+                _dialogs.Inform(Localization.T("이 외장하드로 복사하려면 폴더 위에 정확히 놓아주세요."));
                 return;
             }
             if (!target.IsDirectory) return;
             if (!FileCopyService.IsWithin(target.Path, _root) || !Directory.Exists(target.Path))
-                throw new IOException("복사 대상 폴더가 이 드라이브에 없거나 더 이상 존재하지 않습니다.");
+                throw new IOException(Localization.T("복사 대상 폴더가 이 드라이브에 없거나 더 이상 존재하지 않습니다."));
             if (!_dialogs.ConfirmCopy(target.Path)) return;
             destination = target.Path;
             var report = await Task.Run(() => new FileCopyService().Copy(external, destination,
                 (source, existing) => _surface.Dispatcher.Invoke(() => _disposed
                     ? CopyConflictChoice.Cancel : _dialogs.ResolveConflict(source, existing)), _lifetime.Token));
-            if (!_disposed) _dialogs.Inform($"{(report.Cancelled ? "복사를 중단했습니다" : "복사가 완료되었습니다")}.\n파일 {report.FilesCopied}개 복사, 항목 {report.ItemsSkipped}개 건너뜀.\n이미 복사한 항목은 유지됩니다.");
+            if (!_disposed) _dialogs.Inform(Localization.Format("{0}.\n파일 {1}개 복사, 항목 {2}개 건너뜀.\n이미 복사한 항목은 유지됩니다.", (report.Cancelled ? Localization.T("복사를 중단했습니다") : Localization.T("복사가 완료되었습니다")), report.FilesCopied, report.ItemsSkipped));
         }
         catch (Exception ex)
         {
-            if (!_disposed) _dialogs.Inform($"복사를 완료하지 못했습니다. 이미 복사한 항목은 유지됩니다.\n{ex.Message}");
+            if (!_disposed) _dialogs.Inform(Localization.Format("복사를 완료하지 못했습니다. 이미 복사한 항목은 유지됩니다.\n{0}", ex.Message));
         }
         finally
         {
@@ -250,10 +250,10 @@ public sealed class DragDropService : IDisposable
 public sealed class DropDialogs(Window owner) : IDropDialogs
 {
     public void Inform(string message) => DialogActivation.Show(owner,
-        () => MessageBox.Show(owner, message, "드래그 앤 드롭", MessageBoxButton.OK, MessageBoxImage.Information));
+        () => MessageBox.Show(owner, message, Localization.T("드래그 앤 드롭"), MessageBoxButton.OK, MessageBoxImage.Information));
     public bool ConfirmCopy(string destination) => DialogActivation.Show(owner,
-        () => MessageBox.Show(owner, $"'{destination}' 폴더로 복사하시겠습니까?",
-        "파일 복사 확인", MessageBoxButton.YesNo, MessageBoxImage.Question)) == MessageBoxResult.Yes;
+        () => MessageBox.Show(owner, Localization.Format("'{0}' 폴더로 복사하시겠습니까?", destination),
+        Localization.T("파일 복사 확인"), MessageBoxButton.YesNo, MessageBoxImage.Question)) == MessageBoxResult.Yes;
     public CopyConflictChoice ResolveConflict(string source, string target)
     {
         var dialog = new CopyConflictWindow(owner, source, target);

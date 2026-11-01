@@ -17,8 +17,8 @@ internal sealed class NamePromptWindow : Window
         _name.Text = initial;
         layout.Children.Add(_name); layout.Children.Add(_error);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-        var cancel = new Button { Content = "취소", IsCancel = true, MinWidth = 70, Margin = new Thickness(4) };
-        var ok = new Button { Content = "확인", IsDefault = true, MinWidth = 70, Margin = new Thickness(4) };
+        var cancel = new Button { Content = Localization.T("취소"), IsCancel = true, MinWidth = 70, Margin = new Thickness(4) };
+        var ok = new Button { Content = Localization.T("확인"), IsDefault = true, MinWidth = 70, Margin = new Thickness(4) };
         ok.Click += (_, _) =>
         {
             try { (validate ?? ShellFileOperations.ValidateName)(Value); DialogResult = true; }

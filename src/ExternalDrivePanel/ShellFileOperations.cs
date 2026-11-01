@@ -59,11 +59,11 @@ public static class ShellFileOperations
     {
         if (string.IsNullOrWhiteSpace(name) || name != name.Trim() || name.EndsWith('.') || name is "." or ".."
             || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
-            throw new ArgumentException("사용할 수 없는 이름입니다. 경로 구분자나 끝의 점/공백을 빼주세요.");
+            throw new ArgumentException(Localization.T("사용할 수 없는 이름입니다. 경로 구분자나 끝의 점/공백을 빼주세요."));
         var stem = name.Split('.')[0].ToUpperInvariant();
         if (new[] { "CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$" }.Contains(stem)
             || stem.Length == 4 && (stem.StartsWith("COM") || stem.StartsWith("LPT")) && stem[3] is >= '0' and <= '9')
-            throw new ArgumentException("Windows에서 예약한 이름은 사용할 수 없습니다.");
+            throw new ArgumentException(Localization.T("Windows에서 예약한 이름은 사용할 수 없습니다."));
         return name;
     }
 
@@ -90,7 +90,7 @@ public static class ShellFileOperations
                 foreach (var path in paths)
                 {
                     if (Directory.Exists(path) && FileCopyService.IsWithin(destination, path))
-                        throw new IOException("폴더를 자기 자신이나 하위 폴더에 붙여넣을 수 없습니다.");
+                        throw new IOException(Localization.T("폴더를 자기 자신이나 하위 폴더에 붙여넣을 수 없습니다."));
                     WithItem(path, item =>
                     {
                         var sameFolder = string.Equals(Path.TrimEndingDirectorySeparator(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path)) ?? ""),
@@ -109,7 +109,7 @@ public static class ShellFileOperations
         foreach (var path in paths)
         {
             if (Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(Path.GetFullPath(path))) is null)
-                throw new IOException("드라이브 루트는 삭제할 수 없습니다.");
+                throw new IOException(Localization.T("드라이브 루트는 삭제할 수 없습니다."));
             WithItem(path, item => Check(operation.DeleteItem(item, IntPtr.Zero)));
         }
     });
@@ -123,7 +123,7 @@ public static class ShellFileOperations
             {
                 var path = paths[index];
                 if (Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(Path.GetFullPath(path))) is null)
-                    throw new IOException("드라이브 루트의 이름은 여기서 바꿀 수 없습니다.");
+                    throw new IOException(Localization.T("드라이브 루트의 이름은 여기서 바꿀 수 없습니다."));
                 var newName = paths.Count == 1 ? name : $"{name} ({index + 1}){(Directory.Exists(path) ? "" : Path.GetExtension(path))}";
                 WithItem(path, item => Check(operation.RenameItem(item, newName, IntPtr.Zero)));
             }

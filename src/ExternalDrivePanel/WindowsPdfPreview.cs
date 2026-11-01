@@ -17,16 +17,16 @@ public sealed class WindowsPdfPreview : IAsyncDisposable
     public static async Task<WindowsPdfPreview> OpenAsync(string path, CancellationToken token = default)
     {
         token.ThrowIfCancellationRequested();
-        if (!File.Exists(path)) throw new FileNotFoundException("PDF 파일을 찾을 수 없습니다.", path);
-        var worker = Process.Start(PdfPreviewWorker.StartInfo(path)) ?? throw new IOException("PDF 엔진을 시작하지 못했습니다.");
+        if (!File.Exists(path)) throw new FileNotFoundException(Localization.T("PDF 파일을 찾을 수 없습니다."), path);
+        var worker = Process.Start(PdfPreviewWorker.StartInfo(path)) ?? throw new IOException(Localization.T("PDF 엔진을 시작하지 못했습니다."));
         var session = new WindowsPdfPreview(worker);
         _ = worker.StandardError.ReadToEndAsync();
         try
         {
             using var cancel = token.Register(session.Terminate);
-            if (await session.ReadIntAsync(token).ConfigureAwait(false) != PdfPreviewWorker.Magic) throw new IOException("PDF 엔진 응답이 올바르지 않습니다.");
+            if (await session.ReadIntAsync(token).ConfigureAwait(false) != PdfPreviewWorker.Magic) throw new IOException(Localization.T("PDF 엔진 응답이 올바르지 않습니다."));
             session.PageCount = await session.ReadIntAsync(token).ConfigureAwait(false);
-            if (session.PageCount is <= 0 or > 1_000_000) throw new IOException("PDF 페이지 수가 올바르지 않습니다.");
+            if (session.PageCount is <= 0 or > 1_000_000) throw new IOException(Localization.T("PDF 페이지 수가 올바르지 않습니다."));
             return session;
         }
         catch { await session.DisposeAsync().ConfigureAwait(false); throw; }
@@ -43,7 +43,7 @@ public sealed class WindowsPdfPreview : IAsyncDisposable
             await _worker.StandardInput.WriteLineAsync($"PAGE {index} {Math.Clamp(maxPixels, 256, 2048)}").ConfigureAwait(false);
             await _worker.StandardInput.FlushAsync().ConfigureAwait(false);
             var length = await ReadIntAsync(CancellationToken.None).ConfigureAwait(false);
-            if (length == 0 || length == int.MinValue || Math.Abs(length) > PdfPreviewWorker.MaxPacket) throw new IOException("PDF 엔진 데이터가 올바르지 않습니다.");
+            if (length == 0 || length == int.MinValue || Math.Abs(length) > PdfPreviewWorker.MaxPacket) throw new IOException(Localization.T("PDF 엔진 데이터가 올바르지 않습니다."));
             var packet = new byte[Math.Abs(length)];
             await _worker.StandardOutput.BaseStream.ReadExactlyAsync(packet).ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
@@ -60,7 +60,7 @@ public sealed class WindowsPdfPreview : IAsyncDisposable
     {
         var bytes = new byte[4];
         try { await _worker.StandardOutput.BaseStream.ReadExactlyAsync(bytes, token).ConfigureAwait(false); }
-        catch (EndOfStreamException ex) { throw new IOException("Windows PDF 엔진이 문서를 읽지 못했거나 종료되었습니다.", ex); }
+        catch (EndOfStreamException ex) { throw new IOException(Localization.T("Windows PDF 엔진이 문서를 읽지 못했거나 종료되었습니다."), ex); }
         return BinaryPrimitives.ReadInt32LittleEndian(bytes);
     }
     private void Terminate() { try { if (!_worker.HasExited) _worker.Kill(); } catch (Exception ex) { Debug.WriteLine(ex); } }

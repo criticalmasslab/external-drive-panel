@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Threading;
 
 namespace ExternalDrivePanel;
 
@@ -12,6 +13,8 @@ internal sealed class PhysicalWindowPlacement
     private LayoutRect? _pending;
     private HwndSource? _source;
     private bool _firstRenderComplete;
+    private readonly bool _maintainPhysicalBounds;
+    private bool _restoreQueued;
     private (IntPtr Handle, int Left, int Top, int Right, int Bottom)? _applied;
     [ThreadStatic] private static List<PhysicalWindowPlacement>? _batch;
 
@@ -49,9 +52,10 @@ internal sealed class PhysicalWindowPlacement
 
     private static uint PlacementFlags() => SwpNoZOrder | SwpNoActivate;
 
-    public PhysicalWindowPlacement(Window window)
+    public PhysicalWindowPlacement(Window window, bool maintainPhysicalBounds = false)
     {
         _window = window;
+        _maintainPhysicalBounds = maintainPhysicalBounds;
         _window.SourceInitialized += (_, _) =>
         {
             _source = HwndSource.FromHwnd(new WindowInteropHelper(_window).Handle);
@@ -114,7 +118,7 @@ internal sealed class PhysicalWindowPlacement
                 Math.Max(1, right - left), Math.Max(1, bottom - top),
                 PlacementFlags()))
         {
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "창을 선택한 화면 영역에 배치하지 못했습니다.");
+            throw new Win32Exception(Marshal.GetLastWin32Error(), Localization.T("창을 선택한 화면 영역에 배치하지 못했습니다."));
         }
         _applied = Bounds();
     }
@@ -127,6 +131,12 @@ internal sealed class PhysicalWindowPlacement
 
     private IntPtr HandleWindowMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
+        // WPF may apply WM_DPICHANGED's suggested rectangle after our native
+        // placement. The cached requested bounds then differ from the real HWND.
+        // Only managed panel windows own physical geometry; movable dialogs do not.
+        if (_maintainPhysicalBounds && _pending is not null &&
+            (message == 0x02E0 || message == 0x47 && !MatchesActualBounds(window)))
+            RestoreAfterDpiChange();
         if (message == 0x24 && _pending is not null) // WM_GETMINMAXINFO
         {
             // Windows' default tracking limit is the virtual desktop plus its
@@ -152,6 +162,28 @@ internal sealed class PhysicalWindowPlacement
         }
         return IntPtr.Zero;
     }
+
+    private bool MatchesActualBounds(IntPtr window)
+    {
+        var target = Bounds();
+        return GetWindowRect(window, out var actual) && actual.Left == target.Left && actual.Top == target.Top
+            && actual.Right == target.Right && actual.Bottom == target.Bottom;
+    }
+    private void RestoreAfterDpiChange()
+    {
+        _applied = null;
+        if (_restoreQueued || _window.Dispatcher.HasShutdownStarted) return;
+        _restoreQueued = true;
+        _window.Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(() =>
+        {
+            _restoreQueued = false;
+            if (_source is null || _pending is null) return;
+            if (!MatchesActualBounds(new WindowInteropHelper(_window).Handle)) { _applied = null; Apply(); }
+        }));
+    }
+
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetWindowRect(IntPtr window, out NativeRect rectangle);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct NativePoint { public int X, Y; }

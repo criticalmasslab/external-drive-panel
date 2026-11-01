@@ -38,7 +38,7 @@ public static class PdfPreviewWorker
                     var image = document.RenderAsync(page, Math.Clamp(pixels, 256, 2048)).GetAwaiter().GetResult();
                     var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(image));
                     using var stream = new MemoryStream(); png.Save(stream);
-                    if (stream.Length > MaxPacket) throw new IOException("PDF 이미지가 너무 큽니다.");
+                    if (stream.Length > MaxPacket) throw new IOException(Localization.T("PDF 이미지가 너무 큽니다."));
                     output.Write((int)stream.Length); output.Write(stream.GetBuffer(), 0, (int)stream.Length); output.Flush();
                 }
                 catch (Exception ex)
@@ -57,7 +57,7 @@ public static class PdfPreviewWorker
         var current = Environment.ProcessPath;
         var executable = current is not null && Assembly.GetEntryAssembly()?.GetName().Name == typeof(App).Assembly.GetName().Name
             ? current : Path.Combine(AppContext.BaseDirectory, "ExternalDrivePanel.exe");
-        if (!File.Exists(executable)) throw new FileNotFoundException("PDF 미리보기 보조 실행 파일을 찾을 수 없습니다.", executable);
+        if (!File.Exists(executable)) throw new FileNotFoundException(Localization.T("PDF 미리보기 보조 실행 파일을 찾을 수 없습니다."), executable);
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, CreateNoWindow = true,
             RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true, WorkingDirectory = AppContext.BaseDirectory };
         if (Path.GetFileNameWithoutExtension(executable).Equals("dotnet", StringComparison.OrdinalIgnoreCase))

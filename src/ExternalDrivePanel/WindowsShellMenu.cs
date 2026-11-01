@@ -32,7 +32,7 @@ public sealed class WindowsShellMenu : IDisposable
     public WindowsShellMenu(IntPtr owner, IReadOnlyList<string> paths, bool background = false, bool connectSite = false)
     {
         if (paths.Count == 0 || (!background && !CanCombine(paths)))
-            throw new ArgumentException("서로 다른 폴더의 항목은 개별 Windows 메뉴를 사용해주세요.");
+            throw new ArgumentException(Localization.T("서로 다른 폴더의 항목은 개별 Windows 메뉴를 사용해주세요."));
         try
         {
             var iid = new Guid(ContextId);
@@ -111,16 +111,16 @@ public sealed class WindowsShellMenu : IDisposable
     public void AddPanelCommands(bool remove)
     {
         AppendMenuW(_menu, 0x800, 0, null);
-        AppendMenuW(_menu, 0, PanelFavorite, remove ? "패널 즐겨찾기에서 제거" : "패널 즐겨찾기에 추가");
-        AppendMenuW(_menu, 0, PanelCopyPath, "경로로 복사\tCtrl+Shift+C");
-        AppendMenuW(_menu, 0, PanelZip, "패널 ZIP 압축");
+        AppendMenuW(_menu, 0, PanelFavorite, remove ? Localization.T("패널 즐겨찾기에서 제거") : Localization.T("패널 즐겨찾기에 추가"));
+        AppendMenuW(_menu, 0, PanelCopyPath, Localization.T("경로로 복사\tCtrl+Shift+C"));
+        AppendMenuW(_menu, 0, PanelZip, Localization.T("패널 ZIP 압축"));
     }
 
     public uint Show(Window owner, Point screenPoint)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         var hwnd = new WindowInteropHelper(owner).Handle;
-        var source = HwndSource.FromHwnd(hwnd) ?? throw new InvalidOperationException("창 핸들이 준비되지 않았습니다.");
+        var source = HwndSource.FromHwnd(hwnd) ?? throw new InvalidOperationException(Localization.T("창 핸들이 준비되지 않았습니다."));
         var extended = _context as IContextMenu3;
         var older = _context as IContextMenu2;
         IntPtr Hook(IntPtr window, int message, IntPtr wParam, IntPtr lParam, ref bool handled)

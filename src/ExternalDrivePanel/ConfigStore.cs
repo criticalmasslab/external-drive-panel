@@ -51,14 +51,14 @@ public sealed class ConfigStore
     public static AppConfig ReadValidated(string path)
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        if (stream.Length > MaximumBytes) throw new JsonException("설정 파일이 너무 큽니다. (최대 8MB)");
+        if (stream.Length > MaximumBytes) throw new JsonException(Localization.T("설정 파일이 너무 큽니다. (최대 8MB)"));
         using var document = JsonDocument.Parse(stream);
         var root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("version", out var version)
             || version.ValueKind != JsonValueKind.Number || !version.TryGetInt32(out var versionNumber) || versionNumber != 1
             || !root.TryGetProperty("zone", out _) || !root.TryGetProperty("globalView", out _) || !root.TryGetProperty("drives", out _))
-            throw new JsonException("최상위 설정 스키마가 올바르지 않습니다.");
-        var config = root.Deserialize<AppConfig>(Options) ?? throw new JsonException("설정이 null입니다.");
+            throw new JsonException(Localization.T("최상위 설정 스키마가 올바르지 않습니다."));
+        var config = root.Deserialize<AppConfig>(Options) ?? throw new JsonException(Localization.T("설정이 null입니다."));
         Validate(config); return config;
     }
     public Task<bool> FlushAsync() { lock (_saveLock) return _pendingSave; }
@@ -70,7 +70,7 @@ public sealed class ConfigStore
             Validate(config);
             // Snapshot on the caller's thread; the mutable config never crosses threads.
             var bytes = JsonSerializer.SerializeToUtf8Bytes(config, Options);
-            if (bytes.Length > MaximumBytes) throw new JsonException("설정 파일이 너무 큽니다.");
+            if (bytes.Length > MaximumBytes) throw new JsonException(Localization.T("설정 파일이 너무 큽니다."));
             lock (_saveLock)
                 return _pendingSave = _pendingSave.ContinueWith(_ => SaveBytes(bytes),
                     CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
@@ -121,10 +121,11 @@ public sealed class ConfigStore
 
     private static void Validate(AppConfig config)
     {
+        config.Language = Localization.Normalize(config.Language);
         if (config.Version != 1 || config.Zone is null || config.GlobalView is null || config.Drives is null
             || config.DriveOrder is null || config.IgnoredDrives is null
             || config.DriveOrder.Concat(config.IgnoredDrives).Any(serial => !uint.TryParse(serial, out _)))
-            throw new JsonException("지원하지 않거나 올바르지 않은 설정 형식입니다.");
+            throw new JsonException(Localization.T("지원하지 않거나 올바르지 않은 설정 형식입니다."));
         var zone = config.Zone;
         if (zone.MonitorIndex < 0 || zone.GridCols is < 1 or > 50 || zone.GridRows is < 1 or > 50
             || zone.CellCol < 0 || zone.CellCol >= zone.GridCols || zone.CellRow < 0 || zone.CellRow >= zone.GridRows
@@ -133,7 +134,7 @@ public sealed class ConfigStore
                 .Any(value => !double.IsFinite(value) || value < 0)
             || !Enum.IsDefined(config.GlobalView.ViewMode) || !double.IsFinite(config.GlobalView.IconSize)
             || config.GlobalView.IconSize is < 16 or > 64)
-            throw new JsonException("설정 값이 허용 범위를 벗어났습니다.");
+            throw new JsonException(Localization.T("설정 값이 허용 범위를 벗어났습니다."));
         foreach (var (serial, drive) in config.Drives)
         {
             if (!uint.TryParse(serial, out _) || drive is null || drive.Favorites is null
@@ -142,7 +143,7 @@ public sealed class ConfigStore
                 || (drive.PreferredLabel is { } preferred && (preferred.Length > 32 || preferred.Any(char.IsControl)))
                 || drive.Favorites.Any(favorite => favorite is null || !IsSafeRelativePath(favorite.RelativePath)
                     || favorite.DisplayName is null))
-                throw new JsonException("올바르지 않은 드라이브 설정입니다.");
+                throw new JsonException(Localization.T("올바르지 않은 드라이브 설정입니다."));
         }
     }
 }

@@ -9,12 +9,12 @@ public sealed class DriveViewModeConverter : JsonConverter<GlobalViewMode?>
     public override GlobalViewMode? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType == JsonTokenType.Null) return null;
-        if (reader.TokenType != JsonTokenType.String) throw new JsonException("드라이브 viewMode는 문자열이어야 합니다.");
+        if (reader.TokenType != JsonTokenType.String) throw new JsonException(Localization.T("드라이브 viewMode는 문자열이어야 합니다."));
         return reader.GetString() switch
         {
             "icons" => GlobalViewMode.Icon,
             "details" => GlobalViewMode.Details,
-            _ => throw new JsonException("드라이브 viewMode는 icons 또는 details여야 합니다.")
+            _ => throw new JsonException(Localization.T("드라이브 viewMode는 icons 또는 details여야 합니다."))
         };
     }
 

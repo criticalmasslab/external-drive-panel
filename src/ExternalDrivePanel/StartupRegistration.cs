@@ -26,7 +26,7 @@ public sealed class StartupRegistration : IStartupRegistration
             var locator = VelopackLocator.Current;
             var content = locator?.CurrentlyInstalledVersion is not null ? locator.AppContentDir : null;
             return !string.IsNullOrEmpty(content) ? Path.Combine(content, "ExternalDrivePanel.exe")
-                : Environment.ProcessPath ?? throw new IOException("실행 파일 경로를 찾지 못했습니다.");
+                : Environment.ProcessPath ?? throw new IOException(Localization.T("실행 파일 경로를 찾지 못했습니다."));
         }
     }
     public static string BuildCommand(string path) => $"\"{Path.GetFullPath(path)}\" --startup";

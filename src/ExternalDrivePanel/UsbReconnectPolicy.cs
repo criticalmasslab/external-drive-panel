@@ -9,7 +9,7 @@ public static class UsbReconnectPolicy
         Func<string, bool> hasActiveDisk, Func<string, string, uint, bool> portMatches)
     {
         if (ancestors.Count == 0 || (ancestors[0].Status & 0x400) == 0 || ancestors[0].Problem != 47)
-            throw new IOException("안전 제거 대기 상태가 아닙니다.");
+            throw new IOException(Localization.T("안전 제거 대기 상태가 아닙니다."));
         for (var i = 0; i + 1 < ancestors.Count; i++)
         {
             var usb = ancestors[i]; var hub = ancestors[i + 1];
@@ -20,9 +20,9 @@ public static class UsbReconnectPolicy
             if ((usb.Capabilities & 8) != 0 || !DeviceReconnectService.IsValid(target)
                 || !hub.Service.StartsWith("USBHUB", StringComparison.OrdinalIgnoreCase)
                 || hasActiveDisk(usb.Id) || !portMatches(hub.Id, usb.Id, usb.Port))
-                throw new IOException("이 USB 포트를 개별적으로 재연결할 수 없습니다.");
+                throw new IOException(Localization.T("이 USB 포트를 개별적으로 재연결할 수 없습니다."));
             return target;
         }
-        throw new IOException("지원되는 USB 저장장치가 아닙니다.");
+        throw new IOException(Localization.T("지원되는 USB 저장장치가 아닙니다."));
     }
 }

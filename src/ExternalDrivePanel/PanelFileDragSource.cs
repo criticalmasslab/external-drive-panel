@@ -109,7 +109,7 @@ internal sealed class PanelFileDragSource : IDisposable
             data.SetData(Format, _active.Id);
             DragDrop.DoDragDrop(view, data, DragDropEffects.Copy | DragDropEffects.Move);
         }
-        catch (Exception ex) { DialogActivation.Show(_owner, () => MessageBox.Show(_owner, ex.Message, "파일 드래그", MessageBoxButton.OK, MessageBoxImage.Warning)); }
+        catch (Exception ex) { DialogActivation.Show(_owner, () => MessageBox.Show(_owner, ex.Message, Localization.T("파일 드래그"), MessageBoxButton.OK, MessageBoxImage.Warning)); }
         finally { _active = null; _dragging = false; if (!_disposed) _refresh(); }
     }
     public void Dispose()

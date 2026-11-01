@@ -5,6 +5,7 @@ namespace ExternalDrivePanel;
 public sealed class AppConfig
 {
     public int Version { get; set; } = 1;
+    public string Language { get; set; } = "ko";
     public ZoneSettings Zone { get; set; } = new();
     public GlobalViewConfig GlobalView { get; set; } = new();
     public Dictionary<string, DriveConfig> Drives { get; set; } = new();

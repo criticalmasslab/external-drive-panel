@@ -1,6 +1,6 @@
 <Window x:Class="ExternalDrivePanel.ZoneSettingsWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:ExternalDrivePanel"
-        Title="화면 영역 설정" Width="390" Height="520" WindowStyle="None" WindowStartupLocation="Manual"
+        Title="{local:Translate L5E957B9B040A0AB6}" Width="390" Height="520" WindowStyle="None" WindowStartupLocation="Manual"
         ResizeMode="CanResize" Background="#FFF7F7F7" Foreground="#FF243447" FontSize="12"
         UseLayoutRounding="True" SnapsToDevicePixels="True">
     <WindowChrome.WindowChrome>
@@ -11,65 +11,73 @@
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
         <Border x:Name="SettingsHeader" Height="{DynamicResource SettingsHeaderHeight}" Background="#FF243447" Padding="{DynamicResource ChromeHeaderPadding}" MouseLeftButtonDown="Header_OnMouseLeftButtonDown">
             <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center"><local:SymbolIcon Kind="Settings" Foreground="White" Margin="0,0,8,0" /><TextBlock Text="화면 영역 설정" Foreground="White" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" /></StackPanel>
-                <Button x:Name="HeaderCloseButton" Grid.Column="1" Style="{StaticResource ChromeButton}" ToolTip="닫기 — 변경사항 유지" AutomationProperties.Name="설정 닫기" Click="CloseButton_OnClick"><local:SymbolIcon Kind="Close" /></Button>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center"><local:SymbolIcon Kind="Settings" Foreground="White" Margin="0,0,8,0" /><TextBlock Text="{local:Translate L5E957B9B040A0AB6}" Foreground="White" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" /></StackPanel>
+                <Button x:Name="HeaderCloseButton" Grid.Column="1" Style="{StaticResource ChromeButton}" ToolTip="{local:Translate L0EC3D34085D366ED}" AutomationProperties.Name="{local:Translate LA2BB7C58E3AF5715}" Click="CloseButton_OnClick"><local:SymbolIcon Kind="Close" /></Button>
             </Grid>
         </Border>
         <Viewbox x:Name="SettingsBodyFit" Grid.Row="1" Stretch="Uniform" StretchDirection="DownOnly" VerticalAlignment="Top">
             <Border Width="388" Padding="12,10"><StackPanel>
-                <TextBlock Text="시작 옵션" Style="{StaticResource SettingsSection}" />
-                <CheckBox x:Name="StartupCheck" Content="Windows 시작 시 자동 실행" Margin="0,6,0,0" Checked="Startup_OnChanged" Unchecked="Startup_OnChanged" />
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="160" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="{local:Translate 언어}" Style="{StaticResource SettingsSection}" VerticalAlignment="Center" />
+                    <ComboBox x:Name="LanguageChoice" Grid.Column="1" SelectedValuePath="Tag" SelectionChanged="Language_OnSelectionChanged" AutomationProperties.Name="Language / 언어" Padding="6,3">
+                        <ComboBoxItem Content="한국어" Tag="ko" />
+                        <ComboBoxItem Content="English" Tag="en" />
+                    </ComboBox>
+                </Grid>
+                <TextBlock Text="{local:Translate L1D7702A72660B7FC}" Style="{StaticResource SettingsSection}" />
+                <CheckBox x:Name="StartupCheck" Content="{local:Translate LB8EA7BFC0B6DA0BF}" Margin="0,6,0,0" Checked="Startup_OnChanged" Unchecked="Startup_OnChanged" />
                 <TextBlock x:Name="StartupMessage" TextWrapping="Wrap" Margin="0,4,0,0">
                     <TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource SettingsHint}"><Style.Triggers>
                         <Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed" /></Trigger>
                     </Style.Triggers></Style></TextBlock.Style>
                 </TextBlock>
                 <Border Style="{StaticResource SettingsSeparator}" />
-                <TextBlock Text="모니터" Style="{StaticResource SettingsSection}" />
+                <TextBlock Text="{local:Translate LEBD4EA099E7F9F98}" Style="{StaticResource SettingsSection}" />
                 <StackPanel x:Name="MonitorOptions" Margin="0,5,0,0" />
                 <Border Style="{StaticResource SettingsSeparator}" />
                 <Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                    <TextBlock Text="화면 분할" Style="{StaticResource SettingsSection}" VerticalAlignment="Center" />
+                    <TextBlock Text="{local:Translate L15A6865634B7F028}" Style="{StaticResource SettingsSection}" VerticalAlignment="Center" />
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <TextBlock Text="가로" VerticalAlignment="Center" /><TextBox x:Name="GridColsText" AutomationProperties.Name="가로 분할 수" Width="48" Margin="7,0,12,0" TextChanged="Form_OnChanged" />
-                        <TextBlock Text="세로" VerticalAlignment="Center" /><TextBox x:Name="GridRowsText" AutomationProperties.Name="세로 분할 수" Width="48" Margin="7,0,0,0" TextChanged="Form_OnChanged" />
+                        <TextBlock Text="{local:Translate L79B03B4207CA5CE7}" VerticalAlignment="Center" /><TextBox x:Name="GridColsText" AutomationProperties.Name="{local:Translate LF376C620726AF87A}" Width="48" Margin="7,0,12,0" TextChanged="Form_OnChanged" />
+                        <TextBlock Text="{local:Translate LABAA893444DB84A1}" VerticalAlignment="Center" /><TextBox x:Name="GridRowsText" AutomationProperties.Name="{local:Translate LC4779DB5A61B1EC9}" Width="48" Margin="7,0,0,0" TextChanged="Form_OnChanged" />
                     </StackPanel>
                 </Grid>
                 <Border Background="White" BorderBrush="#FFBFC5CC" BorderThickness="1" CornerRadius="3" Padding="4"><UniformGrid x:Name="GridPreview" Height="80" /></Border>
                 <TextBlock x:Name="SelectionHint" Style="{StaticResource SettingsHint}" Margin="0,4,0,8" />
-                <TextBlock Text="외장하드 패널 배치" Style="{StaticResource SettingsSection}" Margin="0,0,0,5" />
+                <TextBlock Text="{local:Translate L82D6F0110C4554FB}" Style="{StaticResource SettingsSection}" Margin="0,0,0,5" />
                 <UniformGrid Columns="2">
-                    <RadioButton x:Name="VerticalSplitRadio" Content="위아래로 나열" GroupName="Split" Margin="0,0,4,0" Checked="Option_OnChanged" />
-                    <RadioButton x:Name="HorizontalSplitRadio" Content="좌우로 나열" GroupName="Split" Checked="Option_OnChanged" />
+                    <RadioButton x:Name="VerticalSplitRadio" Content="{local:Translate L562EEA7A527DBF9D}" GroupName="Split" Margin="0,0,4,0" Checked="Option_OnChanged" />
+                    <RadioButton x:Name="HorizontalSplitRadio" Content="{local:Translate LB85D2E6568D3BC65}" GroupName="Split" Checked="Option_OnChanged" />
                 </UniformGrid>
-                <TextBlock Text="패널 크기 배분" Style="{StaticResource SettingsSection}" Margin="0,10,0,5" />
+                <TextBlock Text="{local:Translate L16A379CC6D9F9F44}" Style="{StaticResource SettingsSection}" Margin="0,10,0,5" />
                 <UniformGrid Columns="2">
-                    <RadioButton x:Name="EqualPanelsRadio" Content="균등 분할 (고정)" GroupName="PanelSizing" Margin="0,0,4,0" Checked="Option_OnChanged" />
-                    <RadioButton x:Name="ResponsivePanelsRadio" Content="내용에 따라 자동" GroupName="PanelSizing" Checked="Option_OnChanged" />
+                    <RadioButton x:Name="EqualPanelsRadio" Content="{local:Translate L3EBEBE7BF0D718F5}" GroupName="PanelSizing" Margin="0,0,4,0" Checked="Option_OnChanged" />
+                    <RadioButton x:Name="ResponsivePanelsRadio" Content="{local:Translate L32BD4116FDC55089}" GroupName="PanelSizing" Checked="Option_OnChanged" />
                 </UniformGrid>
-                <TextBlock Text="자동 배분은 위아래 배치에 적용됩니다." Style="{StaticResource SettingsHint}" FontSize="11" Margin="0,5,0,0" />
+                <TextBlock Text="{local:Translate L5EC5D3006B413810}" Style="{StaticResource SettingsHint}" FontSize="11" Margin="0,5,0,0" />
                 <Border Style="{StaticResource SettingsSeparator}" />
                 <Grid Margin="0,0,0,5"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                    <TextBlock Text="바깥 여백" Style="{StaticResource SettingsSection}" VerticalAlignment="Center" />
-                    <CheckBox x:Name="UniformMarginCheck" Grid.Column="1" Content="사방 동일" Checked="UniformMargin_OnChanged" Unchecked="UniformMargin_OnChanged" />
+                    <TextBlock Text="{local:Translate LB06021D1B074D336}" Style="{StaticResource SettingsSection}" VerticalAlignment="Center" />
+                    <CheckBox x:Name="UniformMarginCheck" Grid.Column="1" Content="{local:Translate L38CF32B3C8784976}" Checked="UniformMargin_OnChanged" Unchecked="UniformMargin_OnChanged" />
                 </Grid>
                 <StackPanel x:Name="UniformMarginPanel" Orientation="Horizontal">
-                    <TextBlock Text="전체" Width="45" VerticalAlignment="Center" /><TextBox x:Name="MarginAllText" AutomationProperties.Name="전체 여백" Width="70" TextChanged="Form_OnChanged" /><TextBlock Text="px" Style="{StaticResource SettingsHint}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                    <TextBlock Text="{local:Translate LA4B69FAF0C1113FA}" Width="45" VerticalAlignment="Center" /><TextBox x:Name="MarginAllText" AutomationProperties.Name="{local:Translate LBD01397FA77C01DB}" Width="70" TextChanged="Form_OnChanged" /><TextBlock Text="px" Style="{StaticResource SettingsHint}" VerticalAlignment="Center" Margin="8,0,0,0" />
                 </StackPanel>
                 <Grid x:Name="IndividualMarginPanel">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="45" /><ColumnDefinition Width="70" /><ColumnDefinition Width="32" /><ColumnDefinition Width="45" /><ColumnDefinition Width="70" /></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
-                    <TextBlock Text="위" VerticalAlignment="Center" /><TextBox x:Name="MarginTopText" Grid.Column="1" AutomationProperties.Name="위 여백" Margin="0,0,0,6" TextChanged="Form_OnChanged" />
-                    <TextBlock Text="아래" Grid.Column="3" VerticalAlignment="Center" /><TextBox x:Name="MarginBottomText" Grid.Column="4" AutomationProperties.Name="아래 여백" Margin="0,0,0,6" TextChanged="Form_OnChanged" />
-                    <TextBlock Text="왼쪽" Grid.Row="1" VerticalAlignment="Center" /><TextBox x:Name="MarginLeftText" Grid.Row="1" Grid.Column="1" AutomationProperties.Name="왼쪽 여백" TextChanged="Form_OnChanged" />
-                    <TextBlock Text="오른쪽" Grid.Row="1" Grid.Column="3" VerticalAlignment="Center" /><TextBox x:Name="MarginRightText" Grid.Row="1" Grid.Column="4" AutomationProperties.Name="오른쪽 여백" TextChanged="Form_OnChanged" />
+                    <TextBlock Text="{local:Translate LE0BEBB354D8F7F3B}" VerticalAlignment="Center" /><TextBox x:Name="MarginTopText" Grid.Column="1" AutomationProperties.Name="{local:Translate LB58C8405E84B9D22}" Margin="0,0,0,6" TextChanged="Form_OnChanged" />
+                    <TextBlock Text="{local:Translate L8F2EA9820639F8B8}" Grid.Column="3" VerticalAlignment="Center" /><TextBox x:Name="MarginBottomText" Grid.Column="4" AutomationProperties.Name="{local:Translate L7A83DDC6A34605C5}" Margin="0,0,0,6" TextChanged="Form_OnChanged" />
+                    <TextBlock Text="{local:Translate LDC0103C11A2B107B}" Grid.Row="1" VerticalAlignment="Center" /><TextBox x:Name="MarginLeftText" Grid.Row="1" Grid.Column="1" AutomationProperties.Name="{local:Translate LB7210D2D5F27CEA0}" TextChanged="Form_OnChanged" />
+                    <TextBlock Text="{local:Translate LF594AA6A15B9381C}" Grid.Row="1" Grid.Column="3" VerticalAlignment="Center" /><TextBox x:Name="MarginRightText" Grid.Row="1" Grid.Column="4" AutomationProperties.Name="{local:Translate LA9C7D2DA84F9A39C}" TextChanged="Form_OnChanged" />
                 </Grid>
-                <TextBlock Text="선택 영역 가장자리와 패널 사이의 간격입니다. (px)" Style="{StaticResource SettingsHint}" FontSize="11" Margin="0,6,0,0" />
+                <TextBlock Text="{local:Translate LD2C5481CD9D473BA}" Style="{StaticResource SettingsHint}" FontSize="11" Margin="0,6,0,0" />
             </StackPanel></Border>
         </Viewbox>
         <Border Grid.Row="2" Background="#FFF4F5F7" BorderBrush="#FFD0D5DC" BorderThickness="0,1,0,0" Padding="12,8"><Grid>
             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
             <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
-                <TextBlock Text="변경 즉시 반영" Foreground="#FF3B4C60" /><TextBlock Text="취소하면 이전 설정으로 돌아갑니다." FontSize="11" Style="{StaticResource SettingsHint}" Margin="0,3,0,0" />
+                <TextBlock Text="{local:Translate LDEB7CABF3B2AD5CF}" Foreground="#FF3B4C60" TextWrapping="Wrap" /><TextBlock Text="{local:Translate LEE21EF5E0324CC1D}" FontSize="11" Style="{StaticResource SettingsHint}" Margin="0,3,0,0" TextWrapping="Wrap" />
                 <TextBlock x:Name="ValidationMessage" Foreground="#FFB64E3B" TextWrapping="Wrap" Margin="0,3,0,0">
                     <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers>
                         <Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed" /></Trigger>
@@ -77,8 +85,8 @@
                 </TextBlock>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="CancelButton" Content="취소" MinWidth="64" Margin="0,0,6,0" IsCancel="True" Click="CancelButton_OnClick" />
-                <Button x:Name="CloseButton" Content="닫기" Style="{StaticResource SettingsPrimaryButton}" MinWidth="64" IsDefault="True" Click="CloseButton_OnClick" />
+                <Button x:Name="CancelButton" Content="{local:Translate LBE876433993AB7BA}" MinWidth="64" Margin="0,0,6,0" IsCancel="True" Click="CancelButton_OnClick" />
+                <Button x:Name="CloseButton" Content="{local:Translate L1E8C10206F5B35BD}" Style="{StaticResource SettingsPrimaryButton}" MinWidth="64" IsDefault="True" Click="CloseButton_OnClick" />
             </StackPanel>
         </Grid></Border>
         <Border x:Name="CopyrightFooter" Grid.Row="3" Height="{DynamicResource SettingsFooterHeight}" Background="#FF243447">

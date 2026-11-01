@@ -13,22 +13,22 @@ public sealed class WindowsEjectBackend : IEjectBackend
     private sealed record Disk(uint DevInst, uint? Number);
     public EjectTarget Resolve(string root)
     {
-        if (!EjectService.IsDriveRoot(root)) throw new IOException("드라이브 루트를 확인해주세요.");
+        if (!EjectService.IsDriveRoot(root)) throw new IOException(Localization.T("드라이브 루트를 확인해주세요."));
         root = char.ToUpperInvariant(root[0]) + ":\\";
         var type = new DriveInfo(root).DriveType;
-        if (type is not (DriveType.Fixed or DriveType.Removable)) throw new IOException("이 드라이브는 안전 제거 대상이 아닙니다.");
+        if (type is not (DriveType.Fixed or DriveType.Removable)) throw new IOException(Localization.T("이 드라이브는 안전 제거 대상이 아닙니다."));
         var number = ReadDiskNumber($@"\\.\{root[..2]}");
         // Block OS/app/config storage, including a second partition on that disk.
         var protectedPaths = new[] { Environment.SystemDirectory, Environment.ProcessPath,
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) };
         foreach (var protectedRoot in protectedPaths.Where(path => !string.IsNullOrEmpty(path)).Select(path => Path.GetPathRoot(path!)).Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            if (!EjectService.IsDriveRoot(protectedRoot)) throw new IOException("시스템 저장장치를 확인하지 못해 안전 제거를 중단했습니다.");
+            if (!EjectService.IsDriveRoot(protectedRoot)) throw new IOException(Localization.T("시스템 저장장치를 확인하지 못해 안전 제거를 중단했습니다."));
             if (number == ReadDiskNumber($@"\\.\{protectedRoot![..2]}"))
-                throw new IOException("Windows 또는 프로그램·설정이 있는 물리 디스크는 제거할 수 없습니다.");
+                throw new IOException(Localization.T("Windows 또는 프로그램·설정이 있는 물리 디스크는 제거할 수 없습니다."));
         }
         var disks = EnumerateDisks();
-        var disk = disks.SingleOrDefault(disk => disk.Number == number) ?? throw new IOException("드라이브에 해당하는 Windows 장치를 찾지 못했습니다.");
+        var disk = disks.SingleOrDefault(disk => disk.Number == number) ?? throw new IOException(Localization.T("드라이브에 해당하는 Windows 장치를 찾지 못했습니다."));
         var candidate = EjectSafetyPolicy.Select(Ancestors(disk.DevInst), node => disks.Any(other => other.DevInst != disk.DevInst && IsDescendant(other.DevInst, node)));
         var serial = new DriveService().GetVolumeInfo(root).VolumeSerialNumber;
         return new(root, number, candidate.DevInst, candidate.DeviceId, serial);
@@ -49,7 +49,7 @@ public sealed class WindowsEjectBackend : IEjectBackend
     public EjectResult Request(EjectTarget target)
     {
         if (!string.Equals(DeviceId(target.DevInst), target.DeviceId, StringComparison.OrdinalIgnoreCase))
-            return EjectResult.Failed("장치 식별 정보가 바뀌어 제거를 중단했습니다.");
+            return EjectResult.Failed(Localization.T("장치 식별 정보가 바뀌어 제거를 중단했습니다."));
         // Resolve has closed every volume/interface handle before this call.
         var name = new StringBuilder(260);
         var code = CM_Request_Device_EjectW(target.DevInst, out var veto, name, name.Capacity, 0);
@@ -60,28 +60,28 @@ public sealed class WindowsEjectBackend : IEjectBackend
         if (code == 0) return EjectResult.Succeeded();
         var reason = veto switch
         {
-            2 => "Windows가 장치의 열린 핸들을 정리 중입니다. 잠시 후 다시 시도해주세요.",
-            3 => "프로그램이 이 장치를 사용 중이라고 Windows에 응답했습니다.",
-            4 => "Windows 서비스가 이 장치를 사용 중입니다.",
-            5 => "장치에 열린 파일 또는 폴더 핸들이 남아 있다고 Windows가 보고했습니다.",
-            6 or 7 or 11 => "장치 또는 드라이버가 안전 제거 요청을 거부했습니다.",
-            1 or 8 or 10 => "장치 또는 드라이버가 이 방식의 안전 제거를 지원하지 않습니다.",
-            12 => "현재 사용자 세션에 장치 제거 권한이 없습니다. Windows의 하드웨어 안전 제거 메뉴를 사용해주세요.",
-            13 => "장치 연결 상태가 바뀌었습니다. 연결 상태를 다시 확인해주세요.",
-            _ when code == 0x33 => "Windows가 장치 제거 권한을 거부했습니다. 하드웨어 안전 제거 메뉴를 사용해주세요.",
-            _ => "Windows가 안전 제거 요청을 완료하지 못했습니다."
+            2 => Localization.T("Windows가 장치의 열린 핸들을 정리 중입니다. 잠시 후 다시 시도해주세요."),
+            3 => Localization.T("프로그램이 이 장치를 사용 중이라고 Windows에 응답했습니다."),
+            4 => Localization.T("Windows 서비스가 이 장치를 사용 중입니다."),
+            5 => Localization.T("장치에 열린 파일 또는 폴더 핸들이 남아 있다고 Windows가 보고했습니다."),
+            6 or 7 or 11 => Localization.T("장치 또는 드라이버가 안전 제거 요청을 거부했습니다."),
+            1 or 8 or 10 => Localization.T("장치 또는 드라이버가 이 방식의 안전 제거를 지원하지 않습니다."),
+            12 => Localization.T("현재 사용자 세션에 장치 제거 권한이 없습니다. Windows의 하드웨어 안전 제거 메뉴를 사용해주세요."),
+            13 => Localization.T("장치 연결 상태가 바뀌었습니다. 연결 상태를 다시 확인해주세요."),
+            _ when code == 0x33 => Localization.T("Windows가 장치 제거 권한을 거부했습니다. 하드웨어 안전 제거 메뉴를 사용해주세요."),
+            _ => Localization.T("Windows가 안전 제거 요청을 완료하지 못했습니다.")
         };
-        if (veto is 3 or 4 or 7 or 11 && !string.IsNullOrWhiteSpace(name)) reason += "\n대상: " + name;
+        if (veto is 3 or 4 or 7 or 11 && !string.IsNullOrWhiteSpace(name)) reason += Localization.T("\n대상: ") + name;
         DiagnosticLog.Record($"eject.pnp.cr{code:X}.veto{veto}");
-        return EjectResult.Failed($"{reason}\n(PnP 코드 0x{code:X}, 거부 유형 {veto})");
+        return EjectResult.Failed(Localization.Format("{0}\n(PnP 코드 0x{1:X}, 거부 유형 {2})", reason, code, veto));
     }
     private static uint ReadDiskNumber(string path)
     {
         using var handle = CreateFileW(path, 0, 3, 0, 3, 0, 0);
-        if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error(), "장치 정보를 조회할 수 없습니다.");
+        if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error(), Localization.T("장치 정보를 조회할 수 없습니다."));
         if (!DeviceIoControl(handle, 0x002D1080, 0, 0, out var number, Marshal.SizeOf<StorageDeviceNumber>(), out var returned, 0)
-            || returned < Marshal.SizeOf<StorageDeviceNumber>()) throw new Win32Exception(Marshal.GetLastWin32Error(), "물리 디스크 번호를 조회할 수 없습니다.");
-        if (number.Type != 7) throw new IOException("일반 디스크 장치가 아닙니다.");
+            || returned < Marshal.SizeOf<StorageDeviceNumber>()) throw new Win32Exception(Marshal.GetLastWin32Error(), Localization.T("물리 디스크 번호를 조회할 수 없습니다."));
+        if (number.Type != 7) throw new IOException(Localization.T("일반 디스크 장치가 아닙니다."));
         return number.Number;
     }
     private static List<Disk> EnumerateDisks()
@@ -101,7 +101,7 @@ public sealed class WindowsEjectBackend : IEjectBackend
             }
             var info = new DeviceInfoData { Size = Marshal.SizeOf<DeviceInfoData>() };
             _ = SetupDiGetDeviceInterfaceDetailW(set, ref entry, 0, 0, out var size, ref info);
-            if (size is < 8 or > 65536) throw new IOException("장치 인터페이스 정보가 올바르지 않습니다.");
+            if (size is < 8 or > 65536) throw new IOException(Localization.T("장치 인터페이스 정보가 올바르지 않습니다."));
             var detail = Marshal.AllocHGlobal((int)size);
             try
             {
@@ -114,7 +114,7 @@ public sealed class WindowsEjectBackend : IEjectBackend
             }
             finally { Marshal.FreeHGlobal(detail); }
         }
-        throw new IOException("장치 수가 안전 조회 범위를 초과했습니다.");
+        throw new IOException(Localization.T("장치 수가 안전 조회 범위를 초과했습니다."));
     }
     private static bool IsDescendant(uint node, uint ancestor)
     {
@@ -123,29 +123,29 @@ public sealed class WindowsEjectBackend : IEjectBackend
         {
             if (node == ancestor) return true;
             if (DeviceId(node).StartsWith("HTREE\\ROOT\\", StringComparison.OrdinalIgnoreCase)) return false;
-            if (CM_Get_Parent(out var parent, node, 0) != 0) throw new IOException("다른 디스크의 연결 계층을 확인하지 못했습니다.");
+            if (CM_Get_Parent(out var parent, node, 0) != 0) throw new IOException(Localization.T("다른 디스크의 연결 계층을 확인하지 못했습니다."));
             node = parent;
         }
-        throw new IOException("장치 계층을 안전하게 확인할 수 없습니다.");
+        throw new IOException(Localization.T("장치 계층을 안전하게 확인할 수 없습니다."));
     }
     private static string DeviceId(uint node)
     {
         var value = new StringBuilder(200);
-        if (CM_Get_Device_IDW(node, value, value.Capacity, 0) != 0) throw new IOException("장치 식별 정보를 읽지 못했습니다.");
+        if (CM_Get_Device_IDW(node, value, value.Capacity, 0) != 0) throw new IOException(Localization.T("장치 식별 정보를 읽지 못했습니다."));
         return value.ToString();
     }
     private static uint Capabilities(uint node)
     {
         var size = 4u;
         if (CM_Get_DevNode_Registry_PropertyW(node, 0x10, out var type, out uint value, ref size, 0) != 0 || type != 4 || size != 4)
-            throw new IOException("장치 제거 가능 여부를 확인할 수 없습니다.");
+            throw new IOException(Localization.T("장치 제거 가능 여부를 확인할 수 없습니다."));
         return value;
     }
     private static string StringProperty(uint node, uint property)
     {
         var value = new StringBuilder(256); var size = 512u;
         if (CM_Get_DevNode_Registry_PropertyTextW(node, property, out var type, value, ref size, 0) != 0 || type != 1)
-            throw new IOException("장치 드라이버 정보를 확인할 수 없습니다.");
+            throw new IOException(Localization.T("장치 드라이버 정보를 확인할 수 없습니다."));
         return value.ToString();
     }
     [StructLayout(LayoutKind.Sequential)] private struct StorageDeviceNumber { public uint Type, Number, Partition; }

@@ -1,0 +1,2012 @@
+[
+  {
+    "Id": "L6919A73EF12DB97B",
+    "Korean": "\n대상: ",
+    "English": "\nDestination: "
+  },
+  {
+    "Id": "L6B5B294CED2E212C",
+    "Korean": " · 5,000개까지만 표시합니다. 검색어를 좁혀주세요.",
+    "English": " · Limited to 5,000 items. Refine your search."
+  },
+  {
+    "Id": "L4FAB6CA76FF982AB",
+    "Korean": " · Windows 썸네일 (문서 전체 아님)",
+    "English": " · Windows thumbnail (not the full document)"
+  },
+  {
+    "Id": "L1ECB3B5F0766CE09",
+    "Korean": " · {0:N0}개 확인",
+    "English": " · {0:N0} checked"
+  },
+  {
+    "Id": "LE765C58EEBBF02E4",
+    "Korean": " · {0} / {1}쪽",
+    "English": " · Page {0} / {1}"
+  },
+  {
+    "Id": "LE711C767C3542CC6",
+    "Korean": " · 앞부분 128 KB만 표시",
+    "English": " · First 128 KB only"
+  },
+  {
+    "Id": "LA3A20790D667E0CA",
+    "Korean": " · 이미지 (GIF/TIFF는 첫 프레임)",
+    "English": " · Image (first GIF/TIFF frame)"
+  },
+  {
+    "Id": "L4A641FBA6231317F",
+    "Korean": " · 일부 경로 건너뜀",
+    "English": " · Some paths skipped"
+  },
+  {
+    "Id": "L60E22A8306E3B14D",
+    "Korean": " · 재생 버튼을 눌러 시작",
+    "English": " · Press Play to start"
+  },
+  {
+    "Id": "L219B850264FA7209",
+    "Korean": " 일부 장치는 재연결하지 못했습니다.",
+    "English": " Some devices could not be reconnected."
+  },
+  {
+    "Id": "L2117937A3B0483DA",
+    "Korean": " 파일",
+    "English": " file"
+  },
+  {
+    "Id": "L4BE0942F171161FB",
+    "Korean": "'{0}' 등록을 해제할까요?\n이 외장하드의 즐겨찾기도 함께 삭제됩니다. 파일은 삭제되지 않아요.",
+    "English": "Unregister '{0}'?\nIts panel favorites will also be removed. Your files will not be deleted."
+  },
+  {
+    "Id": "L8CA2E12F7214CDA8",
+    "Korean": "'{0}' 외장하드가 연결되었습니다.\n등록해서 패널로 관리할까요?",
+    "English": "External drive '{0}' is connected.\nRegister it to manage it in a panel?"
+  },
+  {
+    "Id": "LA5AC4F383EC62B66",
+    "Korean": "'{0}' 폴더로 복사하시겠습니까?",
+    "English": "Copy to folder '{0}'?"
+  },
+  {
+    "Id": "LDE8B3202C23E371D",
+    "Korean": "(경로 없음)",
+    "English": "(Path not found)"
+  },
+  {
+    "Id": "LBCEAC6E42EB2AF32",
+    "Korean": "(연결 안 됨) ",
+    "English": "(Disconnected) "
+  },
+  {
+    "Id": "L115BBADA787846D8",
+    "Korean": "(접근 불가)",
+    "English": "(Unavailable)"
+  },
+  {
+    "Id": "L7A949AFED1F6AE14",
+    "Korean": "External Drive Panel — 개발용",
+    "English": "External Drive Panel — Development"
+  },
+  {
+    "Id": "L505FCEECE780ECB7",
+    "Korean": "External Drive Panel — 소프트웨어 렌더링 (진단)",
+    "English": "External Drive Panel — Software rendering (diagnostic)"
+  },
+  {
+    "Id": "LF0CCF534BDFCB6C5",
+    "Korean": "External Drive Panel 앞으로",
+    "English": "Bring External Drive Panel forward"
+  },
+  {
+    "Id": "L6B33C13FCACC8E2A",
+    "Korean": "External Drive Panel 업데이트",
+    "English": "External Drive Panel update"
+  },
+  {
+    "Id": "LDFBC90160D5D7516",
+    "Korean": "JSON 설정 파일|*.json",
+    "English": "JSON settings file|*.json"
+  },
+  {
+    "Id": "L09E87F03A3F1505B",
+    "Korean": "PDF 미리보기 보조 실행 파일을 찾을 수 없습니다.",
+    "English": "The PDF preview helper could not be found."
+  },
+  {
+    "Id": "L5186027A56ED9A8B",
+    "Korean": "PDF 엔진 데이터가 올바르지 않습니다.",
+    "English": "Invalid PDF engine data."
+  },
+  {
+    "Id": "L58FB90A227046BD0",
+    "Korean": "PDF 엔진 응답이 올바르지 않습니다.",
+    "English": "Invalid response from the PDF engine."
+  },
+  {
+    "Id": "LB6A9883FEC015143",
+    "Korean": "PDF 엔진을 시작하지 못했습니다.",
+    "English": "Could not start the PDF engine."
+  },
+  {
+    "Id": "L56EF2218642A8AAF",
+    "Korean": "PDF 이미지가 너무 큽니다.",
+    "English": "The PDF image is too large."
+  },
+  {
+    "Id": "LE954B4B2910FEBC7",
+    "Korean": "PDF 파일을 찾을 수 없습니다.",
+    "English": "The PDF file could not be found."
+  },
+  {
+    "Id": "LF79715D776AB8E0B",
+    "Korean": "PDF 페이지 수가 올바르지 않습니다.",
+    "English": "Invalid PDF page count."
+  },
+  {
+    "Id": "L32A7D0E4D13E2379",
+    "Korean": "PDF 페이지 크기가 올바르지 않습니다.",
+    "English": "Invalid PDF page size."
+  },
+  {
+    "Id": "L8042B0A5D5ED774E",
+    "Korean": "PDF 페이지를 표시할 수 없습니다.\n",
+    "English": "Could not display this PDF page.\n"
+  },
+  {
+    "Id": "LE6C31753AB304DBD",
+    "Korean": "PDF를 미리볼 수 없습니다. 암호 보호·손상 또는 지원되지 않는 문서일 수 있습니다. 기본 앱으로 열어 확인해 주세요.",
+    "English": "This PDF cannot be previewed. It may be password-protected, damaged, or unsupported. Open it in the default app."
+  },
+  {
+    "Id": "L081C32531DBB4A0F",
+    "Korean": "USB 장치 트리 조회 범위를 초과했습니다.",
+    "English": "The USB device tree exceeds the inspection limit."
+  },
+  {
+    "Id": "L85C4650CBD1E17F1",
+    "Korean": "USB 재연결을 요청했습니다. Windows가 드라이브를 인식하면 패널이 다시 표시됩니다. 돌아오지 않으면 케이블을 다시 연결해주세요.",
+    "English": "USB reconnection requested. The panel will return when Windows detects the drive. If it does not, unplug and reconnect the cable."
+  },
+  {
+    "Id": "LFB7BC8B7C2CC1D64",
+    "Korean": "USB 재연결을 취소했습니다. 드라이브 목록은 새로고쳤습니다.",
+    "English": "USB reconnection cancelled. The drive list has been refreshed."
+  },
+  {
+    "Id": "LE70C9EBA953AE196",
+    "Korean": "USB 포트 연결 상태를 확인하지 못했습니다.",
+    "English": "Could not verify the USB port connection state."
+  },
+  {
+    "Id": "LF30C06C7ED0727D7",
+    "Korean": "USB 포트를 확인하지 못했습니다.",
+    "English": "Could not verify the USB port."
+  },
+  {
+    "Id": "L0A4906A0458BB1D7",
+    "Korean": "USB 허브 인터페이스를 식별하지 못했습니다.",
+    "English": "Could not identify the USB hub interface."
+  },
+  {
+    "Id": "LE18ADEF6CB8D0E56",
+    "Korean": "USB 허브 인터페이스를 확인하지 못했습니다.",
+    "English": "Could not verify the USB hub interface."
+  },
+  {
+    "Id": "LB2D4B446CFADBBB6",
+    "Korean": "Windows PDF 엔진이 문서를 읽지 못했거나 종료되었습니다.",
+    "English": "The Windows PDF engine could not read the document or stopped responding."
+  },
+  {
+    "Id": "L454AEF72B4DAF592",
+    "Korean": "Windows 공유",
+    "English": "Windows Share"
+  },
+  {
+    "Id": "LDA61490B77EAFE50",
+    "Korean": "Windows 또는 프로그램·설정이 있는 물리 디스크는 제거할 수 없습니다.",
+    "English": "The physical disk containing Windows, this app, or its settings cannot be removed."
+  },
+  {
+    "Id": "L322D846EEC4C0A21",
+    "Korean": "Windows 메뉴 (항목별)",
+    "English": "Windows menu (per item)"
+  },
+  {
+    "Id": "L70529A3F54981ED9",
+    "Korean": "Windows 메뉴를 열 수 없어 기본 메뉴로 표시합니다",
+    "English": "Windows menu unavailable; showing the basic menu"
+  },
+  {
+    "Id": "L84A82FBD1B202BD6",
+    "Korean": "Windows 새로 만들기 메뉴…",
+    "English": "Windows New menu…"
+  },
+  {
+    "Id": "L1D89713BB21FAE8E",
+    "Korean": "Windows 서비스가 이 장치를 사용 중입니다.",
+    "English": "A Windows service is using this device."
+  },
+  {
+    "Id": "LB8EA7BFC0B6DA0BF",
+    "Korean": "Windows 시작 시 자동 실행",
+    "English": "Run when Windows starts"
+  },
+  {
+    "Id": "L2A2C325EF691B0AF",
+    "Korean": "Windows 코덱 기반 재생",
+    "English": "Playback using Windows codecs"
+  },
+  {
+    "Id": "L039B1A1DBB8D853C",
+    "Korean": "Windows가 안전 제거 요청을 완료하지 못했습니다.",
+    "English": "Windows could not complete safe removal."
+  },
+  {
+    "Id": "L3AC3BA6F0308A9EE",
+    "Korean": "Windows가 이 장치를 제거 가능한 외장 장치로 식별하지 못했습니다. 하드웨어 안전 제거 메뉴를 확인해주세요.",
+    "English": "Windows did not identify this as a removable external device. Use Safely Remove Hardware in the taskbar."
+  },
+  {
+    "Id": "L2FA48343A2983871",
+    "Korean": "Windows가 장치 제거 권한을 거부했습니다. 하드웨어 안전 제거 메뉴를 사용해주세요.",
+    "English": "Windows denied permission to remove the device. Use Safely Remove Hardware in the taskbar."
+  },
+  {
+    "Id": "L699FC2FCE37C08C0",
+    "Korean": "Windows가 장치의 열린 핸들을 정리 중입니다. 잠시 후 다시 시도해주세요.",
+    "English": "Windows is releasing open handles on this device. Try again shortly."
+  },
+  {
+    "Id": "LFFDED92DC3951539",
+    "Korean": "Windows에서 예약한 이름은 사용할 수 없습니다.",
+    "English": "Names reserved by Windows cannot be used."
+  },
+  {
+    "Id": "LE82B104180AB3DCD",
+    "Korean": "Windows에서 이 미디어를 재생할 수 없습니다. 코덱이 없거나 파일이 손상되었을 수 있습니다. 기본 앱으로 열어 확인해 주세요.",
+    "English": "Windows cannot play this media. A codec may be missing or the file may be damaged. Open it in the default app."
+  },
+  {
+    "Id": "LB036DDDABE212FB2",
+    "Korean": "ZIP 파일로 압축",
+    "English": "Compress to ZIP file"
+  },
+  {
+    "Id": "L38965F052B6D5C82",
+    "Korean": "{0:0.##}배",
+    "English": "{0:0.##}×"
+  },
+  {
+    "Id": "LBC1A08414A1F6CE5",
+    "Korean": "{0}\n(PnP 코드 0x{1:X}, 거부 유형 {2})",
+    "English": "{0}\n(PnP code 0x{1:X}, veto type {2})"
+  },
+  {
+    "Id": "LC7A2426225B01A14",
+    "Korean": "{0}\n미완성 ZIP 정리 실패: {1}\n{2}",
+    "English": "{0}\nCould not clean up incomplete ZIP: {1}\n{2}"
+  },
+  {
+    "Id": "L3B4FA245862D5FF8",
+    "Korean": "{0}\n크기: {1}\n수정: {2}\n\n",
+    "English": "{0}\nSize: {1}\nModified: {2}\n\n"
+  },
+  {
+    "Id": "L7D1D91F6E48D3E29",
+    "Korean": "{0} / {1}쪽",
+    "English": "Page {0} / {1}"
+  },
+  {
+    "Id": "L696240BA119B59AA",
+    "Korean": "{0} · 읽기 전용",
+    "English": "{0} · Read-only"
+  },
+  {
+    "Id": "L5F26B126566D3479",
+    "Korean": "{0} 외장하드를 안전하게 꺼낼까요?\n같은 물리 장치의 다른 파티션도 함께 제거됩니다.\n진행 중인 패널 파일 작업이 있으면 완료 후 제거합니다.",
+    "English": "Safely remove {0}?\nOther partitions on the same physical device will also be removed.\nAny panel file operations will finish first."
+  },
+  {
+    "Id": "LBDD57EDC021937A7",
+    "Korean": "{0} 중 {1} 사용 가능 · {2:P1} 사용",
+    "English": "{1} free of {0} · {2:P1} used"
+  },
+  {
+    "Id": "L1459F178B9D33BCB",
+    "Korean": "{0}.\n파일 {1}개 복사, 항목 {2}개 건너뜀.\n이미 복사한 항목은 유지됩니다.",
+    "English": "{0}.\nCopied {1} files; skipped {2} items.\nFiles already copied are kept."
+  },
+  {
+    "Id": "L8894FDBA55136303",
+    "Korean": "{0}{1:N0}개 결과",
+    "English": "{0}{1:N0} results"
+  },
+  {
+    "Id": "L46554FEA4BA6438A",
+    "Korean": "{0}를 완료하지 못했습니다.\n{1}",
+    "English": "Could not complete {0}.\n{1}"
+  },
+  {
+    "Id": "L01EECB0EE10605FB",
+    "Korean": "{0}모니터 ({1} × {2}, {3}, {4})",
+    "English": "{0}Monitor ({1} × {2}, {3}, {4})"
+  },
+  {
+    "Id": "L2B7F50E8E7352A7F",
+    "Korean": "{0}열 · {1}행",
+    "English": "Column {0} · Row {1}"
+  },
+  {
+    "Id": "L79B03B4207CA5CE7",
+    "Korean": "가로",
+    "English": "Columns"
+  },
+  {
+    "Id": "LF376C620726AF87A",
+    "Korean": "가로 분할 수",
+    "English": "Column count"
+  },
+  {
+    "Id": "L3FB96F0D3879C4A3",
+    "Korean": "같은 이름의 항목이 있습니다",
+    "English": "An item with the same name already exists"
+  },
+  {
+    "Id": "LC0D4BCC606A3539F",
+    "Korean": "개발용 · EXTERNAL DRIVE PANEL",
+    "English": "DEV · EXTERNAL DRIVE PANEL"
+  },
+  {
+    "Id": "LE936258B13F2C6E8",
+    "Korean": "개발용 — 로컬에서 갱신합니다",
+    "English": "Development — updated locally"
+  },
+  {
+    "Id": "L2690A543E5EF93FF",
+    "Korean": "개발용 실행에서는 정식 버전의 자동실행 설정을 변경하지 않습니다.",
+    "English": "Development startup is managed by the local launcher script."
+  },
+  {
+    "Id": "LB6962F6D1B037BC8",
+    "Korean": "건너뛰기",
+    "English": "Skip"
+  },
+  {
+    "Id": "L4B8D541EBE6D9003",
+    "Korean": "검색",
+    "English": "Search"
+  },
+  {
+    "Id": "L62639EC31CA4B494",
+    "Korean": "검색 (Enter)",
+    "English": "Search (Enter)"
+  },
+  {
+    "Id": "LD5868003C32ABBD6",
+    "Korean": "검색 닫기",
+    "English": "Close search"
+  },
+  {
+    "Id": "L90A3D343FAEA48F7",
+    "Korean": "검색 닫기 (Esc)",
+    "English": "Close search (Esc)"
+  },
+  {
+    "Id": "L35A9863BE8362FC6",
+    "Korean": "검색 완료 · ",
+    "English": "Search complete · "
+  },
+  {
+    "Id": "L2647DB6771214F52",
+    "Korean": "검색 중 · ",
+    "English": "Searching · "
+  },
+  {
+    "Id": "LFB5A57A17232EB2E",
+    "Korean": "검색 중… 해당 드라이브 전체를 확인합니다.",
+    "English": "Searching the entire drive…"
+  },
+  {
+    "Id": "LA4C6184045DAB1B1",
+    "Korean": "검색 중지 · {0:N0}개 결과",
+    "English": "Search stopped · {0:N0} results"
+  },
+  {
+    "Id": "LF615AD22F57A8380",
+    "Korean": "검색: {0} — {1}",
+    "English": "Search: {0} — {1}"
+  },
+  {
+    "Id": "L7EDD56289B1DEC24",
+    "Korean": "검색할 수 없습니다: ",
+    "English": "Search failed: "
+  },
+  {
+    "Id": "LC9FC5A208FC5CAE3",
+    "Korean": "격자는 1~50의 정수, 여백은 0 이상의 숫자를 입력하세요.",
+    "English": "Enter whole numbers from 1 to 50 for the grid and non-negative numbers for margins."
+  },
+  {
+    "Id": "L70D81572C8B43B9F",
+    "Korean": "경로로 복사",
+    "English": "Copy as path"
+  },
+  {
+    "Id": "L41A054C140259655",
+    "Korean": "경로로 복사\tCtrl+Shift+C",
+    "English": "Copy as path\tCtrl+Shift+C"
+  },
+  {
+    "Id": "L00DA5B2788EA3EF0",
+    "Korean": "경로를 찾을 수 없습니다.",
+    "English": "The path could not be found."
+  },
+  {
+    "Id": "L9B1F4EF3557F876C",
+    "Korean": "경로를 찾을 수 없습니다.\n{0}",
+    "English": "The path could not be found.\n{0}"
+  },
+  {
+    "Id": "LD62648E19143C34D",
+    "Korean": "공유",
+    "English": "Share"
+  },
+  {
+    "Id": "LEFBA01F7E2511D9C",
+    "Korean": "공유…",
+    "English": "Share…"
+  },
+  {
+    "Id": "L08CDA93FD1196B6E",
+    "Korean": "관리자 권한 이름 변경을 시작하지 못했습니다.",
+    "English": "Could not start the elevated rename operation."
+  },
+  {
+    "Id": "L3EBEBE7BF0D718F5",
+    "Korean": "균등 분할 (고정)",
+    "English": "Equal sizes (fixed)"
+  },
+  {
+    "Id": "LC60FF513CE9606D1",
+    "Korean": "기본 앱으로 열기",
+    "English": "Open in default app"
+  },
+  {
+    "Id": "L65FDEC55B5FFB2D6",
+    "Korean": "기본 앱으로 열지 못했습니다.\n",
+    "English": "Could not open in the default app.\n"
+  },
+  {
+    "Id": "L672137B0531A45FD",
+    "Korean": "꺼내기 실패",
+    "English": "Eject failed"
+  },
+  {
+    "Id": "L32BD4116FDC55089",
+    "Korean": "내용에 따라 자동",
+    "English": "Fit to content"
+  },
+  {
+    "Id": "L26698D40B4F4C2EF",
+    "Korean": "다른 디스크의 연결 계층을 확인하지 못했습니다.",
+    "English": "Could not verify another disk's connection hierarchy."
+  },
+  {
+    "Id": "L242EF0726C19EE0E",
+    "Korean": "다른 설정·종료·제거 작업을 완료한 뒤 다시 시도해주세요.",
+    "English": "Finish the other settings, exit, or removal operation and try again."
+  },
+  {
+    "Id": "L994AC67CA3748A79",
+    "Korean": "다음 페이지 (→)",
+    "English": "Next page (→)"
+  },
+  {
+    "Id": "L1F1F302FFCB798A7",
+    "Korean": "다음 항목 (↓)",
+    "English": "Next item (↓)"
+  },
+  {
+    "Id": "L1E8C10206F5B35BD",
+    "Korean": "닫기",
+    "English": "Close"
+  },
+  {
+    "Id": "L0EC3D34085D366ED",
+    "Korean": "닫기 — 변경사항 유지",
+    "English": "Close — keep changes"
+  },
+  {
+    "Id": "L7AE51F186B7BEB5C",
+    "Korean": "덮어쓰기",
+    "English": "Overwrite"
+  },
+  {
+    "Id": "L2DF06869205B07FE",
+    "Korean": "뒤로",
+    "English": "Back"
+  },
+  {
+    "Id": "L4F2EA3D24DA14635",
+    "Korean": "드라이브 viewMode는 icons 또는 details여야 합니다.",
+    "English": "Drive viewMode must be icons or details."
+  },
+  {
+    "Id": "L8FF5E057339F762F",
+    "Korean": "드라이브 viewMode는 문자열이어야 합니다.",
+    "English": "Drive viewMode must be a string."
+  },
+  {
+    "Id": "L1FC57009F7522E9E",
+    "Korean": "드라이브 검색",
+    "English": "Search drive"
+  },
+  {
+    "Id": "LF489A8651C0FAB1A",
+    "Korean": "드라이브 루트 전체는 ZIP으로 압축할 수 없습니다.",
+    "English": "An entire drive root cannot be compressed to ZIP."
+  },
+  {
+    "Id": "LCDC7B8207D5B982B",
+    "Korean": "드라이브 루트는 삭제할 수 없습니다.",
+    "English": "The drive root cannot be deleted."
+  },
+  {
+    "Id": "L818318B79BC14318",
+    "Korean": "드라이브 루트를 확인해주세요.",
+    "English": "Check the drive root."
+  },
+  {
+    "Id": "LB2281233C62108FB",
+    "Korean": "드라이브 루트의 이름은 여기서 바꿀 수 없습니다.",
+    "English": "The drive root cannot be renamed here."
+  },
+  {
+    "Id": "LE7F03FD1A7CC019E",
+    "Korean": "드라이브 목록을 새로고쳤습니다. 제거된 장치가 나타나지 않으면 USB 케이블을 다시 연결해주세요.",
+    "English": "Drive list refreshed. If the removed device does not appear, unplug and reconnect the USB cable."
+  },
+  {
+    "Id": "LA0A49C30F5CF26B4",
+    "Korean": "드라이브 전체 검색 — 이름, *.pdf, .jpg, ext:txt 입력 후 Enter",
+    "English": "Search the whole drive — enter a name, *.pdf, .jpg, or ext:txt and press Enter"
+  },
+  {
+    "Id": "L2A0E9B411A32690D",
+    "Korean": "드라이브 전체는 복사할 수 없습니다.",
+    "English": "An entire drive cannot be copied."
+  },
+  {
+    "Id": "L7DE757745492CD6D",
+    "Korean": "드라이브가 연결되어 있고 접근 가능한지 확인해 주세요.",
+    "English": "Check that the drive is connected and accessible."
+  },
+  {
+    "Id": "LBD08DF651E8BCB74",
+    "Korean": "드라이브에 해당하는 Windows 장치를 찾지 못했습니다.",
+    "English": "Could not find the Windows device for this drive."
+  },
+  {
+    "Id": "L96999A3CAA24DEA7",
+    "Korean": "드래그 앤 드롭",
+    "English": "Drag and drop"
+  },
+  {
+    "Id": "LB90D61CA948E79EF",
+    "Korean": "드롭 처리에 실패했습니다.\n{0}",
+    "English": "Drop failed.\n{0}"
+  },
+  {
+    "Id": "LBB216F104FDE8DF4",
+    "Korean": "등록",
+    "English": "Register"
+  },
+  {
+    "Id": "LA09D91CC7B81887E",
+    "Korean": "등록 해제",
+    "English": "Unregister"
+  },
+  {
+    "Id": "L30FF19976AB59C5C",
+    "Korean": "등록할 수 있는 외장하드가 없습니다",
+    "English": "No drives available to register"
+  },
+  {
+    "Id": "L17B58F376FBA7A62",
+    "Korean": "로그 폴더를 열지 못했습니다.",
+    "English": "Could not open the log folder."
+  },
+  {
+    "Id": "LD7B3BDF7C4612EB0",
+    "Korean": "링크 또는 연결 지점은 복사하지 않습니다: {0}",
+    "English": "Links and junctions are not copied: {0}"
+  },
+  {
+    "Id": "LDAC0AD43D290B221",
+    "Korean": "링크/연결 지점은 압축하지 않습니다: ",
+    "English": "Links and junctions are not compressed: "
+  },
+  {
+    "Id": "LA38873BB691A459D",
+    "Korean": "맞춤",
+    "English": "Fit"
+  },
+  {
+    "Id": "L8E7D6E2C20A75BED",
+    "Korean": "메모장에서 편집",
+    "English": "Edit in Notepad"
+  },
+  {
+    "Id": "LEBD4EA099E7F9F98",
+    "Korean": "모니터",
+    "English": "Monitor"
+  },
+  {
+    "Id": "L9801050C0E7626F6",
+    "Korean": "물리 디스크 번호를 조회할 수 없습니다.",
+    "English": "Could not read the physical disk number."
+  },
+  {
+    "Id": "L88213109DE7BA463",
+    "Korean": "미리보기 닫기 (Esc / Space)",
+    "English": "Close preview (Esc / Space)"
+  },
+  {
+    "Id": "LF7B41243EF242B6C",
+    "Korean": "미리보기 불가",
+    "English": "Preview unavailable"
+  },
+  {
+    "Id": "L25B621228F6372CA",
+    "Korean": "미리보기를 불러오는 중…",
+    "English": "Loading preview…"
+  },
+  {
+    "Id": "L5E2CC9D92A85C621",
+    "Korean": "미리보기를 표시할 수 없습니다. 파일이 없거나 접근할 수 없거나 지원되지 않는 형식일 수 있습니다.",
+    "English": "Cannot display the preview. The file may be missing, inaccessible, or unsupported."
+  },
+  {
+    "Id": "LB06021D1B074D336",
+    "Korean": "바깥 여백",
+    "English": "Outer margins"
+  },
+  {
+    "Id": "L87DA354B794E60B3",
+    "Korean": "배포된 ExternalDrivePanel 실행 파일에서 관리자 권한 요청을 사용할 수 있습니다.",
+    "English": "Permission elevation is available in the published ExternalDrivePanel executable."
+  },
+  {
+    "Id": "LADD65F1BE4493495",
+    "Korean": "배포된 앱에서 재연결할 수 있습니다.",
+    "English": "Reconnection is available in the published app."
+  },
+  {
+    "Id": "LC4CD0C266596720D",
+    "Korean": "백업 가져오기…",
+    "English": "Import backup…"
+  },
+  {
+    "Id": "L9F0A05C026E53294",
+    "Korean": "백업 내보내기…",
+    "English": "Export backup…"
+  },
+  {
+    "Id": "L3366426DF90395FF",
+    "Korean": "백업을 저장하지 못했습니다. 저장 공간과 권한을 확인해주세요.",
+    "English": "Could not save the backup. Check disk space and permissions."
+  },
+  {
+    "Id": "LDEB7CABF3B2AD5CF",
+    "Korean": "변경 즉시 반영",
+    "English": "Changes apply immediately"
+  },
+  {
+    "Id": "L37B3D3B11B2637F6",
+    "Korean": "복사",
+    "English": "Copy"
+  },
+  {
+    "Id": "L1CA09AC44002D77B",
+    "Korean": "복사 (Ctrl+C)",
+    "English": "Copy (Ctrl+C)"
+  },
+  {
+    "Id": "L35072C82880A007A",
+    "Korean": "복사 대상 폴더가 이 드라이브에 없거나 더 이상 존재하지 않습니다.",
+    "English": "The destination folder is not on this drive or no longer exists."
+  },
+  {
+    "Id": "LE2EDBF40367E9670",
+    "Korean": "복사가 완료되었습니다",
+    "English": "Copy complete"
+  },
+  {
+    "Id": "L09DD909C38C31B9A",
+    "Korean": "복사를 완료하지 못했습니다. 이미 복사한 항목은 유지됩니다.\n{0}",
+    "English": "Copy could not be completed. Files already copied are kept.\n{0}"
+  },
+  {
+    "Id": "L0AFB8D6D02B500EE",
+    "Korean": "복사를 중단했습니다",
+    "English": "Copy cancelled"
+  },
+  {
+    "Id": "L6D0812104DA14424",
+    "Korean": "볼륨 이름 변경 실패",
+    "English": "Volume rename failed"
+  },
+  {
+    "Id": "LFB5936539E7D47CB",
+    "Korean": "볼륨 이름 변경…",
+    "English": "Rename volume…"
+  },
+  {
+    "Id": "LF6A0DE6C3AA96EA0",
+    "Korean": "볼륨 이름에 사용할 수 없는 문자가 있습니다.",
+    "English": "The volume name contains invalid characters."
+  },
+  {
+    "Id": "L7CDD99EAC6D25F57",
+    "Korean": "볼륨 이름은 최대 {0}자입니다.",
+    "English": "The volume name can contain up to {0} characters."
+  },
+  {
+    "Id": "L9BAFD24763C6DB5F",
+    "Korean": "볼륨 이름을 변경하지 못했습니다. {0} (오류 {1})",
+    "English": "Could not rename the volume. {0} (Error {1})"
+  },
+  {
+    "Id": "LEFAC63A7DA2F457E",
+    "Korean": "볼륨 정보를 읽을 수 없습니다",
+    "English": "Could not read volume information"
+  },
+  {
+    "Id": "L0521E5B15CFFF01E",
+    "Korean": "볼륨 정보를 읽을 수 없습니다: {0}",
+    "English": "Could not read volume information: {0}"
+  },
+  {
+    "Id": "LB5DD36B1AB95192A",
+    "Korean": "볼륨의 드라이브 루트 경로가 아닙니다.",
+    "English": "This is not a volume root path."
+  },
+  {
+    "Id": "L8BF609C884CAB593",
+    "Korean": "불러오는 중…",
+    "English": "Loading…"
+  },
+  {
+    "Id": "L8E45BFBB76052ECD",
+    "Korean": "붙여넣기",
+    "English": "Paste"
+  },
+  {
+    "Id": "LF7B2136E8C971CBE",
+    "Korean": "붙여넣기 (Ctrl+V)",
+    "English": "Paste (Ctrl+V)"
+  },
+  {
+    "Id": "L38CF32B3C8784976",
+    "Korean": "사방 동일",
+    "English": "Same on all sides"
+  },
+  {
+    "Id": "LCD4416FAB8EE14AD",
+    "Korean": "사용 가능한 모니터를 찾지 못했습니다.",
+    "English": "No monitors are available."
+  },
+  {
+    "Id": "L80AD2A4BF41CAD0A",
+    "Korean": "사용할 수 없는 이름입니다. 경로 구분자나 끝의 점/공백을 빼주세요.",
+    "English": "Invalid name. Remove path separators and trailing dots or spaces."
+  },
+  {
+    "Id": "L6139B6C3ED73CD4A",
+    "Korean": "삭제",
+    "English": "Delete"
+  },
+  {
+    "Id": "L7AF2D72F645684D8",
+    "Korean": "삭제…",
+    "English": "Delete…"
+  },
+  {
+    "Id": "L864000ABAE447846",
+    "Korean": "새 버전을 준비했습니다. 패널 하단의 ‘업데이트 후 다시 시작’을 눌러주세요.",
+    "English": "A new version is ready. Click 'Update and restart' at the bottom of the panels."
+  },
+  {
+    "Id": "L3C9FC67C46CECA2E",
+    "Korean": "새 업데이트 준비됨",
+    "English": "Update ready"
+  },
+  {
+    "Id": "L45B7819D5F296099",
+    "Korean": "새 외장하드 연결",
+    "English": "New external drive"
+  },
+  {
+    "Id": "L1061B4B34EF565A0",
+    "Korean": "새 이름",
+    "English": "New name"
+  },
+  {
+    "Id": "LD58F2B98EED6A474",
+    "Korean": "새 텍스트 문서",
+    "English": "New Text Document"
+  },
+  {
+    "Id": "L8F3E03C3FAE971B2",
+    "Korean": "새 텍스트 문서.txt",
+    "English": "New Text Document.txt"
+  },
+  {
+    "Id": "L848A4081F95CE171",
+    "Korean": "새 폴더",
+    "English": "New Folder"
+  },
+  {
+    "Id": "L61CBFB012ECB0885",
+    "Korean": "새로 만들기",
+    "English": "New"
+  },
+  {
+    "Id": "L4EC2CC8D57793197",
+    "Korean": "새로 만들기 — 현재 폴더 (홈에서는 드라이브 루트)",
+    "English": "New — in the current folder (drive root on Home)"
+  },
+  {
+    "Id": "LB9E1B022A24BFD52",
+    "Korean": "서로 다른 폴더의 파일은 각 항목의 Windows 메뉴에서 공유해주세요.",
+    "English": "Use each item's Windows menu to share files from different folders."
+  },
+  {
+    "Id": "L291111900EDE5769",
+    "Korean": "서로 다른 폴더의 항목은 개별 Windows 메뉴를 사용해주세요.",
+    "English": "Use individual Windows menus for items from different folders."
+  },
+  {
+    "Id": "LD2C5481CD9D473BA",
+    "Korean": "선택 영역 가장자리와 패널 사이의 간격입니다. (px)",
+    "English": "Space between the selected area edges and panels. (px)"
+  },
+  {
+    "Id": "LC5DED7E3695E2212",
+    "Korean": "선택 영역: {0}열 · {1}행 — 칸을 클릭해서 변경",
+    "English": "Selected: column {0} · row {1} — click a cell to change"
+  },
+  {
+    "Id": "L7EEF3E5D202CA3FE",
+    "Korean": "선택 항목을 즐겨찾기에 추가 (선택이 없으면 현재 폴더)",
+    "English": "Add selection to favorites (current folder if none selected)"
+  },
+  {
+    "Id": "L188BD2EF623C04DF",
+    "Korean": "선택한 {0}개 항목을 삭제할까요?\n드라이브에 따라 휴지통을 사용할 수 없으면 Windows에서 추가로 확인합니다.\n즐겨찾기 등록만 제거하려면 ‘패널 즐겨찾기에서 제거’를 사용하세요.",
+    "English": "Delete {0} selected items?\nWindows may ask again if the drive does not support the Recycle Bin.\nUse 'Remove from panel favorites' to remove only the favorite."
+  },
+  {
+    "Id": "L66653F5716700720",
+    "Korean": "설정 값이 허용 범위를 벗어났습니다.",
+    "English": "Settings values are outside the allowed range."
+  },
+  {
+    "Id": "LA2BB7C58E3AF5715",
+    "Korean": "설정 닫기",
+    "English": "Close settings"
+  },
+  {
+    "Id": "L12F2916E9947A6FF",
+    "Korean": "설정 복원",
+    "English": "Restore settings"
+  },
+  {
+    "Id": "LE4434F4D47CA345E",
+    "Korean": "설정 저장 위치에 접근할 수 없습니다.\n",
+    "English": "Cannot access the settings location.\n"
+  },
+  {
+    "Id": "L2FA7B8904CDAD45A",
+    "Korean": "설정 파일이 너무 큽니다.",
+    "English": "The settings file is too large."
+  },
+  {
+    "Id": "L7846087C78D1B1E9",
+    "Korean": "설정 파일이 너무 큽니다. (최대 8MB)",
+    "English": "The settings file is too large. (Maximum 8 MB)"
+  },
+  {
+    "Id": "LB2974F1456C9623F",
+    "Korean": "설정·즐겨찾기 백업",
+    "English": "Settings and favorites backup"
+  },
+  {
+    "Id": "LE2A6E24BD48D1B0A",
+    "Korean": "설정·즐겨찾기 백업 가져오기",
+    "English": "Import settings and favorites backup"
+  },
+  {
+    "Id": "LACAC38CAAF6E7A4A",
+    "Korean": "설정과 즐겨찾기를 백업했습니다.\n백업에는 파일 자체나 Windows 시작프로그램 설정은 포함되지 않습니다.\n경로와 드라이브 정보가 있으므로 신뢰할 수 있는 곳에 보관해주세요.",
+    "English": "Settings and favorites backed up.\nThe backup does not include your files or Windows startup settings.\nIt contains paths and drive information. Store it in a trusted location."
+  },
+  {
+    "Id": "L737B6C048C7017AF",
+    "Korean": "설정과 즐겨찾기를 복원했습니다. Windows 시작프로그램 설정은 변경하지 않았습니다.",
+    "English": "Settings and favorites restored. Windows startup settings were not changed."
+  },
+  {
+    "Id": "L8D6DD30AC6937CEB",
+    "Korean": "설정을 가져오지 못했습니다.\n",
+    "English": "Could not import settings.\n"
+  },
+  {
+    "Id": "L7A4A7894A80DE620",
+    "Korean": "설정을 복원하지 못했습니다. 현재 설정은 유지됩니다. 저장 공간과 권한을 확인해주세요.",
+    "English": "Could not restore settings. Current settings are kept. Check disk space and permissions."
+  },
+  {
+    "Id": "L8B609DD9A69CDC25",
+    "Korean": "설정을 저장하지 못해 업데이트를 중단했습니다. 저장 공간과 권한을 확인한 뒤 다시 시도해주세요.",
+    "English": "Update cancelled because settings could not be saved. Check disk space and permissions, then try again."
+  },
+  {
+    "Id": "LF3BD85C1D9C51FA2",
+    "Korean": "설정이 null입니다.",
+    "English": "Settings cannot be null."
+  },
+  {
+    "Id": "LA5D07397E102FB41",
+    "Korean": "설치본에서만 자동 업데이트를 사용할 수 있습니다",
+    "English": "Automatic updates are only available in the installed app"
+  },
+  {
+    "Id": "L648AA5D771096FCC",
+    "Korean": "설치할 업데이트가 준비되지 않았습니다.",
+    "English": "No update is ready to install."
+  },
+  {
+    "Id": "LABAA893444DB84A1",
+    "Korean": "세로",
+    "English": "Rows"
+  },
+  {
+    "Id": "LC4779DB5A61B1EC9",
+    "Korean": "세로 분할 수",
+    "English": "Row count"
+  },
+  {
+    "Id": "L286D43F0F3CF915E",
+    "Korean": "속성",
+    "English": "Properties"
+  },
+  {
+    "Id": "L90665568632CBFB8",
+    "Korean": "수정한 날짜",
+    "English": "Date modified"
+  },
+  {
+    "Id": "L76359AA122CD55BB",
+    "Korean": "숨김 항목 숨기기",
+    "English": "Hide hidden items"
+  },
+  {
+    "Id": "L4C11E0C4ACC31C5A",
+    "Korean": "숨김 항목 표시",
+    "English": "Show hidden items"
+  },
+  {
+    "Id": "LF51D69C53639FA8C",
+    "Korean": "시스템 저장장치를 확인하지 못해 안전 제거를 중단했습니다.",
+    "English": "Safe removal stopped because system storage could not be identified."
+  },
+  {
+    "Id": "L6E4CE3F254B5F36B",
+    "Korean": "시작 설정을 되돌리지 못했습니다: ",
+    "English": "Could not restore startup settings: "
+  },
+  {
+    "Id": "L2C0CA6B500435F85",
+    "Korean": "시작 설정을 변경하지 못했습니다: ",
+    "English": "Could not change startup settings: "
+  },
+  {
+    "Id": "LCD31135292304979",
+    "Korean": "시작 설정을 읽지 못했습니다: ",
+    "English": "Could not read startup settings: "
+  },
+  {
+    "Id": "L1D7702A72660B7FC",
+    "Korean": "시작 옵션",
+    "English": "Startup"
+  },
+  {
+    "Id": "L82BDD3D495C6E022",
+    "Korean": "실제 파일/폴더 삭제 (Delete) — 즐겨찾기 제거와 다름",
+    "English": "Delete actual files/folders (Delete) — not just favorites"
+  },
+  {
+    "Id": "L3B613F4E0AD3EC24",
+    "Korean": "실행 어셈블리를 찾지 못했습니다.",
+    "English": "Could not find the app assembly."
+  },
+  {
+    "Id": "L4E7007D10AF88567",
+    "Korean": "실행 파일 경로를 찾지 못했습니다.",
+    "English": "Could not find the executable path."
+  },
+  {
+    "Id": "L056A4F3C8163807E",
+    "Korean": "실행 파일을 찾지 못했습니다.",
+    "English": "Could not find the executable."
+  },
+  {
+    "Id": "L8F2EA9820639F8B8",
+    "Korean": "아래",
+    "English": "Bottom"
+  },
+  {
+    "Id": "L7A83DDC6A34605C5",
+    "Korean": "아래 여백",
+    "English": "Bottom margin"
+  },
+  {
+    "Id": "L35CFCC661BDF75B9",
+    "Korean": "아이콘 작게",
+    "English": "Smaller icons"
+  },
+  {
+    "Id": "LBAE7FBBB9143692D",
+    "Korean": "아이콘 크게",
+    "English": "Larger icons"
+  },
+  {
+    "Id": "LA328EDBA46D21C1D",
+    "Korean": "아직 업데이트를 확인하지 않았습니다",
+    "English": "Updates have not been checked yet"
+  },
+  {
+    "Id": "L1E1440C29DA2E529",
+    "Korean": "안전 제거 대기 상태가 아닙니다.",
+    "English": "The device is not waiting for safe removal."
+  },
+  {
+    "Id": "L30E1991F765A44D2",
+    "Korean": "안전 제거 준비에 실패했습니다. ",
+    "English": "Could not prepare for safe removal. "
+  },
+  {
+    "Id": "L15C88A10A595B2D4",
+    "Korean": "안전하게 꺼내기",
+    "English": "Safely eject"
+  },
+  {
+    "Id": "L4056AD2A0C50ACA4",
+    "Korean": "안전하게 제거되었습니다.",
+    "English": "Safely removed."
+  },
+  {
+    "Id": "LDF3A4BF19B7D93FB",
+    "Korean": "안전하게 제거하지 못했습니다.\n\n{0}\n\n작업표시줄의 하드웨어 안전 제거 아이콘을 이용해주세요.",
+    "English": "Could not safely remove the device.\n\n{0}\n\nUse Safely Remove Hardware in the taskbar."
+  },
+  {
+    "Id": "LE917F8D53DA98654",
+    "Korean": "압축",
+    "English": "Compress"
+  },
+  {
+    "Id": "LF099AA70D6AE163F",
+    "Korean": "압축 실패: ",
+    "English": "Compression failed: "
+  },
+  {
+    "Id": "L50E0F051B77C4645",
+    "Korean": "압축 완료: ",
+    "English": "Compression complete: "
+  },
+  {
+    "Id": "L9735E632B6125B05",
+    "Korean": "압축 중…",
+    "English": "Compressing…"
+  },
+  {
+    "Id": "LFD31621CA869A66F",
+    "Korean": "압축할 경로를 찾을 수 없습니다.",
+    "English": "The path to compress could not be found."
+  },
+  {
+    "Id": "LCB4897C6B6949E02",
+    "Korean": "앞으로",
+    "English": "Forward"
+  },
+  {
+    "Id": "L9EA9BD59E20C2E51",
+    "Korean": "업데이트",
+    "English": "Update"
+  },
+  {
+    "Id": "L9E400D4CC1817537",
+    "Korean": "업데이트 준비 완료 — 패널 하단에서 다시 시작",
+    "English": "Update ready — restart from the panel footer"
+  },
+  {
+    "Id": "L62965E98E578E204",
+    "Korean": "업데이트 확인 실패 — 연결을 확인하고 다시 시도하세요",
+    "English": "Update check failed — check your connection and try again"
+  },
+  {
+    "Id": "LA9F1C9E271801DF8",
+    "Korean": "업데이트 확인·다운로드 중…",
+    "English": "Checking and downloading updates…"
+  },
+  {
+    "Id": "LFD85E6A3121D3D86",
+    "Korean": "업데이트 후 다시 시작",
+    "English": "Update and restart"
+  },
+  {
+    "Id": "LF0AF35E772075AF1",
+    "Korean": "업데이트를 설치하고 패널을 다시 시작할까요?\n진행 중인 파일 작업은 완료될 때까지 기다립니다.",
+    "English": "Install the update and restart the panels?\nAny file operations will finish first."
+  },
+  {
+    "Id": "L4DBBA53AF7A2CF4F",
+    "Korean": "업데이트를 시작하지 못했습니다. 다시 시도해주세요.\n",
+    "English": "Could not start the update. Try again.\n"
+  },
+  {
+    "Id": "L16A87619E4EA4063",
+    "Korean": "여러 물리 디스크를 공유하는 장치입니다. Windows의 하드웨어 안전 제거 메뉴를 사용해주세요.",
+    "English": "This device is shared by multiple physical disks. Use Safely Remove Hardware in Windows."
+  },
+  {
+    "Id": "L79585986158DC952",
+    "Korean": "연결 프로그램…",
+    "English": "Open with…"
+  },
+  {
+    "Id": "LA37772D5066AD69E",
+    "Korean": "연결된 모니터 정보를 가져올 수 없습니다.",
+    "English": "Could not retrieve monitor information."
+  },
+  {
+    "Id": "L2668BC818E5BB923",
+    "Korean": "열기",
+    "English": "Open"
+  },
+  {
+    "Id": "L0126A636C291AA0F",
+    "Korean": "열려 있는 파일 작업 대화상자를 닫은 뒤 새로고침해주세요.",
+    "English": "Close the file operation dialog before refreshing."
+  },
+  {
+    "Id": "L1062F30826A5321C",
+    "Korean": "열려 있는 파일 작업 대화상자를 먼저 닫은 뒤 다시 시도해주세요.",
+    "English": "Close the file operation dialog and try again."
+  },
+  {
+    "Id": "LF594AA6A15B9381C",
+    "Korean": "오른쪽",
+    "English": "Right"
+  },
+  {
+    "Id": "LA9C7D2DA84F9A39C",
+    "Korean": "오른쪽 여백",
+    "English": "Right margin"
+  },
+  {
+    "Id": "L907BF35EB24C7522",
+    "Korean": "올바르지 않은 드라이브 설정입니다.",
+    "English": "Invalid drive settings."
+  },
+  {
+    "Id": "LD9B3BC8F933F83A7",
+    "Korean": "올바른 드라이브 루트가 아닙니다.",
+    "English": "Invalid drive root."
+  },
+  {
+    "Id": "L46A2A96601653BE6",
+    "Korean": "외장하드",
+    "English": "External drive"
+  },
+  {
+    "Id": "L76CFD89B430DCF2D",
+    "Korean": "외장하드 {0}개를 다시 찾았습니다.",
+    "English": "Found {0} reconnected drives."
+  },
+  {
+    "Id": "L4EC3EB6DF2712037",
+    "Korean": "외장하드 등록",
+    "English": "Register external drive"
+  },
+  {
+    "Id": "L004024C0933F8F2A",
+    "Korean": "외장하드 등록 해제",
+    "English": "Unregister external drive"
+  },
+  {
+    "Id": "LCF4DB3B72F27AF80",
+    "Korean": "외장하드 볼륨 이름 변경",
+    "English": "Rename external drive volume"
+  },
+  {
+    "Id": "L6D4951F4B9FE233C",
+    "Korean": "외장하드 새로고침",
+    "English": "Refresh drives"
+  },
+  {
+    "Id": "L0B98405A68351E8C",
+    "Korean": "외장하드 새로고침 — 안전 제거된 USB 재연결 시도",
+    "English": "Refresh drives — try reconnecting safely removed USB storage"
+  },
+  {
+    "Id": "L82D6F0110C4554FB",
+    "Korean": "외장하드 패널 배치",
+    "English": "Panel arrangement"
+  },
+  {
+    "Id": "LCF7AAC3E283EB57D",
+    "Korean": "외장하드를 다시 확인합니다. 필요한 경우 Windows 관리자 권한 확인창이 표시됩니다.",
+    "English": "Checking drives. Windows may ask for administrator permission if needed."
+  },
+  {
+    "Id": "LDC0103C11A2B107B",
+    "Korean": "왼쪽",
+    "English": "Left"
+  },
+  {
+    "Id": "LB7210D2D5F27CEA0",
+    "Korean": "왼쪽 여백",
+    "English": "Left margin"
+  },
+  {
+    "Id": "L01C20A2FF7419FC2",
+    "Korean": "용량 정보를 읽을 수 없습니다",
+    "English": "Capacity information unavailable"
+  },
+  {
+    "Id": "L9B6AA41ECEDBF4E6",
+    "Korean": "용량 확인 중…",
+    "English": "Checking capacity…"
+  },
+  {
+    "Id": "L68F11B19D9B8D56B",
+    "Korean": "원본 항목을 찾을 수 없습니다.",
+    "English": "The source item could not be found."
+  },
+  {
+    "Id": "LBD6BE15A3BF25387",
+    "Korean": "원본: {0}\n\n대상: {1}\n\n폴더 덮어쓰기는 내용을 합칩니다. 내부 이름 충돌은 다시 확인합니다.\n취소하면 남은 복사를 중단하며, 이미 복사한 항목은 유지됩니다.",
+    "English": "Source: {0}\n\nDestination: {1}\n\nOverwriting a folder merges its contents. Conflicts inside are checked separately.\nCancel stops the remaining copies. Files already copied are kept."
+  },
+  {
+    "Id": "LE0BEBB354D8F7F3B",
+    "Korean": "위",
+    "English": "Top"
+  },
+  {
+    "Id": "LB58C8405E84B9D22",
+    "Korean": "위 여백",
+    "English": "Top margin"
+  },
+  {
+    "Id": "L3FD4BDBE77C71CEA",
+    "Korean": "위로",
+    "English": "Up"
+  },
+  {
+    "Id": "L562EEA7A527DBF9D",
+    "Korean": "위아래로 나열",
+    "English": "Stack vertically"
+  },
+  {
+    "Id": "L6C0B9DD710AB0FDE",
+    "Korean": "위치",
+    "English": "Location"
+  },
+  {
+    "Id": "L5CF2792B3FAB3578",
+    "Korean": "유형",
+    "English": "Type"
+  },
+  {
+    "Id": "L09CF5F379AEA23F9",
+    "Korean": "이 USB 포트를 개별적으로 재연결할 수 없습니다.",
+    "English": "This USB port cannot be reconnected individually."
+  },
+  {
+    "Id": "L31843898C0EB23AC",
+    "Korean": "이 드라이브 검색",
+    "English": "Search this drive"
+  },
+  {
+    "Id": "LC05262209863CDD4",
+    "Korean": "이 드라이브는 다시 묻지 않기",
+    "English": "Do not ask again for this drive"
+  },
+  {
+    "Id": "LA9A888FBC003AC45",
+    "Korean": "이 드라이브는 안전 제거 대상이 아닙니다.",
+    "English": "This drive cannot be safely removed by this app."
+  },
+  {
+    "Id": "L0687863EAC0031E9",
+    "Korean": "이 외장하드로 복사하려면 폴더 위에 정확히 놓아주세요.",
+    "English": "To copy to this drive, drop directly onto a folder."
+  },
+  {
+    "Id": "LEE7119B30D719A63",
+    "Korean": "이 이미지 형식은 현재 설치된 Windows 코덱으로 미리볼 수 없습니다.",
+    "English": "The installed Windows codecs cannot preview this image format."
+  },
+  {
+    "Id": "LE31B28A8E3A219B5",
+    "Korean": "이 파일을 연결된 프로그램으로 열기",
+    "English": "Open this file in its associated app"
+  },
+  {
+    "Id": "L6E63E8AA759C28A5",
+    "Korean": "이 패널 보기 전환",
+    "English": "Toggle panel view"
+  },
+  {
+    "Id": "L446767AE1A6AFC8D",
+    "Korean": "이 항목에는 Windows 공유 기능이 제공되지 않습니다. 우클릭 Windows 메뉴에서 이용 가능한 공유 기능을 확인해주세요.",
+    "English": "Windows Share is not available for this item. Check the item's Windows context menu for sharing options."
+  },
+  {
+    "Id": "L0F52A06328CD9EC9",
+    "Korean": "이 형식의 본문 미리보기는 지원하지 않습니다. 기본 앱으로 열어 확인할 수 있습니다.",
+    "English": "Content preview is not supported for this format. Open it in the default app."
+  },
+  {
+    "Id": "L83B651B85E13A225",
+    "Korean": "이동",
+    "English": "Move"
+  },
+  {
+    "Id": "L253D1510CAF53620",
+    "Korean": "이름",
+    "English": "Name"
+  },
+  {
+    "Id": "L39E046478AE8A99E",
+    "Korean": "이름 바꾸기",
+    "English": "Rename"
+  },
+  {
+    "Id": "LF7CFE3A06E3327BF",
+    "Korean": "이름 바꾸기 (F2)",
+    "English": "Rename (F2)"
+  },
+  {
+    "Id": "LFBDBC7918053E732",
+    "Korean": "이름 바꾸기…",
+    "English": "Rename…"
+  },
+  {
+    "Id": "L10E5B1925EA24149",
+    "Korean": "이미지 해상도가 미리보기 범위를 벗어났습니다.",
+    "English": "The image resolution exceeds the preview limit."
+  },
+  {
+    "Id": "L2D692E8214FA8EAB",
+    "Korean": "이번만 건너뛰기",
+    "English": "Skip this time"
+  },
+  {
+    "Id": "LCF0DA917DB70F5E7",
+    "Korean": "이전 정상 설정으로 복원…",
+    "English": "Restore last good settings…"
+  },
+  {
+    "Id": "L34D5A051ED2B1B3F",
+    "Korean": "이전 크기로 복원",
+    "English": "Restore"
+  },
+  {
+    "Id": "L8C3FEBF1ADA830FD",
+    "Korean": "이전 페이지 (←)",
+    "English": "Previous page (←)"
+  },
+  {
+    "Id": "LDCB69241AD98E80A",
+    "Korean": "이전 항목 (↑)",
+    "English": "Previous item (↑)"
+  },
+  {
+    "Id": "LEA1A6A542AA66884",
+    "Korean": "일괄 이름 바꾸기 (번호 자동 추가)",
+    "English": "Rename multiple items (add sequential numbers)"
+  },
+  {
+    "Id": "L6F14BEA27F3E9BE4",
+    "Korean": "일반 디스크 장치가 아닙니다.",
+    "English": "This is not a standard disk device."
+  },
+  {
+    "Id": "L4F51C0C8ADA89F28",
+    "Korean": "일시정지",
+    "English": "Pause"
+  },
+  {
+    "Id": "L63C11A46EA67CCCE",
+    "Korean": "자기 자신이나 하위 폴더로 복사할 수 없습니다.",
+    "English": "Cannot copy a folder into itself or its subfolder."
+  },
+  {
+    "Id": "L5EC5D3006B413810",
+    "Korean": "자동 배분은 위아래 배치에 적용됩니다.",
+    "English": "Automatic sizing applies to vertical layouts."
+  },
+  {
+    "Id": "L251AC1D5258BB3DC",
+    "Korean": "작업 완료 기다리는 중…",
+    "English": "Waiting for file operations…"
+  },
+  {
+    "Id": "LF5E9EE27079313C2",
+    "Korean": "작업 완료 후 종료",
+    "English": "Exit after file operations"
+  },
+  {
+    "Id": "L41052DAEF743AA5F",
+    "Korean": "잘라내기",
+    "English": "Cut"
+  },
+  {
+    "Id": "L9C6F6B3239F5A5FC",
+    "Korean": "잘라내기 (Ctrl+X)",
+    "English": "Cut (Ctrl+X)"
+  },
+  {
+    "Id": "LC9A42AB75A5DD3B4",
+    "Korean": "장치 계층을 안전하게 확인할 수 없습니다.",
+    "English": "Could not safely verify the device hierarchy."
+  },
+  {
+    "Id": "L234FFA926BFE697F",
+    "Korean": "장치 드라이버 정보를 확인할 수 없습니다.",
+    "English": "Could not read device driver information."
+  },
+  {
+    "Id": "L4D57E8A6C934E410",
+    "Korean": "장치 드라이버를 확인하지 못했습니다.",
+    "English": "Could not verify the device driver."
+  },
+  {
+    "Id": "L8A634B17CA4735BE",
+    "Korean": "장치 또는 드라이버가 안전 제거 요청을 거부했습니다.",
+    "English": "The device or driver rejected safe removal."
+  },
+  {
+    "Id": "LF79F960CAFE79FC5",
+    "Korean": "장치 또는 드라이버가 이 방식의 안전 제거를 지원하지 않습니다.",
+    "English": "The device or driver does not support this safe removal method."
+  },
+  {
+    "Id": "LF0E77FDB27C69BE9",
+    "Korean": "장치 상태를 확인하지 못했습니다.",
+    "English": "Could not verify the device status."
+  },
+  {
+    "Id": "L07D4140FFD3E80CC",
+    "Korean": "장치 수가 안전 조회 범위를 초과했습니다.",
+    "English": "The device count exceeds the inspection limit."
+  },
+  {
+    "Id": "L8779B3A3DACF9C9C",
+    "Korean": "장치 식별 정보가 바뀌어 제거를 중단했습니다.",
+    "English": "Removal stopped because device identity changed."
+  },
+  {
+    "Id": "L011C5EFE9BE56218",
+    "Korean": "장치 식별 정보를 읽지 못했습니다.",
+    "English": "Could not read the device identity."
+  },
+  {
+    "Id": "L6BD89A5DAD1BB5E1",
+    "Korean": "장치 식별 정보를 확인하지 못했습니다.",
+    "English": "Could not verify the device identity."
+  },
+  {
+    "Id": "L9328077397E040F6",
+    "Korean": "장치 연결 상태가 바뀌었습니다. 연결 상태를 다시 확인해주세요.",
+    "English": "The connected device changed. Check the connection and try again."
+  },
+  {
+    "Id": "L7FC575D30BAC326B",
+    "Korean": "장치 인터페이스 정보가 올바르지 않습니다.",
+    "English": "Invalid device interface information."
+  },
+  {
+    "Id": "L94A698B62965636B",
+    "Korean": "장치 정보를 조회할 수 없습니다.",
+    "English": "Could not retrieve device information."
+  },
+  {
+    "Id": "LF1B40DBF384F658A",
+    "Korean": "장치 제거 가능 여부를 확인할 수 없습니다.",
+    "English": "Could not determine whether the device can be removed."
+  },
+  {
+    "Id": "L8ECDB260788D59EE",
+    "Korean": "장치 조회 범위를 초과했습니다.",
+    "English": "The device inspection limit was exceeded."
+  },
+  {
+    "Id": "LEC67F9597F109822",
+    "Korean": "장치 트리 조회 범위를 초과했습니다.",
+    "English": "The device tree exceeds the inspection limit."
+  },
+  {
+    "Id": "LF24B271A9A5BF717",
+    "Korean": "장치 트리를 확인하지 못했습니다.",
+    "English": "Could not inspect the device tree."
+  },
+  {
+    "Id": "L35852305509F7E64",
+    "Korean": "장치가 더 이상 연결되어 있지 않습니다.",
+    "English": "The device is no longer connected."
+  },
+  {
+    "Id": "L37C2F6F08417A1A5",
+    "Korean": "장치를 다시 연결하지 못했습니다. USB 케이블을 분리했다가 다시 연결해주세요.",
+    "English": "Could not reconnect the device. Unplug and reconnect the USB cable."
+  },
+  {
+    "Id": "LA064AF0585511BF0",
+    "Korean": "장치에 열린 파일 또는 폴더 핸들이 남아 있다고 Windows가 보고했습니다.",
+    "English": "Windows reported that files or folders on this device still have open handles."
+  },
+  {
+    "Id": "LD43A776C5E289F2A",
+    "Korean": "재생",
+    "English": "Play"
+  },
+  {
+    "Id": "LDC148C21DDCB7953",
+    "Korean": "재연결 대상이 너무 많습니다.",
+    "English": "Too many devices to reconnect."
+  },
+  {
+    "Id": "L6D7546F3632E6D74",
+    "Korean": "재연결을 시작하지 못했습니다.",
+    "English": "Could not start reconnection."
+  },
+  {
+    "Id": "LA4B69FAF0C1113FA",
+    "Korean": "전체",
+    "English": "All"
+  },
+  {
+    "Id": "LE71349EF0EBD00B8",
+    "Korean": "전체 {0} / 사용 {1} / 사용 가능 {2} ({3:P1} 사용)",
+    "English": "Total {0} / Used {1} / Free {2} ({3:P1} used)"
+  },
+  {
+    "Id": "LC121330353E7868A",
+    "Korean": "전체 기본값: 상세 보기 — 클릭하면 전체 패널 아이콘 보기",
+    "English": "Global default: Details — click to switch all panels to icons"
+  },
+  {
+    "Id": "L8857D01F767426F4",
+    "Korean": "전체 기본값: 아이콘 보기 — 클릭하면 전체 패널 상세 보기",
+    "English": "Global default: Icons — click to switch all panels to details"
+  },
+  {
+    "Id": "LBD01397FA77C01DB",
+    "Korean": "전체 여백",
+    "English": "All margins"
+  },
+  {
+    "Id": "LD5A6E27F44D34183",
+    "Korean": "전체 패널 보기 전환",
+    "English": "Toggle all panel views"
+  },
+  {
+    "Id": "L086BB5335D174A9A",
+    "Korean": "종료",
+    "English": "Exit"
+  },
+  {
+    "Id": "L8A6EAF2C013DD17D",
+    "Korean": "종료 또는 안전하게 꺼내기를 준비 중입니다. 잠시 후 다시 시도해주세요.",
+    "English": "Preparing to exit or eject. Try again shortly."
+  },
+  {
+    "Id": "L862FCDBE7A1D5720",
+    "Korean": "종료/업데이트 준비 중 문제가 발생했습니다. 다시 시도해주세요.\n",
+    "English": "An error occurred while preparing to exit or update. Try again.\n"
+  },
+  {
+    "Id": "LB85D2E6568D3BC65",
+    "Korean": "좌우로 나열",
+    "English": "Arrange horizontally"
+  },
+  {
+    "Id": "LADBD6FE4BE4A0A58",
+    "Korean": "주 ",
+    "English": "Primary "
+  },
+  {
+    "Id": "L8D80704E1BCB67D7",
+    "Korean": "준비 중 연결된 장치가 바뀌었습니다. 드라이브를 다시 확인해주세요.",
+    "English": "The connected device changed during preparation. Check the drive and try again."
+  },
+  {
+    "Id": "L44F859DD7059C8AD",
+    "Korean": "준비 중…",
+    "English": "Preparing…"
+  },
+  {
+    "Id": "L92CDEF3C5BC09F84",
+    "Korean": "중지",
+    "English": "Stop"
+  },
+  {
+    "Id": "L063C9DB5E3A8F778",
+    "Korean": "즐겨찾기",
+    "English": "Favorites"
+  },
+  {
+    "Id": "LF8E7D07DC57D063A",
+    "Korean": "즐겨찾기 홈",
+    "English": "Favorites Home"
+  },
+  {
+    "Id": "LB6181C3CFE198040",
+    "Korean": "즐겨찾기 홈 (현재 화면)",
+    "English": "Favorites Home (current view)"
+  },
+  {
+    "Id": "L079DF040CB1BD8A9",
+    "Korean": "즐겨찾기가 없습니다. 폴더나 파일을 우클릭해서 추가해보세요.",
+    "English": "No favorites yet. Right-click a folder or file to add it."
+  },
+  {
+    "Id": "L69A8F5A96F80AF34",
+    "Korean": "즐겨찾기에 추가",
+    "English": "Add to favorites"
+  },
+  {
+    "Id": "LE695DC916D23B2A5",
+    "Korean": "즐겨찾기에서 제거",
+    "English": "Remove from favorites"
+  },
+  {
+    "Id": "LFBE38D4F5507D15D",
+    "Korean": "지금 업데이트 확인",
+    "English": "Check for updates now"
+  },
+  {
+    "Id": "L48A48BE973479EB8",
+    "Korean": "지원되는 USB 저장장치가 아닙니다.",
+    "English": "This USB storage device is not supported."
+  },
+  {
+    "Id": "LB140DA1D206CA56E",
+    "Korean": "지원하지 않거나 올바르지 않은 설정 형식입니다.",
+    "English": "Unsupported or invalid settings format."
+  },
+  {
+    "Id": "LA31CDED27A1F17C4",
+    "Korean": "진단 로그 폴더 열기",
+    "English": "Open diagnostic log folder"
+  },
+  {
+    "Id": "LE9736535B17050DB",
+    "Korean": "진행 중인 복사·이동·압축 작업이 있습니다. 작업이 끝난 뒤 종료할까요?",
+    "English": "Copy, move, or compression operations are running. Exit after they finish?"
+  },
+  {
+    "Id": "L509C2B1DFB70201D",
+    "Korean": "진행 중인 파일 작업이 끝나면 외장하드를 다시 확인합니다.",
+    "English": "Drives will be checked after file operations finish."
+  },
+  {
+    "Id": "L4033097D68F5B315",
+    "Korean": "창 핸들이 준비되지 않았습니다.",
+    "English": "The window handle is not ready."
+  },
+  {
+    "Id": "L1ABC847137A073ED",
+    "Korean": "창에 맞추기 (0)",
+    "English": "Fit to window (0)"
+  },
+  {
+    "Id": "LB6AA90B39C905F63",
+    "Korean": "창을 선택한 화면 영역에 배치하지 못했습니다.",
+    "English": "Could not position the window in the selected screen area."
+  },
+  {
+    "Id": "LB7B1C1530346FB1F",
+    "Korean": "최대화",
+    "English": "Maximize"
+  },
+  {
+    "Id": "LD974BAD460A6CB52",
+    "Korean": "최상위 설정 스키마가 올바르지 않습니다.",
+    "English": "Invalid top-level settings schema."
+  },
+  {
+    "Id": "LD92ED316D7EDF686",
+    "Korean": "최소화",
+    "English": "Minimize"
+  },
+  {
+    "Id": "L118FDF2D826C6A5F",
+    "Korean": "최신 버전입니다",
+    "English": "You are up to date"
+  },
+  {
+    "Id": "LD65A9E5A4C1A02B0",
+    "Korean": "축소 (-)",
+    "English": "Zoom out (-)"
+  },
+  {
+    "Id": "LBE876433993AB7BA",
+    "Korean": "취소",
+    "English": "Cancel"
+  },
+  {
+    "Id": "LEE21EF5E0324CC1D",
+    "Korean": "취소하면 이전 설정으로 돌아갑니다.",
+    "English": "Cancel restores the previous settings."
+  },
+  {
+    "Id": "L82232621B82D72BE",
+    "Korean": "크기",
+    "English": "Size"
+  },
+  {
+    "Id": "L1B6024D1A68057D6",
+    "Korean": "큰 PDF입니다. 기본 앱으로 열어 확인해 주세요.",
+    "English": "This PDF is too large to preview. Open it in the default app."
+  },
+  {
+    "Id": "LEC8E9DB2D383EEB6",
+    "Korean": "큰 이미지입니다. 기본 앱으로 열어 확인해 주세요.",
+    "English": "This image is too large to preview. Open it in the default app."
+  },
+  {
+    "Id": "L24FD4F6FCA978777",
+    "Korean": "탐색기에서 열기",
+    "English": "Open in Explorer"
+  },
+  {
+    "Id": "LA59E306A276AE1E6",
+    "Korean": "텍스트 문서…",
+    "English": "Text document…"
+  },
+  {
+    "Id": "L3B16D9A3C8620C7A",
+    "Korean": "텍스트로 표시할 수 없는 파일입니다.",
+    "English": "This file cannot be displayed as text."
+  },
+  {
+    "Id": "L0C8354D0E51A08B2",
+    "Korean": "파일",
+    "English": "File"
+  },
+  {
+    "Id": "LF39CEDFDD91C5BD9",
+    "Korean": "파일 드래그",
+    "English": "File drag"
+  },
+  {
+    "Id": "L9A1B157001EA80DB",
+    "Korean": "파일 미리보기",
+    "English": "File preview"
+  },
+  {
+    "Id": "LC53EFF9FB5C81D92",
+    "Korean": "파일 미리보기 끔 — 클릭하면 켜기",
+    "English": "File previews off — click to enable"
+  },
+  {
+    "Id": "L4F4693C40F1DC919",
+    "Korean": "파일 미리보기 전환",
+    "English": "Toggle file previews"
+  },
+  {
+    "Id": "LFDACC812B7964D68",
+    "Korean": "파일 미리보기 켜짐 — 클릭하면 끄기",
+    "English": "File previews on — click to disable"
+  },
+  {
+    "Id": "LA1D88DEC08291D42",
+    "Korean": "파일 복사 확인",
+    "English": "Confirm file copy"
+  },
+  {
+    "Id": "L173E6397547A1237",
+    "Korean": "파일 작업",
+    "English": "File operation"
+  },
+  {
+    "Id": "LAAD6218D5697B954",
+    "Korean": "파일 작업이 끝나면 설정을 복원합니다.",
+    "English": "Settings will be restored after file operations finish."
+  },
+  {
+    "Id": "LC6BAD0E5E9805571",
+    "Korean": "파일 폴더",
+    "English": "File folder"
+  },
+  {
+    "Id": "L050A2CE713E278DC",
+    "Korean": "파일/폴더 삭제",
+    "English": "Delete files/folders"
+  },
+  {
+    "Id": "L6F1F9D033CD844B8",
+    "Korean": "파일과 폴더의 종류가 달라 덮어쓸 수 없습니다: {0}",
+    "English": "Cannot overwrite items of different types (file/folder): {0}"
+  },
+  {
+    "Id": "LD58EC75A3C39A95E",
+    "Korean": "패널 ZIP 압축",
+    "English": "Panel ZIP compression"
+  },
+  {
+    "Id": "LD23A23AF18529532",
+    "Korean": "패널 다시 보이기",
+    "English": "Show panel"
+  },
+  {
+    "Id": "LA85E896EF2287769",
+    "Korean": "패널 숨기기",
+    "English": "Hide panel"
+  },
+  {
+    "Id": "LD7060A8B7FD7008D",
+    "Korean": "패널 앞으로",
+    "English": "Bring panels forward"
+  },
+  {
+    "Id": "LCDB393ADF39DFA14",
+    "Korean": "패널 즐겨찾기에 추가",
+    "English": "Add to panel favorites"
+  },
+  {
+    "Id": "LB996A5E089E2C86F",
+    "Korean": "패널 즐겨찾기에서 제거",
+    "English": "Remove from panel favorites"
+  },
+  {
+    "Id": "L16A379CC6D9F9F44",
+    "Korean": "패널 크기 배분",
+    "English": "Panel sizing"
+  },
+  {
+    "Id": "LE5561A2B010115D1",
+    "Korean": "폴더",
+    "English": "Folder"
+  },
+  {
+    "Id": "L1CDBAFD85916E965",
+    "Korean": "폴더…",
+    "English": "Folder…"
+  },
+  {
+    "Id": "L7566005F49F5DF62",
+    "Korean": "폴더는 기본 정보만 표시합니다.",
+    "English": "Only basic information is shown for folders."
+  },
+  {
+    "Id": "L432EA674A0718187",
+    "Korean": "폴더를 열 수 없음",
+    "English": "Cannot open folder"
+  },
+  {
+    "Id": "L369B2E14CD80A72F",
+    "Korean": "폴더를 자기 자신이나 하위 폴더에 붙여넣을 수 없습니다.",
+    "English": "Cannot paste a folder into itself or a subfolder."
+  },
+  {
+    "Id": "L1DCB9659B5565E6D",
+    "Korean": "표시할 PDF 페이지가 없습니다.",
+    "English": "No PDF pages to display."
+  },
+  {
+    "Id": "L10CB9C085C40B65D",
+    "Korean": "프로그램 실행 경로를 찾을 수 없습니다.",
+    "English": "Could not find the program executable path."
+  },
+  {
+    "Id": "L5E9768F24FCB3A2F",
+    "Korean": "프로그램 어셈블리를 찾을 수 없습니다.",
+    "English": "Could not find the program assembly."
+  },
+  {
+    "Id": "L035C2BF2CA6AB126",
+    "Korean": "프로그램이 사용하는 설정 파일과 다른 위치를 선택해주세요.",
+    "English": "Choose a location other than the settings file used by this app."
+  },
+  {
+    "Id": "L766ED3125F23F31E",
+    "Korean": "프로그램이 이 장치를 사용 중이라고 Windows에 응답했습니다.",
+    "English": "An application told Windows that it is using this device."
+  },
+  {
+    "Id": "LB6B1552CEB918A77",
+    "Korean": "항목 작업",
+    "English": "Item operation"
+  },
+  {
+    "Id": "L2C285D88FE786771",
+    "Korean": "항목을 열 수 없음",
+    "English": "Cannot open item"
+  },
+  {
+    "Id": "LD01F2C8D4990F1F6",
+    "Korean": "현재 사용자 계정에만 적용됩니다.",
+    "English": "Applies to the current Windows account only."
+  },
+  {
+    "Id": "LAA4257E95E5142E0",
+    "Korean": "현재 사용자 세션에 장치 제거 권한이 없습니다. Windows의 하드웨어 안전 제거 메뉴를 사용해주세요.",
+    "English": "The current session does not have permission to remove devices. Use Safely Remove Hardware in Windows."
+  },
+  {
+    "Id": "LC99254B42FADD16C",
+    "Korean": "현재 설정과 즐겨찾기를 백업 내용으로 교체할까요?\n진행 중인 파일 작업이 끝나면 패널을 다시 구성합니다. 파일 자체는 변경하지 않습니다.\n현재 정상 설정은 이전 설정 백업에 보관됩니다.",
+    "English": "Replace current settings and favorites with this backup?\nPanels will be rebuilt after file operations finish. Your files will not change.\nCurrent valid settings will be kept in the previous-settings backup."
+  },
+  {
+    "Id": "LFFE2D49C28A91FB5",
+    "Korean": "현재: 상세 보기 — 클릭하면 이 패널 아이콘 보기",
+    "English": "Current view: Details — click to show icons in this panel"
+  },
+  {
+    "Id": "L43326B4A09A2A1F7",
+    "Korean": "현재: 아이콘 보기 — 클릭하면 이 패널 상세 보기",
+    "English": "Current view: Icons — click to show details in this panel"
+  },
+  {
+    "Id": "L15A6865634B7F028",
+    "Korean": "화면 분할",
+    "English": "Screen grid"
+  },
+  {
+    "Id": "L5E957B9B040A0AB6",
+    "Korean": "화면 영역 설정",
+    "English": "Screen area settings"
+  },
+  {
+    "Id": "LA0F8F5BEEAEFB970",
+    "Korean": "화면 영역 설정…",
+    "English": "Screen area settings…"
+  },
+  {
+    "Id": "L3063398CDECD3736",
+    "Korean": "확대 (+)",
+    "English": "Zoom in (+)"
+  },
+  {
+    "Id": "L1AACB54C49924296",
+    "Korean": "확인",
+    "English": "OK"
+  },
+  {
+    "Id": "LCCD6FAFAD1B19970",
+    "Korean": "확장자 변경",
+    "English": "Change extension"
+  },
+  {
+    "Id": "L903A1727853F6E67",
+    "Korean": "확장자를 바꾸면 파일을 열지 못할 수 있습니다. 변경할까요?",
+    "English": "Changing the extension may make the file unusable. Continue?"
+  },
+  {
+    "Id": "Language",
+    "Korean": "언어",
+    "English": "Language"
+  }
+]

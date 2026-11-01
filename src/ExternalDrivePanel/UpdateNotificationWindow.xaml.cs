@@ -22,7 +22,7 @@ public partial class UpdateNotificationWindow : Window
     public void SetWaiting(bool waiting)
     {
         RestartButton.IsEnabled = !waiting;
-        RestartButton.Content = waiting ? "작업 완료 기다리는 중…" : "업데이트 후 다시 시작";
+        RestartButton.Content = waiting ? Localization.T("작업 완료 기다리는 중…") : Localization.T("업데이트 후 다시 시작");
     }
     private void Restart_OnClick(object sender, RoutedEventArgs e) => RestartRequested?.Invoke(this, EventArgs.Empty);
 }

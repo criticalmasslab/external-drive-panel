@@ -5,9 +5,9 @@ public partial class App
     private async Task<EjectResult> EjectDriveAsync(string root)
     {
         if (_exitRequested || _ejectInProgress || _topBar?.IsEnabled != true)
-            return EjectResult.Failed("다른 설정·종료·제거 작업을 완료한 뒤 다시 시도해주세요.");
+            return EjectResult.Failed(Localization.T("다른 설정·종료·제거 작업을 완료한 뒤 다시 시도해주세요."));
         if (_panels.Values.Any(panel => !panel.IsEnabled))
-            return EjectResult.Failed("열려 있는 파일 작업 대화상자를 먼저 닫은 뒤 다시 시도해주세요.");
+            return EjectResult.Failed(Localization.T("열려 있는 파일 작업 대화상자를 먼저 닫은 뒤 다시 시도해주세요."));
         _ejectInProgress = true; _exitRequested = true; _snapshotRevision++;
         _pollTimer.Stop();
         var bar = _topBar; var footer = _updateBar;

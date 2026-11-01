@@ -15,6 +15,8 @@ public partial class ZoneSettingsWindow : Window
     private readonly PhysicalWindowPlacement _placement;
     private readonly IStartupRegistration _startup;
     private bool _originalStartup;
+    private readonly string _originalLanguage = Localization.Language;
+    private bool _developmentStartup;
 
     public ZoneSettingsWindow(ZoneSettings settings, IReadOnlyList<MonitorDescriptor> monitors, IStartupRegistration? startup = null)
     {
@@ -22,7 +24,7 @@ public partial class ZoneSettingsWindow : Window
         InitializeComponent();
         CopyrightVersion.Text = $"© 2026 criticalmasslab · v{typeof(ZoneSettingsWindow).Assembly.GetName().Version?.ToString(3)}";
         try { StartupCheck.IsChecked = _originalStartup = _startup.IsEnabled; }
-        catch (Exception ex) { StartupCheck.IsEnabled = false; StartupMessage.Text = "시작 설정을 읽지 못했습니다: " + ex.Message; }
+        catch (Exception ex) { StartupCheck.IsEnabled = false; StartupMessage.Text = Localization.T("시작 설정을 읽지 못했습니다: ") + ex.Message; }
         UpdateChrome(new DpiScale(1, 1));
         SourceInitialized += (_, _) => UpdateChrome(VisualTreeHelper.GetDpi(this));
         _placement = new PhysicalWindowPlacement(this);
@@ -51,13 +53,29 @@ public partial class ZoneSettingsWindow : Window
             MonitorOptions.Children.Add(option);
         }
         _isInitialized = true; UpdateMarginControls(); RebuildGridPreview();
+        LanguageChoice.SelectedValue = Localization.Language;
+        Localization.Attach(this, RefreshLanguage);
+    }
+
+    private void Language_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_isInitialized && LanguageChoice.SelectedValue is string language) Localization.SetLanguage(language);
+    }
+    private void RefreshLanguage()
+    {
+        LanguageChoice.SelectedValue = Localization.Language;
+        _previewState = null; RebuildGridPreview();
+        for (var i = 0; i < MonitorOptions.Children.Count; i++)
+            ((RadioButton)MonitorOptions.Children[i]).Content = _monitors[i].DisplayName;
+        if (_developmentStartup) DisableStartupForDevelopment();
     }
 
     public event EventHandler? SettingsSaved;
     public void DisableStartupForDevelopment()
     {
+        _developmentStartup = true;
         StartupCheck.IsEnabled = false;
-        StartupMessage.Text = "개발용 실행에서는 정식 버전의 자동실행 설정을 변경하지 않습니다.";
+        StartupMessage.Text = Localization.T("개발용 실행에서는 정식 버전의 자동실행 설정을 변경하지 않습니다.");
     }
     private void UpdateChrome(DpiScale dpi)
     {
@@ -77,19 +95,20 @@ public partial class ZoneSettingsWindow : Window
     private void CancelButton_OnClick(object sender, RoutedEventArgs e)
     {
         try { if (_startup.IsEnabled != _originalStartup) _startup.SetEnabled(_originalStartup); }
-        catch (Exception ex) { StartupMessage.Text = "시작 설정을 되돌리지 못했습니다: " + ex.Message; return; }
+        catch (Exception ex) { StartupMessage.Text = Localization.T("시작 설정을 되돌리지 못했습니다: ") + ex.Message; return; }
+        Localization.SetLanguage(_originalLanguage);
         _target.CopyFrom(_original); SettingsSaved?.Invoke(this, EventArgs.Empty); DialogResult = false;
     }
     private void Startup_OnChanged(object sender, RoutedEventArgs e)
     {
         if (!_isInitialized) return;
-        try { _startup.SetEnabled(StartupCheck.IsChecked == true); StartupMessage.Text = "현재 사용자 계정에만 적용됩니다."; }
+        try { _startup.SetEnabled(StartupCheck.IsChecked == true); StartupMessage.Text = Localization.T("현재 사용자 계정에만 적용됩니다."); }
         catch (Exception ex)
         {
             _isInitialized = false;
             try { StartupCheck.IsChecked = _startup.IsEnabled; } catch { StartupCheck.IsChecked = false; }
             _isInitialized = true;
-            StartupMessage.Text = "시작 설정을 변경하지 못했습니다: " + ex.Message;
+            StartupMessage.Text = Localization.T("시작 설정을 변경하지 못했습니다: ") + ex.Message;
         }
     }
     protected override void OnPreviewKeyDown(KeyEventArgs e)
@@ -105,7 +124,7 @@ public partial class ZoneSettingsWindow : Window
     }
     private bool ApplySettings()
     {
-        if (_monitors.Count == 0) { ValidationMessage.Text = "사용 가능한 모니터를 찾지 못했습니다."; return false; }
+        if (_monitors.Count == 0) { ValidationMessage.Text = Localization.T("사용 가능한 모니터를 찾지 못했습니다."); return false; }
         var uniform = UniformMarginCheck.IsChecked == true;
         var all = _draft.MarginAll; var top = _draft.MarginTop; var bottom = _draft.MarginBottom; var left = _draft.MarginLeft; var right = _draft.MarginRight;
         if (!TryGrid(GridColsText.Text, out var columns) || !TryGrid(GridRowsText.Text, out var rows)
@@ -113,7 +132,7 @@ public partial class ZoneSettingsWindow : Window
             || !uniform && (!TryMargin(MarginTopText.Text, out top) || !TryMargin(MarginBottomText.Text, out bottom)
                 || !TryMargin(MarginLeftText.Text, out left) || !TryMargin(MarginRightText.Text, out right)))
         {
-            ValidationMessage.Text = "격자는 1~50의 정수, 여백은 0 이상의 숫자를 입력하세요."; return false;
+            ValidationMessage.Text = Localization.T("격자는 1~50의 정수, 여백은 0 이상의 숫자를 입력하세요."); return false;
         }
         _draft.GridCols = columns; _draft.GridRows = rows;
         _draft.CellCol = Math.Clamp(_draft.CellCol, 0, columns - 1); _draft.CellRow = Math.Clamp(_draft.CellRow, 0, rows - 1);
@@ -130,13 +149,13 @@ public partial class ZoneSettingsWindow : Window
         var state = (_draft.GridCols, _draft.GridRows, _draft.CellCol, _draft.CellRow);
         if (_previewState == state) return;
         _previewState = state;
-        SelectionHint.Text = $"선택 영역: {_draft.CellCol + 1}열 · {_draft.CellRow + 1}행 — 칸을 클릭해서 변경";
+        SelectionHint.Text = Localization.Format("선택 영역: {0}열 · {1}행 — 칸을 클릭해서 변경", _draft.CellCol + 1, _draft.CellRow + 1);
         GridPreview.Columns = _draft.GridCols; GridPreview.Rows = _draft.GridRows; GridPreview.Children.Clear();
         for (var row = 0; row < _draft.GridRows; row++)
         for (var column = 0; column < _draft.GridCols; column++)
         {
             var cell = new Button { Tag = (column, row), Padding = new Thickness(0), Margin = new Thickness(2),
-                MinHeight = 0, ToolTip = $"{column + 1}열 · {row + 1}행",
+                MinHeight = 0, ToolTip = Localization.Format("{0}열 · {1}행", column + 1, row + 1),
                 Content = _draft.GridCols <= 8 && _draft.GridRows <= 6 ? $"{column + 1}, {row + 1}" : null,
                 BorderBrush = column == _draft.CellCol && row == _draft.CellRow ? Brushes.Gold : new SolidColorBrush(Color.FromRgb(191, 197, 204)),
                 BorderThickness = new Thickness(1), Foreground = column == _draft.CellCol && row == _draft.CellRow ? Brushes.White : new SolidColorBrush(Color.FromRgb(104, 113, 124)),

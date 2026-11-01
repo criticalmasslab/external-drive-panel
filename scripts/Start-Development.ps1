@@ -35,16 +35,21 @@ if ($RegisterStartup) {
             ConvertTo-Json | Set-Content -LiteralPath $backupPath -Encoding UTF8
     }
     New-Item -Path $runKey -Force | Out-Null
-    New-ItemProperty -LiteralPath $runKey -Name $valueName -PropertyType String -Value ('"{0}" --development --startup' -f $executable) -Force | Out-Null
+    $launcher = Join-Path $PSScriptRoot 'Start-DevelopmentSession.ps1'
+    $powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $command = '"{0}" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "{1}"' -f $powershell, $launcher
+    New-ItemProperty -LiteralPath $runKey -Name 'ExternalDrivePanelDevelopment' -PropertyType String -Value $command -Force | Out-Null
+    Remove-ItemProperty -LiteralPath $runKey -Name $valueName -ErrorAction SilentlyContinue
     Write-Host 'Windows startup now launches the development app instead of the installed app.'
 }
-Start-Process -FilePath $executable -ArgumentList '--development'
+& (Join-Path $PSScriptRoot 'Start-DevelopmentSession.ps1')
 $shortcutPath = Join-Path $repo 'dist\ExternalDrivePanel-Development.lnk'
 New-Item -ItemType Directory -Path (Split-Path $shortcutPath) -Force | Out-Null
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($shortcutPath)
-$shortcut.TargetPath = $executable
-$shortcut.Arguments = '--development'
+$shortcut.TargetPath = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+$shortcut.Arguments = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "{0}"' -f (Join-Path $PSScriptRoot 'Start-DevelopmentSession.ps1')
+$shortcut.IconLocation = "$executable,0"
 $shortcut.WorkingDirectory = $output
 $shortcut.Description = 'External Drive Panel - 개발용 (별도 설정)'
 $shortcut.Save()

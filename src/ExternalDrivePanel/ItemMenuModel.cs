@@ -28,16 +28,16 @@ public static class ItemMenuModel
         var remove = item.IsHome || item.IsFavorite;
         var menu = new List<ItemMenuEntry>
         {
-            new(ItemMenuCommand.Open, "열기", item.Exists, "Enter"),
-            item.IsDirectory ? new(ItemMenuCommand.Explore, "탐색기에서 열기", item.Exists)
-                : new(ItemMenuCommand.OpenWith, "연결 프로그램…", item.Exists),
+            new(ItemMenuCommand.Open, Localization.T("열기"), item.Exists, "Enter"),
+            item.IsDirectory ? new(ItemMenuCommand.Explore, Localization.T("탐색기에서 열기"), item.Exists)
+                : new(ItemMenuCommand.OpenWith, Localization.T("연결 프로그램…"), item.Exists),
             new(ItemMenuCommand.Separator, ""),
-            new(ItemMenuCommand.ToggleFavorite, remove ? "즐겨찾기에서 제거" : "즐겨찾기에 추가", remove || item.Exists),
-            new(ItemMenuCommand.Compress, "압축", item.Exists, Children: [new(ItemMenuCommand.Zip, "ZIP 파일로 압축", item.Exists)]),
-            new(ItemMenuCommand.CopyPath, "경로로 복사", true, "Ctrl+Shift+C"),
-            new(ItemMenuCommand.Properties, "속성", item.Exists, "Alt+Enter")
+            new(ItemMenuCommand.ToggleFavorite, remove ? Localization.T("즐겨찾기에서 제거") : Localization.T("즐겨찾기에 추가"), remove || item.Exists),
+            new(ItemMenuCommand.Compress, Localization.T("압축"), item.Exists, Children: [new(ItemMenuCommand.Zip, Localization.T("ZIP 파일로 압축"), item.Exists)]),
+            new(ItemMenuCommand.CopyPath, Localization.T("경로로 복사"), true, "Ctrl+Shift+C"),
+            new(ItemMenuCommand.Properties, Localization.T("속성"), item.Exists, "Alt+Enter")
         };
-        if (!item.IsDirectory && item.IsTextFile) menu.Add(new(ItemMenuCommand.EditText, "메모장에서 편집", item.Exists));
+        if (!item.IsDirectory && item.IsTextFile) menu.Add(new(ItemMenuCommand.EditText, Localization.T("메모장에서 편집"), item.Exists));
         return menu;
     }
 
@@ -50,7 +50,7 @@ public static class ItemMenuModel
         var menus = items.Select(Build).ToArray();
         return menus[0].Where(entry => menus.All(menu => menu.Any(other => other.Command == entry.Command)))
             .Select(entry => entry.Command == ItemMenuCommand.ToggleFavorite
-                ? entry with { Label = remove ? "즐겨찾기에서 제거" : "즐겨찾기에 추가", Enabled = remove || items.All(item => item.Exists) }
+                ? entry with { Label = remove ? Localization.T("즐겨찾기에서 제거") : Localization.T("즐겨찾기에 추가"), Enabled = remove || items.All(item => item.Exists) }
                 : entry with { Enabled = menus.All(menu => menu.Single(other => other.Command == entry.Command).Enabled),
                     Children = entry.Children?.Select(child => child with { Enabled = items.All(item => item.Exists) }).ToArray() })
             .ToArray();

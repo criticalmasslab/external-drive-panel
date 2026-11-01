@@ -71,5 +71,5 @@ public sealed record MonitorDescriptor(
     int Height,
     bool IsPrimary)
 {
-    public string DisplayName => $"{(IsPrimary ? "주 " : string.Empty)}모니터 ({Width} × {Height}, {Left}, {Top})";
+    public string DisplayName => Localization.Format("{0}모니터 ({1} × {2}, {3}, {4})", (IsPrimary ? Localization.T("주 ") : string.Empty), Width, Height, Left, Top);
 }

@@ -80,7 +80,7 @@ public sealed class DeviceReconnectService(IDeviceReconnectPlatform? platform = 
 
     internal static async Task<int?> ElevateAsync(IReadOnlyList<UsbReconnectTarget> targets, nint owner)
     {
-        var host = Environment.ProcessPath ?? throw new IOException("실행 파일을 찾지 못했습니다.");
+        var host = Environment.ProcessPath ?? throw new IOException(Localization.T("실행 파일을 찾지 못했습니다."));
         var start = new ProcessStartInfo(host)
         {
             UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden,
@@ -89,16 +89,16 @@ public sealed class DeviceReconnectService(IDeviceReconnectPlatform? platform = 
         if (Path.GetFileNameWithoutExtension(host).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
         {
             var assembly = Path.Combine(AppContext.BaseDirectory, "ExternalDrivePanel.dll");
-            if (!File.Exists(assembly)) throw new IOException("실행 어셈블리를 찾지 못했습니다.");
+            if (!File.Exists(assembly)) throw new IOException(Localization.T("실행 어셈블리를 찾지 못했습니다."));
             start.ArgumentList.Add(assembly);
         }
         else if (!Path.GetFileNameWithoutExtension(host).Equals("ExternalDrivePanel", StringComparison.OrdinalIgnoreCase))
-            throw new IOException("배포된 앱에서 재연결할 수 있습니다.");
+            throw new IOException(Localization.T("배포된 앱에서 재연결할 수 있습니다."));
         start.ArgumentList.Add(HelperSwitch);
         foreach (var target in targets) start.ArgumentList.Add(Encode(target));
         try
         {
-            using var helper = Process.Start(start) ?? throw new IOException("재연결을 시작하지 못했습니다.");
+            using var helper = Process.Start(start) ?? throw new IOException(Localization.T("재연결을 시작하지 못했습니다."));
             await helper.WaitForExitAsync(); return helper.ExitCode;
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) { return null; }

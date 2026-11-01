@@ -22,10 +22,10 @@ internal sealed class NativePdfDocument : IAsyncDisposable
         IRandomAccessStream? stream = null;
         try
         {
-            if (file.Length > 512L * 1024 * 1024) throw new IOException("큰 PDF입니다. 기본 앱으로 열어 확인해 주세요.");
+            if (file.Length > 512L * 1024 * 1024) throw new IOException(Localization.T("큰 PDF입니다. 기본 앱으로 열어 확인해 주세요."));
             stream = file.AsRandomAccessStream();
             var document = await PdfDocument.LoadFromStreamAsync(stream).AsTask(token).ConfigureAwait(false);
-            if (document.PageCount == 0) throw new IOException("표시할 PDF 페이지가 없습니다.");
+            if (document.PageCount == 0) throw new IOException(Localization.T("표시할 PDF 페이지가 없습니다."));
             token.ThrowIfCancellationRequested();
             return new NativePdfDocument(file, stream, document);
         }
@@ -43,7 +43,7 @@ internal sealed class NativePdfDocument : IAsyncDisposable
             var size = page.Size;
             var longest = Math.Clamp(maxPixels, 256, 2048);
             var ratio = longest / Math.Max(size.Width, size.Height);
-            if (!double.IsFinite(ratio) || ratio <= 0) throw new IOException("PDF 페이지 크기가 올바르지 않습니다.");
+            if (!double.IsFinite(ratio) || ratio <= 0) throw new IOException(Localization.T("PDF 페이지 크기가 올바르지 않습니다."));
             var options = new PdfPageRenderOptions { DestinationWidth = (uint)Math.Max(1, Math.Round(size.Width * ratio)), DestinationHeight = (uint)Math.Max(1, Math.Round(size.Height * ratio)) };
             using var output = new InMemoryRandomAccessStream();
             await page.RenderToStreamAsync(output, options).AsTask(token).ConfigureAwait(false);

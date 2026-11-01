@@ -31,7 +31,7 @@ public sealed class ZipCompressionService
     public static string UniquePath(string source, bool isDirectory)
     {
         source = Path.TrimEndingDirectorySeparator(Path.GetFullPath(source));
-        var parent = Path.GetDirectoryName(source) ?? throw new IOException("드라이브 루트 전체는 ZIP으로 압축할 수 없습니다.");
+        var parent = Path.GetDirectoryName(source) ?? throw new IOException(Localization.T("드라이브 루트 전체는 ZIP으로 압축할 수 없습니다."));
         var name = isDirectory ? Path.GetFileName(source) : Path.GetFileNameWithoutExtension(source);
         if (string.IsNullOrEmpty(name)) name = Path.GetFileName(source);
         var result = Path.Combine(parent, name + ".zip");
@@ -42,7 +42,7 @@ public sealed class ZipCompressionService
 
     public static string CreateArchive(string source, bool isDirectory)
     {
-        if (isDirectory ? !Directory.Exists(source) : !File.Exists(source)) throw new FileNotFoundException("압축할 경로를 찾을 수 없습니다.", source);
+        if (isDirectory ? !Directory.Exists(source) : !File.Exists(source)) throw new FileNotFoundException(Localization.T("압축할 경로를 찾을 수 없습니다."), source);
         RejectLinks(source);
         string? output = null;
         try
@@ -72,7 +72,7 @@ public sealed class ZipCompressionService
             if (output is not null)
             {
                 try { File.Delete(output); }
-                catch (Exception cleanup) { throw new IOException($"{error.Message}\n미완성 ZIP 정리 실패: {output}\n{cleanup.Message}", error); }
+                catch (Exception cleanup) { throw new IOException(Localization.Format("{0}\n미완성 ZIP 정리 실패: {1}\n{2}", error.Message, output, cleanup.Message), error); }
             }
             throw;
         }
@@ -85,7 +85,7 @@ public sealed class ZipCompressionService
         while (pending.TryPop(out var path))
         {
             var attributes = File.GetAttributes(path);
-            if ((attributes & FileAttributes.ReparsePoint) != 0) throw new IOException("링크/연결 지점은 압축하지 않습니다: " + path);
+            if ((attributes & FileAttributes.ReparsePoint) != 0) throw new IOException(Localization.T("링크/연결 지점은 압축하지 않습니다: ") + path);
             if ((attributes & FileAttributes.Directory) != 0)
                 foreach (var child in Directory.EnumerateFileSystemEntries(path)) pending.Push(child);
         }

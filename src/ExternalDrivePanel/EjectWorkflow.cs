@@ -20,7 +20,7 @@ public static class EjectWorkflow
             await ShellPreviewService.WaitForIdleAsync();
             return await Task.Run(() => service.TryEject(root));
         }
-        catch (Exception ex) { DiagnosticLog.Record("eject.prepare.failed", ex); return EjectResult.Failed("안전 제거 준비에 실패했습니다. " + ex.Message); }
+        catch (Exception ex) { DiagnosticLog.Record("eject.prepare.failed", ex); return EjectResult.Failed(Localization.T("안전 제거 준비에 실패했습니다. ") + ex.Message); }
         finally
         {
             foreach (var participant in participants)

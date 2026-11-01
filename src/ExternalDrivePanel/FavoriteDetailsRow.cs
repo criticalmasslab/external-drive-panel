@@ -14,7 +14,7 @@ public sealed class FavoriteDetailsRow
     public DateTime? ModifiedDate { get; }
     public long? Size { get; }
     public string SizeDisplay { get; } = string.Empty;
-    public string Type { get; } = "(경로 없음)";
+    public string Type { get; } = Localization.T("(경로 없음)");
 
     public FavoriteDetailsRow(FavoriteItem favorite)
     {
@@ -28,7 +28,7 @@ public sealed class FavoriteDetailsRow
             SizeDisplay = entry.SizeDisplay;
             Type = entry.Type;
         }
-        catch (UnauthorizedAccessException) { Type = "(접근 불가)"; }
+        catch (UnauthorizedAccessException) { Type = Localization.T("(접근 불가)"); }
         catch (IOException) { /* Keep the saved favorite when a path disappears mid-read. */ }
     }
 }

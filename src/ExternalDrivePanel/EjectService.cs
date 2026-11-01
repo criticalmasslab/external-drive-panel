@@ -15,10 +15,10 @@ public sealed class EjectService(IEjectBackend? backend = null)
     {
         try
         {
-            if (!IsDriveRoot(root)) return EjectResult.Failed("올바른 드라이브 루트가 아닙니다.");
+            if (!IsDriveRoot(root)) return EjectResult.Failed(Localization.T("올바른 드라이브 루트가 아닙니다."));
             var first = _backend.Resolve(root);
             var current = _backend.Resolve(root);
-            if (first != current) return EjectResult.Failed("준비 중 연결된 장치가 바뀌었습니다. 드라이브를 다시 확인해주세요.");
+            if (first != current) return EjectResult.Failed(Localization.T("준비 중 연결된 장치가 바뀌었습니다. 드라이브를 다시 확인해주세요."));
             var result = _backend.Request(current);
             DiagnosticLog.Record(result.Success ? "eject.success" : "eject.rejected");
             return result;

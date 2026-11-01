@@ -20,7 +20,8 @@ public partial class QuickPreviewWindow : Window
     private MediaElement? _media;
     private readonly DispatcherTimer _mediaTimer;
     private bool _playing, _closed;
-    private string _fileSummary = "";
+    private PreviewFileInfo? _fileInfo;
+    private string FileSummary => _fileInfo is { } info ? $"{info.LocalizedType} · {info.LocalizedSize} · {info.Modified}" : "";
     private readonly HashSet<Task> _pending = [];
     private Task _pdfCleanup = Task.CompletedTask;
     public string? CurrentPath => _items.Count > 0 ? _items[_index].Path : null;
@@ -36,8 +37,8 @@ public partial class QuickPreviewWindow : Window
         {
             var maximized = WindowState == WindowState.Maximized;
             PreviewMaximizeIcon.Kind = maximized ? "Restore" : "Maximize";
-            PreviewMaximizeButton.ToolTip = maximized ? "이전 크기로 복원" : "최대화";
-            System.Windows.Automation.AutomationProperties.SetName(PreviewMaximizeButton, maximized ? "이전 크기로 복원" : "최대화");
+            PreviewMaximizeButton.ToolTip = maximized ? Localization.T("이전 크기로 복원") : Localization.T("최대화");
+            System.Windows.Automation.AutomationProperties.SetName(PreviewMaximizeButton, maximized ? Localization.T("이전 크기로 복원") : Localization.T("최대화"));
         };
         UpdateChrome(new DpiScale(1, 1));
         SourceInitialized += (_, _) =>
@@ -53,6 +54,12 @@ public partial class QuickPreviewWindow : Window
         PreviewBody.SizeChanged += (_, _) => FitImage();
         _mediaTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _mediaTimer.Tick += (_, _) => UpdateMediaPosition();
+        Localization.Attach(this, () =>
+        {
+            PreviewMaximizeButton.ToolTip = WindowState == WindowState.Maximized ? Localization.T("이전 크기로 복원") : Localization.T("최대화");
+            PlayButton.Content = _playing ? Localization.T("일시정지") : Localization.T("재생");
+            FitImage(); UpdateMediaPosition();
+        });
         Closed += (_, _) =>
         {
             _closed = true; Cancel(ref _loadRequest); Cancel(ref _pageRequest);
@@ -108,13 +115,13 @@ public partial class QuickPreviewWindow : Window
         PreviewImage.Source = null; TextPreview.Clear();
         ImageScroll.Visibility = TextPreview.Visibility = InformationPanel.Visibility = MediaPreview.Visibility = Visibility.Collapsed;
         PageControls.Visibility = ZoomControls.Visibility = Visibility.Collapsed;
-        LoadingMessage.Visibility = Visibility.Visible; PreviewStatus.Text = "불러오는 중…"; OpenInAppButton.IsEnabled = false;
+        LoadingMessage.Visibility = Visibility.Visible; SetStatus(() => Localization.T("불러오는 중…")); OpenInAppButton.IsEnabled = false;
         _zoom = 1; _page = 0;
         try
         {
             var info = await Task.Run(() => QuickPreviewFiles.Information(target), token);
             if (token.IsCancellationRequested || version != _loadVersion) return;
-            _fileSummary = $"{info.Type} · {info.Size} · {info.Modified}";
+            _fileInfo = info;
             OpenInAppButton.IsEnabled = true;
             switch (QuickPreviewPolicy.Kind(target.Path, target.IsDirectory))
             {
@@ -131,23 +138,23 @@ public partial class QuickPreviewWindow : Window
                     catch (Exception ex) when (ex is NotSupportedException or System.IO.FileFormatException)
                     { source = await ShellPreviewService.LoadThumbnailAsync(target.Path, 1024, token); }
                     if (token.IsCancellationRequested) return;
-                    if (source is null) ShowInformation(info, "이 이미지 형식은 현재 설치된 Windows 코덱으로 미리볼 수 없습니다.");
-                    else ShowImage(source, _fileSummary + " · 이미지 (GIF/TIFF는 첫 프레임)");
+                    if (source is null) ShowInformation(info, () => Localization.T("이 이미지 형식은 현재 설치된 Windows 코덱으로 미리볼 수 없습니다."));
+                    else ShowImage(source, () => FileSummary + Localization.T(" · 이미지 (GIF/TIFF는 첫 프레임)"));
                     break;
                 case QuickPreviewKind.Text:
                     var text = await QuickPreviewFiles.ReadTextAsync(target.Path, token);
                     if (token.IsCancellationRequested) return;
                     TextPreview.Text = text.Content; TextPreview.ScrollToHome(); TextPreview.Visibility = Visibility.Visible;
-                    PreviewStatus.Text = $"{text.EncodingName} · 읽기 전용" + (text.Truncated ? " · 앞부분 128 KB만 표시" : "");
+                    SetStatus(() => Localization.Format("{0} · 읽기 전용", text.EncodingName) + (text.Truncated ? Localization.T(" · 앞부분 128 KB만 표시") : ""));
                     break;
                 case QuickPreviewKind.Media:
-                    StartMedia(target.Path); PreviewStatus.Text = _fileSummary + " · 재생 버튼을 눌러 시작";
+                    StartMedia(target.Path); SetStatus(() => FileSummary + Localization.T(" · 재생 버튼을 눌러 시작"));
                     break;
                 default:
                     var thumbnail = target.IsDirectory ? null : await ShellPreviewService.LoadThumbnailAsync(target.Path, 1024, token);
                     if (token.IsCancellationRequested) return;
-                    if (thumbnail is not null) ShowImage(thumbnail, _fileSummary + " · Windows 썸네일 (문서 전체 아님)");
-                    else ShowInformation(info, target.IsDirectory ? "폴더는 기본 정보만 표시합니다." : "이 형식의 본문 미리보기는 지원하지 않습니다. 기본 앱으로 열어 확인할 수 있습니다.");
+                    if (thumbnail is not null) ShowImage(thumbnail, () => FileSummary + Localization.T(" · Windows 썸네일 (문서 전체 아님)"));
+                    else ShowInformation(info, () => target.IsDirectory ? Localization.T("폴더는 기본 정보만 표시합니다.") : Localization.T("이 형식의 본문 미리보기는 지원하지 않습니다. 기본 앱으로 열어 확인할 수 있습니다."));
                     break;
             }
         }
@@ -156,10 +163,10 @@ public partial class QuickPreviewWindow : Window
         {
             if (!token.IsCancellationRequested && version == _loadVersion)
             {
-                var message = QuickPreviewPolicy.Kind(target.Path, target.IsDirectory) == QuickPreviewKind.Pdf
-                    ? "PDF를 미리볼 수 없습니다. 암호 보호·손상 또는 지원되지 않는 문서일 수 있습니다. 기본 앱으로 열어 확인해 주세요."
-                    : "미리보기를 표시할 수 없습니다. 파일이 없거나 접근할 수 없거나 지원되지 않는 형식일 수 있습니다.";
-                ShowInformation(null, message + "\n\n" + ex.Message);
+                string Message() => QuickPreviewPolicy.Kind(target.Path, target.IsDirectory) == QuickPreviewKind.Pdf
+                    ? Localization.T("PDF를 미리볼 수 없습니다. 암호 보호·손상 또는 지원되지 않는 문서일 수 있습니다. 기본 앱으로 열어 확인해 주세요.")
+                    : Localization.T("미리보기를 표시할 수 없습니다. 파일이 없거나 접근할 수 없거나 지원되지 않는 형식일 수 있습니다.");
+                ShowInformation(null, () => Message() + "\n\n" + ex.Message);
                 OpenInAppButton.IsEnabled = File.Exists(target.Path) || Directory.Exists(target.Path);
                 System.Diagnostics.Debug.WriteLine(ex);
             }
@@ -176,7 +183,7 @@ public partial class QuickPreviewWindow : Window
         if (_pdf is null || _loadRequest is null || index < 0 || index >= _pdf.PageCount || _closed) return;
         Cancel(ref _pageRequest); _pageRequest = CancellationTokenSource.CreateLinkedTokenSource(_loadRequest.Token);
         var token = _pageRequest.Token; var document = _pdf; var version = ++_pageVersion;
-        _page = index; PagePosition.Text = $"{_page + 1} / {document.PageCount}쪽";
+        _page = index; Localization.Bind(PagePosition, TextBlock.TextProperty, () => Localization.Format("{0} / {1}쪽", _page + 1, document.PageCount));
         PreviousPageButton.IsEnabled = _page > 0; NextPageButton.IsEnabled = _page + 1 < document.PageCount;
         LoadingMessage.Visibility = Visibility.Visible;
         try
@@ -184,16 +191,17 @@ public partial class QuickPreviewWindow : Window
             var source = await document.RenderAsync(index, 1600, token);
             if (token.IsCancellationRequested || version != _pageVersion) return;
             InformationPanel.Visibility = Visibility.Collapsed;
-            ShowImage(source, _fileSummary + $" · {_page + 1} / {document.PageCount}쪽");
+            ShowImage(source, () => FileSummary + Localization.Format(" · {0} / {1}쪽", _page + 1, document.PageCount));
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { if (!token.IsCancellationRequested) ShowInformation(null, "PDF 페이지를 표시할 수 없습니다.\n" + ex.Message); }
+        catch (Exception ex) { if (!token.IsCancellationRequested) ShowInformation(null, () => Localization.T("PDF 페이지를 표시할 수 없습니다.\n") + ex.Message); }
         finally { if (!token.IsCancellationRequested && version == _pageVersion) LoadingMessage.Visibility = Visibility.Collapsed; }
     }
-    private void ShowImage(BitmapSource image, string status)
+    private void SetStatus(Func<string> text) => Localization.Bind(PreviewStatus, TextBlock.TextProperty, text);
+    private void ShowImage(BitmapSource image, Func<string> status)
     {
         PreviewImage.Source = image; ImageScroll.Visibility = ZoomControls.Visibility = Visibility.Visible;
-        PreviewStatus.Text = status; ImageScroll.ScrollToHome(); FitImage();
+        SetStatus(status); ImageScroll.ScrollToHome(); FitImage();
     }
     private void FitImage()
     {
@@ -201,21 +209,21 @@ public partial class QuickPreviewWindow : Window
         var width = Math.Max(100, PreviewBody.ActualWidth - 40); var height = Math.Max(100, PreviewBody.ActualHeight - 40);
         var fit = Math.Min(1, Math.Min(width / source.PixelWidth, height / source.PixelHeight));
         PreviewImage.Width = source.PixelWidth * fit * _zoom; PreviewImage.Height = source.PixelHeight * fit * _zoom;
-        FitButton.Content = Math.Abs(_zoom - 1) < .01 ? "맞춤" : $"{_zoom:0.##}배";
+        FitButton.Content = Math.Abs(_zoom - 1) < .01 ? Localization.T("맞춤") : Localization.Format("{0:0.##}배", _zoom);
     }
-    private void ShowInformation(PreviewFileInfo? info, string reason)
+    private void ShowInformation(PreviewFileInfo? info, Func<string> reason)
     {
         ImageScroll.Visibility = TextPreview.Visibility = MediaPreview.Visibility = ZoomControls.Visibility = Visibility.Collapsed;
         InformationTitle.Text = info?.Name ?? FileTitle.Text;
-        InformationText.Text = (info is null ? "" : $"{info.Type}\n크기: {info.Size}\n수정: {info.Modified}\n\n") + reason;
-        InformationPanel.Visibility = Visibility.Visible; PreviewStatus.Text = info is null ? "미리보기 불가" : _fileSummary;
+        Localization.Bind(InformationText, TextBlock.TextProperty, () => (info is null ? "" : Localization.Format("{0}\n크기: {1}\n수정: {2}\n\n", info.LocalizedType, info.LocalizedSize, info.Modified)) + reason());
+        InformationPanel.Visibility = Visibility.Visible; SetStatus(() => info is null ? Localization.T("미리보기 불가") : FileSummary);
     }
     private void StartMedia(string path)
     {
         _media = new MediaElement { LoadedBehavior = MediaState.Manual, UnloadedBehavior = MediaState.Manual, ScrubbingEnabled = true, Stretch = Stretch.Uniform };
         _media.MediaOpened += Media_OnOpened; _media.MediaFailed += Media_OnFailed; _media.MediaEnded += Media_OnEnded;
-        MediaHost.Children.Add(_media); MediaPreview.Visibility = Visibility.Visible; PlayButton.Content = "재생"; PlayButton.IsEnabled = false;
-        MediaPosition.Text = "준비 중…";
+        MediaHost.Children.Add(_media); MediaPreview.Visibility = Visibility.Visible; PlayButton.Content = Localization.T("재생"); PlayButton.IsEnabled = false;
+        MediaPosition.Text = Localization.T("준비 중…");
         _media.Source = new Uri(path); _media.Pause(); // Initialize paused. Never autoplay audio when pressing Space.
     }
     private void StopMedia()
@@ -231,20 +239,20 @@ public partial class QuickPreviewWindow : Window
     private void Media_OnFailed(object? sender, ExceptionRoutedEventArgs e)
     {
         if (!ReferenceEquals(sender, _media) || _closed) return;
-        StopMedia(); ShowInformation(null, "Windows에서 이 미디어를 재생할 수 없습니다. 코덱이 없거나 파일이 손상되었을 수 있습니다. 기본 앱으로 열어 확인해 주세요.");
+        StopMedia(); ShowInformation(null, () => Localization.T("Windows에서 이 미디어를 재생할 수 없습니다. 코덱이 없거나 파일이 손상되었을 수 있습니다. 기본 앱으로 열어 확인해 주세요."));
     }
     private void Media_OnEnded(object sender, RoutedEventArgs e)
-    { if (ReferenceEquals(sender, _media)) { _media!.Pause(); _media.Position = TimeSpan.Zero; _playing = false; _mediaTimer.Stop(); PlayButton.Content = "재생"; UpdateMediaPosition(); } }
+    { if (ReferenceEquals(sender, _media)) { _media!.Pause(); _media.Position = TimeSpan.Zero; _playing = false; _mediaTimer.Stop(); PlayButton.Content = Localization.T("재생"); UpdateMediaPosition(); } }
     private void UpdateMediaPosition()
     {
         if (_media is null) return;
-        MediaPosition.Text = _media.NaturalDuration.HasTimeSpan ? $"{_media.Position:hh\\:mm\\:ss} / {_media.NaturalDuration.TimeSpan:hh\\:mm\\:ss}" : "Windows 코덱 기반 재생";
+        MediaPosition.Text = _media.NaturalDuration.HasTimeSpan ? $"{_media.Position:hh\\:mm\\:ss} / {_media.NaturalDuration.TimeSpan:hh\\:mm\\:ss}" : Localization.T("Windows 코덱 기반 재생");
     }
     private void Play_OnClick(object sender, RoutedEventArgs e)
     {
         if (_media is null) return;
         if (_playing) { _media.Pause(); _mediaTimer.Stop(); } else { _media.Play(); _mediaTimer.Start(); }
-        _playing = !_playing; PlayButton.Content = _playing ? "일시정지" : "재생";
+        _playing = !_playing; PlayButton.Content = _playing ? Localization.T("일시정지") : Localization.T("재생");
     }
     private void Header_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
@@ -272,7 +280,7 @@ public partial class QuickPreviewWindow : Window
         if (_items.Count == 0 || !OpenInAppButton.IsEnabled) return;
         var target = _items[_index];
         try { if (target.IsDirectory) ShellActions.OpenInExplorer(target.Path); else ShellActions.OpenFile(target.Path); Close(); }
-        catch (Exception ex) { ShowInformation(null, "기본 앱으로 열지 못했습니다.\n" + ex.Message); }
+        catch (Exception ex) { ShowInformation(null, () => Localization.T("기본 앱으로 열지 못했습니다.\n") + ex.Message); }
     }
     protected override void OnPreviewKeyDown(KeyEventArgs e)
     {

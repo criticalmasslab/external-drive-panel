@@ -13,10 +13,11 @@ public partial class TopBarWindow : Window
         HeaderChromeMetrics.Apply(this, new DpiScale(1, 1));
         SourceInitialized += (_, _) => HeaderChromeMetrics.Apply(this, System.Windows.Media.VisualTreeHelper.GetDpi(this));
         Loaded += (_, _) => HeaderChromeMetrics.Apply(this, System.Windows.Media.VisualTreeHelper.GetDpi(this));
-        _placement = new PhysicalWindowPlacement(this);
+        _placement = new PhysicalWindowPlacement(this, maintainPhysicalBounds: true);
         _viewSettings = viewSettings;
         _viewSettings.Changed += ViewSettings_OnChanged;
         UpdateStateHint();
+        Localization.Attach(this, UpdateStateHint);
     }
 
     public event EventHandler? SettingsRequested;
@@ -48,15 +49,15 @@ public partial class TopBarWindow : Window
 
     private void UpdateStateHint()
     {
-        PreviewButton.ToolTip = _viewSettings.ShowPreviews ? "파일 미리보기 켜짐 — 클릭하면 끄기" : "파일 미리보기 끔 — 클릭하면 켜기";
+        PreviewButton.ToolTip = _viewSettings.ShowPreviews ? Localization.T("파일 미리보기 켜짐 — 클릭하면 끄기") : Localization.T("파일 미리보기 끔 — 클릭하면 켜기");
         PreviewButton.Opacity = _viewSettings.ShowPreviews ? 1 : .65;
         PreviewIcon.IsColorized = _viewSettings.ShowPreviews;
         PreviewButton.Background = System.Windows.Media.Brushes.Transparent;
-        HiddenButton.ToolTip = _viewSettings.ShowHiddenItems ? "숨김 항목 숨기기" : "숨김 항목 표시";
+        HiddenButton.ToolTip = _viewSettings.ShowHiddenItems ? Localization.T("숨김 항목 숨기기") : Localization.T("숨김 항목 표시");
         HiddenButton.Opacity = _viewSettings.ShowHiddenItems ? 1.0 : 0.65;
         var details = _viewSettings.ViewMode == GlobalViewMode.Details;
         ViewModeIcon.Kind = details ? "List" : "Grid";
-        ViewModeButton.ToolTip = details ? "전체 기본값: 상세 보기 — 클릭하면 전체 패널 아이콘 보기" : "전체 기본값: 아이콘 보기 — 클릭하면 전체 패널 상세 보기";
+        ViewModeButton.ToolTip = details ? Localization.T("전체 기본값: 상세 보기 — 클릭하면 전체 패널 아이콘 보기") : Localization.T("전체 기본값: 아이콘 보기 — 클릭하면 전체 패널 상세 보기");
     }
 
     protected override void OnClosed(EventArgs e)

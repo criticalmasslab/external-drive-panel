@@ -112,7 +112,7 @@ public sealed class ItemContextMenuBuilder : IDisposable
             {
                 var fallback = new ContextMenu { PlacementTarget = _owner, Placement = PlacementMode.MousePoint };
                 PopulateSelection(fallback, targets);
-                fallback.Items.Insert(0, new MenuItem { Header = "Windows 메뉴를 열 수 없어 기본 메뉴로 표시합니다", IsEnabled = false, ToolTip = ex.Message });
+                fallback.Items.Insert(0, new MenuItem { Header = Localization.T("Windows 메뉴를 열 수 없어 기본 메뉴로 표시합니다"), IsEnabled = false, ToolTip = ex.Message });
                 fallback.IsOpen = true;
             }
         }
@@ -150,14 +150,14 @@ public sealed class ItemContextMenuBuilder : IDisposable
         if (snapshot.Length > 0 && snapshot.All(item => Context(item).Exists) && FileCommandRequested is not null)
         {
             menu.Items.Add(new Separator());
-            foreach (var (command, label) in new[] { (PanelFileCommand.Cut, "잘라내기"), (PanelFileCommand.Copy, "복사"),
-                (PanelFileCommand.Rename, "이름 바꾸기…"), (PanelFileCommand.Share, "공유…"), (PanelFileCommand.Delete, "삭제…") })
+            foreach (var (command, label) in new[] { (PanelFileCommand.Cut, Localization.T("잘라내기")), (PanelFileCommand.Copy, Localization.T("복사")),
+                (PanelFileCommand.Rename, Localization.T("이름 바꾸기…")), (PanelFileCommand.Share, Localization.T("공유…")), (PanelFileCommand.Delete, Localization.T("삭제…")) })
             {
                 var item = new MenuItem { Header = label };
                 item.Click += async (_, _) => await FileCommandRequested(command, snapshot);
                 menu.Items.Add(item);
             }
-            var native = new MenuItem { Header = "Windows 메뉴 (항목별)" };
+            var native = new MenuItem { Header = Localization.T("Windows 메뉴 (항목별)") };
             foreach (var target in snapshot)
             {
                 var child = new MenuItem { Header = Path.GetFileName(target.Path) };
@@ -260,21 +260,21 @@ public sealed class ItemContextMenuBuilder : IDisposable
                 case ItemMenuCommand.Zip:
                     var task = Zip.TryCreateAsync(target.Path, target.IsDirectory);
                     if (task is null) return;
-                    _notify("압축 중…", false);
+                    _notify(Localization.T("압축 중…"), false);
                     var result = await task;
                     if (result.OutputPath is { } output)
                     {
-                        _notify("압축 완료: " + Path.GetFileName(output), false);
+                        _notify(Localization.T("압축 완료: ") + Path.GetFileName(output), false);
                         if (!_disposed) _archiveCreated(Path.GetDirectoryName(output)!);
                     }
-                    else _notify("압축 실패: " + result.Error, true);
+                    else _notify(Localization.T("압축 실패: ") + result.Error, true);
                     break;
             }
         }
         catch (Exception ex)
         {
             if (command == ItemMenuCommand.CopyPath) return; // Clipboard failures must stay quiet.
-            if (!_disposed) DialogActivation.Show(_owner, () => MessageBox.Show(_owner, ex.Message, "항목 작업", MessageBoxButton.OK, MessageBoxImage.Warning));
+            if (!_disposed) DialogActivation.Show(_owner, () => MessageBox.Show(_owner, ex.Message, Localization.T("항목 작업"), MessageBoxButton.OK, MessageBoxImage.Warning));
         }
     }
 

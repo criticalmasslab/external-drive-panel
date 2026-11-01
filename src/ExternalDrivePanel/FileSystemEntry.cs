@@ -29,7 +29,7 @@ public sealed class FileSystemEntry : INotifyPropertyChanged
     public long? Size { get; }
     public string Icon => IsDirectory ? "📁" : "📄";
     public string DisplayName => $"{Icon} {Name}";
-    public string Type => IsDirectory ? "파일 폴더" : GetFileType(Name);
+    public string Type => IsDirectory ? Localization.T("파일 폴더") : GetFileType(Name);
     public string SizeDisplay => Size is null ? string.Empty : FormatSize(Size.Value);
 
     public static FileSystemEntry FromPath(string path)
@@ -51,7 +51,7 @@ public sealed class FileSystemEntry : INotifyPropertyChanged
     private static string GetFileType(string name)
     {
         var extension = Path.GetExtension(name);
-        return string.IsNullOrWhiteSpace(extension) ? "파일" : extension.TrimStart('.').ToUpperInvariant();
+        return string.IsNullOrWhiteSpace(extension) ? Localization.T("파일") : extension.TrimStart('.').ToUpperInvariant();
     }
 
     private static string FormatSize(long bytes)

@@ -18,7 +18,7 @@ public static class FileOperationRegistry
         lock (Sync)
         {
             if (Paused.Values.Any(root => Touches(normalized, root)))
-                throw new IOException("종료 또는 안전하게 꺼내기를 준비 중입니다. 잠시 후 다시 시도해주세요.");
+                throw new IOException(Localization.T("종료 또는 안전하게 꺼내기를 준비 중입니다. 잠시 후 다시 시도해주세요."));
             var id = ++_next;
             Active[id] = (normalized, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously));
             return new Lease(() =>

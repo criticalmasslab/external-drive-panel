@@ -12,8 +12,8 @@ public sealed record VolumeCapacitySnapshot(ulong TotalBytes, ulong FreeBytes, u
     public ulong UsedBytes => TotalBytes - Math.Min(TotalBytes, FreeBytes);
     public double UsedFraction => TotalBytes == 0 ? 0 : (double)UsedBytes / TotalBytes;
     public bool IsHighUsage => UsedFraction > .8;
-    public string Caption => $"{FormatBytes(TotalBytes)} 중 {FormatBytes(Math.Min(TotalBytes, AvailableBytes))} 사용 가능 · {UsedFraction:P1} 사용";
-    public string Description => $"전체 {FormatBytes(TotalBytes)} / 사용 {FormatBytes(UsedBytes)} / 사용 가능 {FormatBytes(Math.Min(TotalBytes, AvailableBytes))} ({UsedFraction:P1} 사용)";
+    public string Caption => Localization.Format("{0} 중 {1} 사용 가능 · {2:P1} 사용", FormatBytes(TotalBytes), FormatBytes(Math.Min(TotalBytes, AvailableBytes)), UsedFraction);
+    public string Description => Localization.Format("전체 {0} / 사용 {1} / 사용 가능 {2} ({3:P1} 사용)", FormatBytes(TotalBytes), FormatBytes(UsedBytes), FormatBytes(Math.Min(TotalBytes, AvailableBytes)), UsedFraction);
 
     public static string FormatBytes(ulong bytes)
     {
@@ -46,7 +46,7 @@ public sealed class VolumeCapacityBar : Grid, IDisposable
     private readonly ColumnDefinition _used = new() { Width = new GridLength(0, GridUnitType.Star) };
     private readonly ColumnDefinition _free = new() { Width = new GridLength(1, GridUnitType.Star) };
     private readonly Border _fill = new();
-    private readonly TextBlock _caption = new() { Text = "용량 확인 중…", Margin = new Thickness(8, 0, 8, 0),
+    private readonly TextBlock _caption = new() { Text = Localization.T("용량 확인 중…"), Margin = new Thickness(8, 0, 8, 0),
         VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, IsHitTestVisible = false,
         Foreground = new SolidColorBrush(Color.FromRgb(0x20, 0x32, 0x46)) };
     private readonly DispatcherTimer _timer;
@@ -85,7 +85,7 @@ public sealed class VolumeCapacityBar : Grid, IDisposable
     {
         if (_disposed) return;
         if (snapshot?.TotalBytes == 0) snapshot = null;
-        if (Snapshot == snapshot && _caption.Text != "용량 확인 중…") return;
+        if (Snapshot == snapshot && _caption.Text != Localization.T("용량 확인 중…")) return;
         Snapshot = snapshot;
         var fraction = snapshot?.UsedFraction ?? 0;
         _used.Width = new GridLength(fraction, GridUnitType.Star);
@@ -93,8 +93,8 @@ public sealed class VolumeCapacityBar : Grid, IDisposable
         // Soft fills keep the same dark text legible over both used/free portions.
         _fill.Background = new SolidColorBrush(snapshot?.IsHighUsage == true
             ? Color.FromRgb(0xE6, 0x8E, 0x8E) : Color.FromRgb(0x86, 0xBE, 0xE8));
-        _caption.Text = snapshot?.Caption ?? "용량 정보를 읽을 수 없습니다";
-        ToolTip = snapshot?.Description ?? "드라이브가 연결되어 있고 접근 가능한지 확인해 주세요.";
+        _caption.Text = snapshot?.Caption ?? Localization.T("용량 정보를 읽을 수 없습니다");
+        ToolTip = snapshot?.Description ?? Localization.T("드라이브가 연결되어 있고 접근 가능한지 확인해 주세요.");
         System.Windows.Automation.AutomationProperties.SetName(this, _caption.Text);
     }
 
@@ -102,6 +102,12 @@ public sealed class VolumeCapacityBar : Grid, IDisposable
     {
         _suspended = true; _version++; _timer.Stop();
         while (_busy) await Task.Delay(10);
+    }
+    public void RefreshLanguage()
+    {
+        _caption.Text = Snapshot?.Caption ?? Localization.T("용량 정보를 읽을 수 없습니다");
+        ToolTip = Snapshot?.Description ?? Localization.T("드라이브가 연결되어 있고 접근 가능한지 확인해 주세요.");
+        System.Windows.Automation.AutomationProperties.SetName(this, _caption.Text);
     }
     public void Resume()
     {

@@ -91,14 +91,14 @@
                                    FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                     </Button>
                     <StackPanel x:Name="HeaderNavigation" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <Button x:Name="BackButton" Style="{StaticResource ChromeButton}" ToolTip="뒤로" Click="BackButton_OnClick"><local:SymbolIcon Kind="Back" /></Button>
-                            <Button x:Name="ForwardButton" Style="{StaticResource ChromeButton}" ToolTip="앞으로" Click="ForwardButton_OnClick"><local:SymbolIcon Kind="Forward" /></Button>
-                            <Button x:Name="UpButton" Style="{StaticResource ChromeButton}" ToolTip="위로" Click="UpButton_OnClick"><local:SymbolIcon Kind="Up" /></Button>
-                            <Button x:Name="HomeButton" Style="{StaticResource ChromeButton}" ToolTip="즐겨찾기 홈" Click="HomeButton_OnClick"><local:SymbolIcon x:Name="HomeIcon" Kind="Home" /></Button>
-                            <Button x:Name="AddFavoritesButton" Style="{StaticResource ChromeButton}" ToolTip="선택 항목을 즐겨찾기에 추가 (선택이 없으면 현재 폴더)" Click="AddFavoritesButton_OnClick"><local:SymbolIcon Kind="Favorite" /></Button>
-                            <Button Style="{StaticResource ChromeButton}" ToolTip="안전하게 꺼내기" Click="EjectButton_OnClick"><local:SymbolIcon Kind="Eject" /></Button>
+                            <Button x:Name="BackButton" Style="{StaticResource ChromeButton}" ToolTip="{local:Translate L2DF06869205B07FE}" Click="BackButton_OnClick"><local:SymbolIcon Kind="Back" /></Button>
+                            <Button x:Name="ForwardButton" Style="{StaticResource ChromeButton}" ToolTip="{local:Translate LCB4897C6B6949E02}" Click="ForwardButton_OnClick"><local:SymbolIcon Kind="Forward" /></Button>
+                            <Button x:Name="UpButton" Style="{StaticResource ChromeButton}" ToolTip="{local:Translate L3FD4BDBE77C71CEA}" Click="UpButton_OnClick"><local:SymbolIcon Kind="Up" /></Button>
+                            <Button x:Name="HomeButton" Style="{StaticResource ChromeButton}" ToolTip="{local:Translate LF8E7D07DC57D063A}" Click="HomeButton_OnClick"><local:SymbolIcon x:Name="HomeIcon" Kind="Home" /></Button>
+                            <Button x:Name="AddFavoritesButton" Style="{StaticResource ChromeButton}" ToolTip="{local:Translate L7EEF3E5D202CA3FE}" Click="AddFavoritesButton_OnClick"><local:SymbolIcon Kind="Favorite" /></Button>
+                            <Button Style="{StaticResource ChromeButton}" ToolTip="{local:Translate L15C88A10A595B2D4}" Click="EjectButton_OnClick"><local:SymbolIcon Kind="Eject" /></Button>
                             <Border Width="1" Margin="2,4" Background="#FF607084" />
-                            <Button x:Name="ViewModeButton" Style="{StaticResource ChromeButton}" AutomationProperties.Name="이 패널 보기 전환" Click="ViewModeButton_OnClick"><local:SymbolIcon x:Name="ViewModeIcon" Kind="Grid" /></Button>
+                            <Button x:Name="ViewModeButton" Style="{StaticResource ChromeButton}" AutomationProperties.Name="{local:Translate L6E63E8AA759C28A5}" Click="ViewModeButton_OnClick"><local:SymbolIcon x:Name="ViewModeIcon" Kind="Grid" /></Button>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -108,26 +108,26 @@
             <Border x:Name="FileToolbar" Grid.Row="2" Height="{DynamicResource PanelChromeHeight}" Padding="3,0" Background="#FFF4F5F7">
             <Grid VerticalAlignment="Center"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="NewItemButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="새로 만들기" ToolTip="새로 만들기 — 현재 폴더 (홈에서는 드라이브 루트)"><local:SymbolIcon Kind="NewFolder" /></Button>
+                <Button x:Name="NewItemButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="{local:Translate L61CBFB012ECB0885}" ToolTip="{local:Translate L4EC2CC8D57793197}"><local:SymbolIcon Kind="NewFolder" /></Button>
                 <Border Width="1" Margin="3,4" Background="#FFD0D5DC" />
-                <Button x:Name="CutButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="잘라내기" ToolTip="잘라내기 (Ctrl+X)"><local:SymbolIcon Kind="Cut" /></Button>
-                <Button x:Name="CopyButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="복사" ToolTip="복사 (Ctrl+C)"><local:SymbolIcon Kind="Copy" /></Button>
-                <Button x:Name="PasteButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="붙여넣기" ToolTip="붙여넣기 (Ctrl+V)"><local:SymbolIcon Kind="Paste" /></Button>
-                <Button x:Name="RenameButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="이름 바꾸기" ToolTip="이름 바꾸기 (F2)"><local:SymbolIcon Kind="Rename" /></Button>
-                <Button x:Name="ShareButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="공유" ToolTip="Windows 공유"><local:SymbolIcon Kind="Share" /></Button>
-                <Button x:Name="DeleteButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="삭제" ToolTip="실제 파일/폴더 삭제 (Delete) — 즐겨찾기 제거와 다름"><local:SymbolIcon Kind="Delete" /></Button>
+                <Button x:Name="CutButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="{local:Translate L41052DAEF743AA5F}" ToolTip="{local:Translate L9C6F6B3239F5A5FC}"><local:SymbolIcon Kind="Cut" /></Button>
+                <Button x:Name="CopyButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="{local:Translate L37B3D3B11B2637F6}" ToolTip="{local:Translate L1CA09AC44002D77B}"><local:SymbolIcon Kind="Copy" /></Button>
+                <Button x:Name="PasteButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="{local:Translate L8E45BFBB76052ECD}" ToolTip="{local:Translate LF7B2136E8C971CBE}"><local:SymbolIcon Kind="Paste" /></Button>
+                <Button x:Name="RenameButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="{local:Translate L39E046478AE8A99E}" ToolTip="{local:Translate LF7CFE3A06E3327BF}"><local:SymbolIcon Kind="Rename" /></Button>
+                <Button x:Name="ShareButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="{local:Translate LD62648E19143C34D}" ToolTip="{local:Translate L454AEF72B4DAF592}"><local:SymbolIcon Kind="Share" /></Button>
+                <Button x:Name="DeleteButton" Style="{StaticResource ToolbarButton}" AutomationProperties.Name="{local:Translate L6139B6C3ED73CD4A}" ToolTip="{local:Translate L82BDD3D495C6E022}"><local:SymbolIcon Kind="Delete" /></Button>
             </StackPanel>
             <Border x:Name="SearchBoxBorder" Grid.Column="1" Background="White" BorderBrush="#FFBFC5CC" BorderThickness="1" CornerRadius="3"
                     Height="{DynamicResource ChromeButtonHeight}" Margin="4,0,3,0" Padding="4,0" ClipToBounds="True">
                 <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                     <TextBox x:Name="SearchTextBox" BorderThickness="0" Background="Transparent" Padding="0" MinWidth="0" FontSize="12"
-                             VerticalContentAlignment="Center" AutomationProperties.Name="이 드라이브 검색" ToolTip="드라이브 전체 검색 — 이름, *.pdf, .jpg, ext:txt 입력 후 Enter"
+                             VerticalContentAlignment="Center" AutomationProperties.Name="{local:Translate L31843898C0EB23AC}" ToolTip="{local:Translate LA0A49C30F5CF26B4}"
                              PreviewKeyDown="Search_OnKeyDown" TextChanged="SearchText_OnChanged" />
-                    <TextBlock Text="드라이브 검색" Foreground="#FF89919A" FontSize="12" VerticalAlignment="Center" IsHitTestVisible="False" TextTrimming="CharacterEllipsis">
+                    <TextBlock Text="{local:Translate L1FC57009F7522E9E}" Foreground="#FF89919A" FontSize="12" VerticalAlignment="Center" IsHitTestVisible="False" TextTrimming="CharacterEllipsis">
                         <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Text, ElementName=SearchTextBox}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></TextBlock.Style>
                     </TextBlock>
-                    <Button x:Name="SearchButton" Grid.Column="1" Style="{StaticResource ToolbarButton}" Width="{DynamicResource SearchActionWidth}" Height="{DynamicResource SearchActionHeight}" Margin="0" Padding="0" ToolTip="검색 (Enter)" AutomationProperties.Name="검색" Click="Search_OnClick"><local:SymbolIcon Kind="Search" Width="{DynamicResource SearchIconSize}" Height="{DynamicResource SearchIconSize}" /></Button>
-                    <Button x:Name="SearchClearButton" Grid.Column="2" Style="{StaticResource ToolbarButton}" Width="{DynamicResource SearchClearWidth}" Height="{DynamicResource SearchActionHeight}" Margin="0" Padding="0" Visibility="Collapsed" ToolTip="검색 닫기 (Esc)" AutomationProperties.Name="검색 닫기" Click="SearchClear_OnClick"><local:SymbolIcon Kind="Close" Width="{DynamicResource SearchCloseIconSize}" Height="{DynamicResource SearchCloseIconSize}" /></Button>
+                    <Button x:Name="SearchButton" Grid.Column="1" Style="{StaticResource ToolbarButton}" Width="{DynamicResource SearchActionWidth}" Height="{DynamicResource SearchActionHeight}" Margin="0" Padding="0" ToolTip="{local:Translate L62639EC31CA4B494}" AutomationProperties.Name="{local:Translate L4B8D541EBE6D9003}" Click="Search_OnClick"><local:SymbolIcon Kind="Search" Width="{DynamicResource SearchIconSize}" Height="{DynamicResource SearchIconSize}" /></Button>
+                    <Button x:Name="SearchClearButton" Grid.Column="2" Style="{StaticResource ToolbarButton}" Width="{DynamicResource SearchClearWidth}" Height="{DynamicResource SearchActionHeight}" Margin="0" Padding="0" Visibility="Collapsed" ToolTip="{local:Translate L90A3D343FAEA48F7}" AutomationProperties.Name="{local:Translate LD5868003C32ABBD6}" Click="SearchClear_OnClick"><local:SymbolIcon Kind="Close" Width="{DynamicResource SearchCloseIconSize}" Height="{DynamicResource SearchCloseIconSize}" /></Button>
                 </Grid>
             </Border>
             </Grid>
@@ -145,7 +145,7 @@
             <Grid x:Name="ContentArea" Background="Transparent" PreviewMouseDown="ContentArea_OnPreviewMouseDown">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
                 <Border x:Name="SearchStatus" Background="#FFE8EDF3" Padding="6,3" Visibility="Collapsed" SizeChanged="SearchStatus_OnSizeChanged">
-                    <DockPanel><Button x:Name="SearchStopButton" DockPanel.Dock="Right" Content="중지" Click="SearchStop_OnClick" Padding="4,0" Margin="4,0,0,0" />
+                    <DockPanel><Button x:Name="SearchStopButton" DockPanel.Dock="Right" Content="{local:Translate L92CDEF3C5BC09F84}" Click="SearchStop_OnClick" Padding="4,0" Margin="4,0,0,0" />
                         <TextBlock x:Name="SearchStatusText" FontSize="11" Foreground="#FF526174" TextWrapping="Wrap" VerticalAlignment="Center" />
                     </DockPanel>
                 </Border>
@@ -172,7 +172,7 @@
                 <TextBlock x:Name="EmptyFavoritesMessage" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
                            IsHitTestVisible="False" Panel.ZIndex="1"
                            Margin="24" TextAlignment="Center" TextWrapping="Wrap" Foreground="#FF68717C"
-                           Text="즐겨찾기가 없습니다. 폴더나 파일을 우클릭해서 추가해보세요." />
+                           Text="{local:Translate L079DF040CB1BD8A9}" />
 
                 <ListBox x:Name="IconItemsList" Grid.Row="1" Visibility="Collapsed" BorderThickness="0" Background="Transparent" SelectionMode="Extended" ScrollViewer.CanContentScroll="False"
                          FocusVisualStyle="{x:Null}"
@@ -234,7 +234,7 @@
                         </Style>
                     </DataGrid.Resources>
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="이름" SortMemberPath="Name" Width="2*" HeaderStyle="{StaticResource DetailsHeader}">
+                        <DataGridTemplateColumn Header="{local:Translate L253D1510CAF53620}" SortMemberPath="Name" Width="2*" HeaderStyle="{StaticResource DetailsHeader}">
                             <DataGridTemplateColumn.CellTemplate><DataTemplate>
                                 <Grid ToolTip="{Binding FullPath}"><Grid.ColumnDefinitions><ColumnDefinition Width="26" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                                     <Grid Width="24" Height="24"><local:FilePreview FilePath="{Binding FullPath}" FallbackGlyph="{Binding Icon}" PreviewEnabled="{DynamicResource ShowFilePreviews}" GlyphSize="16" />
@@ -244,13 +244,13 @@
                                 </Grid>
                             </DataTemplate></DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="수정한 날짜" Binding="{Binding ModifiedDate, StringFormat=yyyy-MM-dd HH:mm}" SortMemberPath="ModifiedDate" Width="*"
+                        <DataGridTextColumn Header="{local:Translate L90665568632CBFB8}" Binding="{Binding ModifiedDate, StringFormat=yyyy-MM-dd HH:mm}" SortMemberPath="ModifiedDate" Width="*"
                                             ElementStyle="{StaticResource CenteredDetailsText}" HeaderStyle="{StaticResource CenteredDetailsHeader}" />
-                        <DataGridTextColumn Header="크기" Binding="{Binding SizeDisplay}" SortMemberPath="Size" Width="Auto"
+                        <DataGridTextColumn Header="{local:Translate L82232621B82D72BE}" Binding="{Binding SizeDisplay}" SortMemberPath="Size" Width="Auto"
                                             ElementStyle="{StaticResource CenteredDetailsText}" HeaderStyle="{StaticResource CenteredDetailsHeader}" />
-                        <DataGridTextColumn Header="유형" Binding="{Binding Type}" SortMemberPath="Type" Width="*"
+                        <DataGridTextColumn Header="{local:Translate L5CF2792B3FAB3578}" Binding="{Binding Type}" SortMemberPath="Type" Width="*"
                                             ElementStyle="{StaticResource RightDetailsText}" HeaderStyle="{StaticResource RightDetailsHeader}" />
-                        <DataGridTextColumn x:Name="SearchLocationColumn" Header="위치" Binding="{Binding DirectoryPath}" Width="2*" CanUserSort="False" Visibility="Collapsed" />
+                        <DataGridTextColumn x:Name="SearchLocationColumn" Header="{local:Translate L6C0B9DD710AB0FDE}" Binding="{Binding DirectoryPath}" Width="2*" CanUserSort="False" Visibility="Collapsed" />
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
