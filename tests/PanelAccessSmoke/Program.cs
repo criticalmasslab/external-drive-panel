@@ -97,6 +97,34 @@ internal static class Program
             Require(helper.Topmost && !helper.ShowInTaskbar && !helper.ShowActivated && cover.IsActive, "helper stays accessible without stealing focus");
             GetWindowRect(new WindowInteropHelper(helper).Handle, out var rect);
             Require(rect.Right <= monitor.Right - 12 && rect.Bottom <= monitor.Bottom - 12 && rect.Right - rect.Left == 44, "helper is above taskbar inside work area");
+            var blocker = Fixture("Later topmost window fixture");
+            try
+            {
+                Place(blocker, new(rect.Left - 10, rect.Top - 10, 64, 64)); blocker.Activate();
+                var helperHandle = new WindowInteropHelper(helper).Handle;
+                var blockerHandle = new WindowInteropHelper(blocker).Handle;
+                Require(Above(blockerHandle, helperHandle), "later topmost window actually covers existing helper");
+                var foreground = GetForegroundWindow();
+                service.Check();
+                Require(Above(helperHandle, blockerHandle), "existing visible helper recovers above later topmost window");
+                Require(GetForegroundWindow() == foreground, "z-order recovery keeps foreground focus");
+                helper.Topmost = false;
+                service.Check();
+                Require(helper.Topmost && Above(helperHandle, blockerHandle), "helper recovers lost topmost state");
+                Require(GetForegroundWindow() == foreground, "topmost state repair also keeps foreground focus");
+                GetWindowRect(helperHandle, out var restored);
+                Require(restored.Left == rect.Left && restored.Top == rect.Top && restored.Right == rect.Right && restored.Bottom == rect.Bottom,
+                    "topmost repair keeps helper position and 44px size");
+            }
+            finally { blocker.Close(); }
+            var positionChanges = 0;
+            IntPtr CountPositionChanges(IntPtr window, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
+            { if (message == 0x47) positionChanges++; return IntPtr.Zero; }
+            var helperSource = HwndSource.FromHwnd(new WindowInteropHelper(helper).Handle);
+            helperSource.AddHook(CountPositionChanges);
+            try { for (var check = 0; check < 3; check++) service.Check(); }
+            finally { helperSource.RemoveHook(CountPositionChanges); }
+            Require(positionChanges == 0, "uncovered helper does not repeatedly reorder or resize on timer checks");
             ((Button)helper.Content).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Require(reveals == 1 && !service.IsButtonVisible && !panel.Topmost, "click raises panels and hides helper, not permanent topmost panels");
             service.Check(); Require(!service.IsButtonVisible, "uncovered panel keeps helper hidden");
@@ -145,6 +173,15 @@ internal static class Program
     }
     private static void Place(Window window, LayoutRect bounds) => SetWindowPos(new WindowInteropHelper(window).Handle, new nint(-1), (int)bounds.X, (int)bounds.Y, (int)bounds.Width, (int)bounds.Height, 0x10);
     private static void Require(bool ok, string message) { if (!ok) throw new Exception(message); }
+    private static bool Above(nint first, nint second)
+    {
+        var current = GetWindow(second, 3);
+        for (var i = 0; current != 0 && i < 1024; i++, current = GetWindow(current, 3))
+            if (current == first) return true;
+        return false;
+    }
+    [DllImport("user32.dll")] private static extern nint GetWindow(nint handle, uint relation);
+    [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
     [StructLayout(LayoutKind.Sequential)] private struct NativeRect { public int Left, Top, Right, Bottom; }
     [DllImport("user32.dll")] private static extern bool GetWindowRect(nint handle, out NativeRect rect);
     [DllImport("user32.dll")] private static extern bool SetWindowPos(nint handle, nint after, int x, int y, int width, int height, uint flags);

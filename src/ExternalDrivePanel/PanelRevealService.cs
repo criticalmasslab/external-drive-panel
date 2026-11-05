@@ -77,7 +77,7 @@ public sealed class PanelRevealService : IDisposable
             _button ??= CreateButton();
             const double size = 44, margin = 12;
             _button.SetPlacement(new(screen.X + Math.Max(0, screen.Width - size - margin), screen.Y + Math.Max(0, screen.Height - size - margin), Math.Min(size, screen.Width), Math.Min(size, screen.Height)));
-            if (!_button.IsVisible) _button.Show();
+            _button.ShowAboveCoveringWindows();
         }
         catch (Exception ex) { Debug.WriteLine($"Panel reveal: {ex}"); Hide(); }
     }
